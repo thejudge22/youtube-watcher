@@ -110,6 +110,7 @@ docker-compose down
 - All dates in ISO 8601 format
 - API endpoints prefixed with `/api/`
 - Video status enum: `inbox`, `saved`, `discarded`
+- **Testing:** Always run existing tests and verify all features work after implementing a change.
 
 ## Supported YouTube URL Formats
 
