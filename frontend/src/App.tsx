@@ -1,10 +1,26 @@
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Header } from './components/layout/Header';
+import { Navigation } from './components/layout/Navigation';
+import { Inbox } from './pages/Inbox';
+import { Saved } from './pages/Saved';
+import { Channels } from './pages/Channels';
+
 function App() {
   return (
-    <div className="bg-gray-900 text-white min-h-screen">
-      <h1 className="text-3xl font-bold p-4">YouTube Watcher</h1>
-      <p className="p-4">Frontend is running!</p>
-    </div>
-  )
+    <BrowserRouter>
+      <div className="min-h-screen bg-gray-900">
+        <Header />
+        <Navigation />
+        <main>
+          <Routes>
+            <Route path="/" element={<Inbox />} />
+            <Route path="/saved" element={<Saved />} />
+            <Route path="/channels" element={<Channels />} />
+          </Routes>
+        </main>
+      </div>
+    </BrowserRouter>
+  );
 }
 
-export default App
+export default App;

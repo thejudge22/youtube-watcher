@@ -27,17 +27,17 @@
 | 2B | RSS Service | ✅ Complete | `v0.2.1-rss` |
 | 2C | Channel API | ✅ Complete | `v0.2.2-channels-api` |
 | 2D | Video API | ✅ Complete | `v0.2.3-videos-api` |
-| 3A | Frontend Scaffold | ⏳ Pending | `v0.3.0-frontend-scaffold` |
-| 3B | API Client | ⏳ Pending | `v0.3.1-api-client` |
-| 3C | Channel Management UI | ⏳ Pending | `v0.3.2-channels-ui` |
-| 4A | Inbox Page | ⏳ Pending | `v0.4.0-inbox` |
-| 4B | Saved Videos Page | ⏳ Pending | `v0.4.1-saved` |
-| 5 | Direct URL Save | ⏳ Pending | `v0.5.0-url-save` |
-| 6 | Polish | ⏳ Pending | `v1.0.0` |
+| 3A | Frontend Scaffold | ✅ Complete | `v0.3.0-frontend-scaffold` |
+| 3B | API Client | ✅ Complete | `v0.3.1-api-client` |
+| 3C | Channel Management UI | ✅ Complete | `v0.3.2-channels-ui` |
+| 4A | Inbox Page | ✅ Complete | `v0.4.0-inbox` |
+| 4B | Saved Videos Page | ✅ Complete | `v0.4.1-saved` |
+| 5 | Direct URL Save | ✅ Complete | `v0.5.0-url-save` |
+| 6 | Polish | ✅ Complete | `v1.0.0` |
 
-**Current Phase**: Phase 2D - Video API (Complete)
+**Current Phase**: Phase 6 - Polish (Complete)
 
-**Next Phase**: Phase 3A - Frontend Scaffold
+**Next Phase**: Maintenance / v1.0.0 Release
 
 ---
 

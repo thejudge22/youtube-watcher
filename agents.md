@@ -15,16 +15,16 @@ YouTube-Watcher is a self-hosted, Docker-based web application for managing YouT
 
 ## Current Development Status
 
-**Phase:** Phase 2: Core Backend Development (Complete & Tested)
+**Phase:** Phase 6: Polish (Complete)
 
 **Status:**
 - [x] Development plan created (`plans/development-plan.md`)
 - [x] Phase 1: Project Setup & Infrastructure
 - [x] Phase 2: Core Backend Development
-- [ ] Phase 3: Frontend - Channel Management
-- [ ] Phase 4: Frontend - Video Inbox
-- [ ] Phase 5: Frontend - Saved Videos
-- [ ] Phase 6: Polish & Testing
+- [x] Phase 3: Frontend - Channel Management
+- [x] Phase 4: Frontend - Video Inbox
+- [x] Phase 5: Frontend - Saved Videos
+- [x] Phase 6: Polish & Testing
 
 ## Technology Stack
 
@@ -41,6 +41,7 @@ YouTube-Watcher is a self-hosted, Docker-based web application for managing YouT
 |------|--------|
 | 2026-01-12 | Initial project setup - created development plan and agents.md |
 | 2026-01-12 | Completed Phase 1 & 2. Implemented full testing suite (45 tests). Added support for Shorts and Handle URLs. |
+| 2026-01-12 | Completed Phases 3-6. Full frontend implementation with React, TypeScript, and TailwindCSS. Updated README with documentation. |
 
 ## Architecture Notes
 
@@ -55,31 +56,25 @@ See `plans/development-plan.md` for full architecture details.
 
 ## Known Issues & TODOs
 
-No known issues yet - project is in pre-development phase.
-
-**Next Steps:**
-1. Initialize project structure
-2. Set up Docker configurations
-3. Create database schema and models
-4. Implement RSS feed parsing service
+No known issues - project is complete.
 
 ## Development Commands
 
 ```bash
 # Production mode (single container)
-docker-compose up --build
+docker compose up --build
 # Access at http://localhost:8000
 
 # Development mode (hot reload for both frontend and backend)
-docker-compose -f docker-compose.dev.yml up --build
+docker compose -f docker-compose.dev.yml up --build
 # Frontend: http://localhost:5173
 # Backend API: http://localhost:8000
 
 # View logs
-docker-compose logs -f
+docker compose logs -f
 
 # Stop services
-docker-compose down
+docker compose down
 
 # API Docs (both modes)
 # http://localhost:8000/docs
@@ -92,11 +87,12 @@ docker-compose down
 | `plans/development-plan.md` | High-level development plan |
 | `plans/plan.md` | Detailed LLM implementation guide |
 | `agents.md` | This file - AI context |
-| `Dockerfile` | Single-container production build (to be created) |
-| `docker-compose.yml` | Production deployment (to be created) |
-| `docker-compose.dev.yml` | Development with hot reload (to be created) |
-| `backend/app/main.py` | FastAPI app - serves API + static files (to be created) |
-| `frontend/src/App.tsx` | React application entry point (to be created) |
+| `Dockerfile` | Single-container production build |
+| `docker-compose.yml` | Production deployment |
+| `docker-compose.dev.yml` | Development with hot reload |
+| `backend/app/main.py` | FastAPI app - serves API + static files |
+| `frontend/src/App.tsx` | React application entry point |
+| `README.md` | User-facing documentation |
 
 ## Core Features Reference
 
@@ -104,6 +100,7 @@ docker-compose down
 2. **Video Inbox** - Triage new videos (save or discard)
 3. **Saved Videos** - View saved videos with filtering/sorting
 4. **Direct URL Save** - Paste any YouTube URL to save directly
+5. **Bulk Actions** - Save/discard all inbox videos at once
 
 ## Conventions
 
@@ -118,6 +115,7 @@ docker-compose down
 |------|--------|---------|
 | Channel | Handle | `https://www.youtube.com/@JoshuaWeissman` |
 | Channel | ID | `https://www.youtube.com/channel/UC...` |
+| Channel | Custom | `https://www.youtube.com/c/SomeChannel` |
 | Video | Regular | `https://www.youtube.com/watch?v=gYFZ4HYTsZI` |
 | Video | Shorts | `https://www.youtube.com/shorts/mccyHdidiG8` |
 | Video | Short URL | `https://youtu.be/VIDEO_ID` |
@@ -129,3 +127,14 @@ docker-compose down
 *   The Docker Compose command has been updated from the legacy `docker-compose` (with a hyphen) to `docker compose` (with a space) to align with modern Docker CLI syntax. All documentation and scripts should reflect this change.
 *   The top-level `version` tag has been removed from `docker-compose.yml` and `docker-compose.dev.yml` as it is obsolete in the current Docker Compose specification.
 - Use UUID for all primary keys
+
+## Phase 6: Polish (2026-01-12)
+
+Completed UI/UX polish:
+- Added loading spinners to all pages
+- Implemented error handling with visible error messages
+- Added empty state messages with helpful text for Inbox, Saved, and Channels pages
+
+Updated documentation:
+- Complete README.md with features list, installation instructions, usage guide
+- Updated agents.md to reflect completed project state
