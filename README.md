@@ -2,6 +2,8 @@
 
 A self-hosted, Docker-based web application for managing YouTube content discovery. Monitor YouTube channels via RSS feeds, triage new videos in an inbox-style interface, and maintain a personal watch later list.
 
+NOTE: This is an early WIP application, and a lot of features are probably not working yet.  Right now I've tested adding videos, removing them, and sorting / filtering work. Coming soon is adding a channel, finding new videos on a channel, and more.
+
 ![YouTube-Watcher Screenshot Placeholder]
 
 ## Features
@@ -41,7 +43,7 @@ mkdir -p data
 docker compose up --build
 ```
 
-4. Access the application at http://localhost:8000
+4. Access the application at http://localhost:38000
 
 ### Development Mode
 
@@ -129,33 +131,6 @@ API documentation is available at `/docs` when the application is running.
 | Database | SQLite |
 | Deployment | Docker |
 
-## Project Structure
-
-```
-youtube-watcher/
-├── backend/                 # FastAPI backend
-│   ├── app/
-│   │   ├── main.py         # Application entry point
-│   │   ├── routers/        # API endpoints
-│   │   ├── models/         # Database models
-│   │   ├── schemas/        # Pydantic schemas
-│   │   └── services/       # Business logic
-│   └── tests/              # Backend tests
-├── frontend/               # React frontend
-│   ├── src/
-│   │   ├── components/    # React components
-│   │   ├── pages/         # Page components
-│   │   ├── hooks/         # Custom React hooks
-│   │   ├── api/           # API client
-│   │   └── types/         # TypeScript types
-│   └── ...
-├── data/                   # SQLite database storage
-├── docker-compose.yml      # Production Docker Compose
-├── docker-compose.dev.yml  # Development Docker Compose
-├── Dockerfile              # Production Dockerfile
-├── Dockerfile.dev          # Development Dockerfile
-└── README.md              # This file
-```
 
 ## License
 
