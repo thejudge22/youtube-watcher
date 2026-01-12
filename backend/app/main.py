@@ -4,6 +4,8 @@ from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
+from .routers import channels, videos
+
 app = FastAPI()
 
 @app.on_event("startup")
@@ -28,6 +30,10 @@ app.add_middleware(
 @app.get("/api/health")
 async def health():
     return {"status": "ok"}
+
+# Include routers
+app.include_router(channels.router, prefix="/api")
+app.include_router(videos.router, prefix="/api")
 
 # This logic is for the production Docker container, where the frontend is built and served by FastAPI.
 if os.path.exists("static"):
