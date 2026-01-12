@@ -169,6 +169,7 @@ def extract_video_id(url: str) -> str:
     - https://youtu.be/VIDEO_ID
     - https://www.youtube.com/embed/VIDEO_ID
     - https://www.youtube.com/v/VIDEO_ID
+    - https://www.youtube.com/shorts/VIDEO_ID
 
     Args:
         url: YouTube video URL
@@ -200,6 +201,11 @@ def extract_video_id(url: str) -> str:
     v_match = re.match(r'https?://(?:www\.)?youtube\.com/v/([A-Za-z0-9_-]{11})', url)
     if v_match:
         return v_match.group(1)
+    
+    # Shorts URL: /shorts/VIDEO_ID
+    shorts_match = re.match(r'https?://(?:www\.)?youtube\.com/shorts/([A-Za-z0-9_-]{11})', url)
+    if shorts_match:
+        return shorts_match.group(1)
     
     raise ValueError(f"Unrecognized YouTube video URL format: {url}")
 

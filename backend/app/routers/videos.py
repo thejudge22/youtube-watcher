@@ -36,7 +36,8 @@ async def video_to_response(db: AsyncSession, video: Video) -> VideoResponse:
         video_url=video.video_url,
         published_at=video.published_at,
         status=video.status,
-        saved_at=video.saved_at
+        saved_at=video.saved_at,
+        discarded_at=video.discarded_at
     )
 
 
@@ -249,16 +250,16 @@ async def bulk_discard_videos(action: BulkVideoAction, db: AsyncSession = Depend
     return responses
 
 
-@router.post("/videos/from-url", response_model=VideoResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/videos/from-url", response_model=VideoResponse)
 async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depends(get_db)):
     """
     Add a video from a YouTube URL.
     
     Logic:
     1. Extract video ID from URL
-    2. Check if video already exists (return existing if so)
+    2. Check if video already exists (return existing with 200 if so)
     3. Fetch video info from RSS/oEmbed
-    4. Create video with status='saved' and saved_at=now
+    4. Create video with status='saved' and saved_at=now (return 201)
     5. If video's channel exists, link it; otherwise channel_id=null
     """
     # Step 1: Extract video ID
@@ -279,7 +280,13 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
     existing_video = existing.scalar_one_or_none()
     
     if existing_video:
-        return await video_to_response(db, existing_video)
+        # Return existing video with 200 status (handled by response_class)
+        from fastapi.responses import JSONResponse
+        response_data = await video_to_response(db, existing_video)
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content=response_data.model_dump(mode='json')
+        )
     
     # Step 3: Fetch video info
     try:
@@ -320,7 +327,13 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
     # Load channel for response
     await db.refresh(video, ['channel'])
     
-    return await video_to_response(db, video)
+    # Return new video with 201 status
+    from fastapi.responses import JSONResponse
+    response_data = await video_to_response(db, video)
+    return JSONResponse(
+        status_code=status.HTTP_201_CREATED,
+        content=response_data.model_dump(mode='json')
+    )
 
 
 @router.delete("/videos/{video_id}", status_code=status.HTTP_204_NO_CONTENT)

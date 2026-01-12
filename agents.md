@@ -15,12 +15,12 @@ YouTube-Watcher is a self-hosted, Docker-based web application for managing YouT
 
 ## Current Development Status
 
-**Phase:** Pre-development (Planning Complete)
+**Phase:** Phase 2: Core Backend Development (Complete & Tested)
 
-**Status:** 
+**Status:**
 - [x] Development plan created (`plans/development-plan.md`)
-- [ ] Phase 1: Project Setup & Infrastructure
-- [ ] Phase 2: Core Backend Development
+- [x] Phase 1: Project Setup & Infrastructure
+- [x] Phase 2: Core Backend Development
 - [ ] Phase 3: Frontend - Channel Management
 - [ ] Phase 4: Frontend - Video Inbox
 - [ ] Phase 5: Frontend - Saved Videos
@@ -40,6 +40,7 @@ YouTube-Watcher is a self-hosted, Docker-based web application for managing YouT
 | Date | Change |
 |------|--------|
 | 2026-01-12 | Initial project setup - created development plan and agents.md |
+| 2026-01-12 | Completed Phase 1 & 2. Implemented full testing suite (45 tests). Added support for Shorts and Handle URLs. |
 
 ## Architecture Notes
 
@@ -109,6 +110,16 @@ docker-compose down
 - All dates in ISO 8601 format
 - API endpoints prefixed with `/api/`
 - Video status enum: `inbox`, `saved`, `discarded`
+
+## Supported YouTube URL Formats
+
+| Type | Format | Example |
+|------|--------|---------|
+| Channel | Handle | `https://www.youtube.com/@JoshuaWeissman` |
+| Channel | ID | `https://www.youtube.com/channel/UC...` |
+| Video | Regular | `https://www.youtube.com/watch?v=gYFZ4HYTsZI` |
+| Video | Shorts | `https://www.youtube.com/shorts/mccyHdidiG8` |
+| Video | Short URL | `https://youtu.be/VIDEO_ID` |
 
 # Project Development Notes
 

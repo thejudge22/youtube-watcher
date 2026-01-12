@@ -20,6 +20,7 @@ class VideoResponse(BaseModel):
     published_at: datetime
     status: str
     saved_at: Optional[datetime]
+    discarded_at: Optional[datetime]
 
 
 class VideoFromUrl(BaseModel):
