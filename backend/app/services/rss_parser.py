@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel
 
-from .youtube_utils import get_rss_url, get_video_url
+from .youtube_utils import get_rss_url, get_video_url, extract_channel_id
 
 
 class ChannelInfo(BaseModel):
@@ -223,6 +223,16 @@ async def fetch_video_by_id(video_id: str) -> VideoInfo:
         
         title = data.get('title', '')
         author_name = data.get('author_name', '')
+        author_url = data.get('author_url', '')
+        
+        # Extract channel ID from author_url if available
+        channel_id = ''
+        if author_url:
+            try:
+                channel_id = await extract_channel_id(author_url)
+            except (ValueError, Exception):
+                # Fallback to empty if extraction fails
+                pass
         
         # Use default thumbnail URL since oEmbed doesn't provide it
         thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
@@ -232,7 +242,7 @@ async def fetch_video_by_id(video_id: str) -> VideoInfo:
         
         return VideoInfo(
             video_id=video_id,
-            channel_id='',  # Not available from oEmbed
+            channel_id=channel_id,
             channel_name=author_name,
             title=title,
             description=None,  # Not available from oEmbed

@@ -13,8 +13,8 @@ from ..database import get_db
 from ..models.video import Video
 from ..models.channel import Channel
 from ..schemas.video import VideoResponse, VideoFromUrl, BulkVideoAction
-from ..services.youtube_utils import extract_video_id, get_video_url
-from ..services.rss_parser import fetch_video_by_id
+from ..services.youtube_utils import extract_video_id, get_video_url, get_rss_url
+from ..services.rss_parser import fetch_video_by_id, fetch_channel_info
 
 router = APIRouter()
 
@@ -342,13 +342,32 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
             detail=f"Failed to fetch video info: {str(e)}"
         )
     
-    # Step 4: Try to find the channel
+    # Step 4: Try to find or create the channel
     channel_id = None
     if video_info.channel_id:
         channel_result = await db.execute(
             select(Channel).where(Channel.youtube_channel_id == video_info.channel_id)
         )
         channel = channel_result.scalar_one_or_none()
+        
+        if not channel:
+            # Create the channel if it doesn't exist so it shows up in filters
+            try:
+                channel_data = await fetch_channel_info(video_info.channel_id)
+                channel = Channel(
+                    youtube_channel_id=video_info.channel_id,
+                    name=channel_data.name,
+                    rss_url=get_rss_url(video_info.channel_id),
+                    thumbnail_url=channel_data.thumbnail_url,
+                    last_checked=datetime.utcnow()
+                )
+                db.add(channel)
+                await db.flush() # Get the channel.id
+            except Exception:
+                # If channel creation fails, we still want to add the video
+                # but it won't be linked to a channel record
+                channel = None
+        
         if channel:
             channel_id = channel.id
     
