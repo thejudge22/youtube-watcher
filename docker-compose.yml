@@ -6,4 +6,4 @@ services:
     volumes:
       - ./data:/app/data
     environment:
-      - DATABASE_URL=sqlite:///./data/youtube-watcher.db
+      - DATABASE_URL=sqlite+aiosqlite:///./data/youtube-watcher.db

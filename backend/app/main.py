@@ -6,6 +6,11 @@ import os
 
 app = FastAPI()
 
+@app.on_event("startup")
+async def startup_event():
+    # Ensure the data directory exists
+    os.makedirs("data", exist_ok=True)
+
 # CORS Configuration
 origins = [
     "http://localhost:5173",
