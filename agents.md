@@ -109,4 +109,11 @@ docker-compose down
 - All dates in ISO 8601 format
 - API endpoints prefixed with `/api/`
 - Video status enum: `inbox`, `saved`, `discarded`
+
+# Project Development Notes
+
+## Docker Configuration Update (2026-01-12)
+
+*   The Docker Compose command has been updated from the legacy `docker-compose` (with a hyphen) to `docker compose` (with a space) to align with modern Docker CLI syntax. All documentation and scripts should reflect this change.
+*   The top-level `version` tag has been removed from `docker-compose.yml` and `docker-compose.dev.yml` as it is obsolete in the current Docker Compose specification.
 - Use UUID for all primary keys

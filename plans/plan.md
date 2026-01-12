@@ -314,46 +314,44 @@ CREATE INDEX idx_videos_saved_at ON videos(saved_at);
    ```
 
 2. Create `docker-compose.yml` (simplified single service):
-   ```yaml
-   version: '3.8'
-   services:
-     app:
-       build: .
-       ports:
-         - "8000:8000"
-       volumes:
-         - ./data:/app/data
-       environment:
-         - DATABASE_URL=sqlite:///./data/youtube-watcher.db
-   ```
+    ```yaml
+    services:
+      app:
+        build: .
+        ports:
+          - "8000:8000"
+        volumes:
+          - ./data:/app/data
+        environment:
+          - DATABASE_URL=sqlite:///./data/youtube-watcher.db
+    ```
 
 3. Create `docker-compose.dev.yml` for development:
-   ```yaml
-   version: '3.8'
-   services:
-     backend:
-       build:
-         context: .
-         dockerfile: Dockerfile.dev
-       ports:
-         - "8000:8000"
-       volumes:
-         - ./backend:/app
-         - ./data:/app/data
-       environment:
-         - DATABASE_URL=sqlite:///./data/youtube-watcher.db
-       command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ```yaml
+    services:
+      backend:
+        build:
+          context: .
+          dockerfile: Dockerfile.dev
+        ports:
+          - "8000:8000"
+        volumes:
+          - ./backend:/app
+          - ./data:/app/data
+        environment:
+          - DATABASE_URL=sqlite:///./data/youtube-watcher.db
+        command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
-     frontend:
-       image: node:20-alpine
-       working_dir: /app
-       ports:
-         - "5173:5173"
-       volumes:
-         - ./frontend:/app
-         - /app/node_modules
-       command: sh -c "npm install && npm run dev -- --host"
-   ```
+      frontend:
+        image: node:20-alpine
+        working_dir: /app
+        ports:
+          - "5173:5173"
+        volumes:
+          - ./frontend:/app
+          - /app/node_modules
+        command: sh -c "npm install && npm run dev -- --host"
+    ```
 
 4. Create `Dockerfile.dev` for backend development:
    ```dockerfile
@@ -390,8 +388,8 @@ CREATE INDEX idx_videos_saved_at ON videos(saved_at);
 6. Create minimal React app entry point
 
 **Human Action**:
-- For production: `docker-compose up --build`
-- For development: `docker-compose -f docker-compose.dev.yml up --build`
+- For production: `docker compose up --build`
+- For development: `docker compose -f docker-compose.dev.yml up --build`
 
 **Test**:
 - `curl http://localhost:8000/api/health` returns `{"status": "ok"}`
@@ -428,7 +426,7 @@ CREATE INDEX idx_videos_saved_at ON videos(saved_at);
 7. Create initial migration
 8. Update `main.py` to create tables on startup
 
-**Human Action**: Run `docker-compose up` and verify database is created.
+**Human Action**: Run `docker compose up` and verify database is created.
 
 **Test**: Database file exists at `data/youtube-watcher.db` with correct tables.
 
@@ -855,7 +853,7 @@ For each frontend phase, verify:
 ### Integration Testing
 
 Before each commit:
-1. Restart containers: `docker-compose down && docker-compose up --build`
+1. Restart containers: `docker compose down && docker compose up --build`
 2. Verify database persists across restarts
 3. Test complete user workflows
 
@@ -984,7 +982,7 @@ if os.path.exists("static"):
 
 | Aspect | Development | Production |
 |--------|-------------|------------|
-| Command | `docker-compose -f docker-compose.dev.yml up` | `docker-compose up` |
+| Command | `docker compose -f docker-compose.dev.yml up` | `docker compose up` |
 | Frontend | Vite dev server on :5173 | Static files via FastAPI |
 | Hot Reload | Yes (both frontend & backend) | No |
 | Containers | 2 (backend + frontend) | 1 (combined) |
