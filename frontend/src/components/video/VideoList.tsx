@@ -7,9 +7,17 @@ interface VideoListProps {
   onDiscard: (id: string) => void;
   emptyMessage?: string;
   showSaveButton?: boolean;
+  showDiscardButton?: boolean;
 }
 
-export function VideoList({ videos, onSave, onDiscard, emptyMessage, showSaveButton = true }: VideoListProps) {
+export function VideoList({
+  videos,
+  onSave,
+  onDiscard,
+  emptyMessage,
+  showSaveButton = true,
+  showDiscardButton = true,
+}: VideoListProps) {
   if (videos.length === 0) {
     return (
       <div className="bg-gray-800 rounded-lg p-12 text-center">
@@ -43,6 +51,7 @@ export function VideoList({ videos, onSave, onDiscard, emptyMessage, showSaveBut
           onSave={onSave}
           onDiscard={onDiscard}
           showSaveButton={showSaveButton}
+          showDiscardButton={showDiscardButton}
         />
       ))}
     </div>

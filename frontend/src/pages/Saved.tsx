@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
-import { useSavedVideos, useDiscardVideo, useBulkDiscardVideos } from '../hooks/useVideos';
+import { useSavedVideos, useDiscardVideo } from '../hooks/useVideos';
 import { useChannels } from '../hooks/useChannels';
 import { VideoList } from '../components/video/VideoList';
+import { RecentlyDeletedModal } from '../components/video/RecentlyDeletedModal';
 import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import type { SavedVideosParams } from '../types';
@@ -20,6 +21,7 @@ export function Saved() {
   const [channelId, setChannelId] = useState<string>('');
   const [sortBy, setSortBy] = useState<SortBy>('published_at');
   const [order, setOrder] = useState<Order>('desc');
+  const [showRecentlyDeleted, setShowRecentlyDeleted] = useState(false);
 
   const params: SavedVideosParams = useMemo(() => {
     const p: SavedVideosParams = {};
@@ -38,17 +40,9 @@ export function Saved() {
   const { data: videos, isLoading, error, refetch } = useSavedVideos(params);
   const { data: channels } = useChannels();
   const discardVideo = useDiscardVideo();
-  const bulkDiscard = useBulkDiscardVideos();
 
   const handleDiscard = (id: string) => {
     discardVideo.mutate(id);
-  };
-
-  const handleDiscardAll = () => {
-    if (videos && videos.length > 0) {
-      const videoIds = videos.map((v) => v.id);
-      bulkDiscard.mutate(videoIds);
-    }
   };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -96,15 +90,12 @@ export function Saved() {
           )}
         </div>
         <div className="flex flex-wrap gap-3">
-          {videos && videos.length > 0 && (
-            <Button
-              variant="danger"
-              onClick={handleDiscardAll}
-              isLoading={bulkDiscard.isPending}
-            >
-              Remove All
-            </Button>
-          )}
+          <Button
+            variant="secondary"
+            onClick={() => setShowRecentlyDeleted(true)}
+          >
+            Recently Deleted
+          </Button>
         </div>
       </div>
 
@@ -157,6 +148,11 @@ export function Saved() {
         onDiscard={handleDiscard}
         showSaveButton={false}
         emptyMessage="No saved videos. Save videos from the inbox to watch later."
+      />
+
+      <RecentlyDeletedModal
+        isOpen={showRecentlyDeleted}
+        onClose={() => setShowRecentlyDeleted(false)}
       />
     </div>
   );

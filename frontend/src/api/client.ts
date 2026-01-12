@@ -25,6 +25,7 @@ export const channelsApi = {
 export const videosApi = {
   getInbox: () => api.get<Video[]>('/videos/inbox'),
   getSaved: (params?: SavedVideosParams) => api.get<Video[]>('/videos/saved', { params }),
+  getDiscarded: (days?: number) => api.get<Video[]>('/videos/discarded', { params: { days } }),
   save: (id: string) => api.post<Video>(`/videos/${id}/save`),
   discard: (id: string) => api.post<Video>(`/videos/${id}/discard`),
   bulkSave: (videoIds: string[]) => api.post<Video[]>('/videos/bulk-save', { video_ids: videoIds }),

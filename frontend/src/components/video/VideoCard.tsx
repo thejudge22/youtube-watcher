@@ -6,9 +6,16 @@ interface VideoCardProps {
   onSave?: (id: string) => void;
   onDiscard: (id: string) => void;
   showSaveButton?: boolean;
+  showDiscardButton?: boolean;
 }
 
-export function VideoCard({ video, onSave, onDiscard, showSaveButton = true }: VideoCardProps) {
+export function VideoCard({
+  video,
+  onSave,
+  onDiscard,
+  showSaveButton = true,
+  showDiscardButton = true,
+}: VideoCardProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
@@ -79,18 +86,20 @@ export function VideoCard({ video, onSave, onDiscard, showSaveButton = true }: V
             <Button
               variant="primary"
               onClick={() => onSave(video.id)}
-              className="flex-1"
+              className={showDiscardButton ? 'flex-1' : 'w-full'}
             >
               Save
             </Button>
           )}
-          <Button
-            variant="danger"
-            onClick={() => onDiscard(video.id)}
-            className={showSaveButton && onSave ? 'flex-1' : 'w-full'}
-          >
-            {showSaveButton && onSave ? 'Discard' : 'Remove'}
-          </Button>
+          {showDiscardButton && (
+            <Button
+              variant="danger"
+              onClick={() => onDiscard(video.id)}
+              className={showSaveButton && onSave ? 'flex-1' : 'w-full'}
+            >
+              {showSaveButton && onSave ? 'Discard' : 'Remove'}
+            </Button>
+          )}
         </div>
       </div>
     </div>

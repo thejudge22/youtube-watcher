@@ -120,6 +120,42 @@ async def list_saved_videos(
     return responses
 
 
+@router.get("/videos/discarded", response_model=List[VideoResponse])
+async def list_discarded_videos(
+    days: int = Query(30, description="Number of days to look back for discarded videos"),
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    List recently discarded videos (default: last 30 days).
+    
+    Query params:
+        days: Number of days to look back (default: 30)
+    """
+    from datetime import timedelta
+    
+    # Calculate cutoff date
+    cutoff_date = datetime.utcnow() - timedelta(days=days)
+    
+    # Build query
+    query = (
+        select(Video)
+        .options(selectinload(Video.channel))
+        .where(Video.status == 'discarded')
+        .where(Video.discarded_at >= cutoff_date)
+        .order_by(Video.discarded_at.desc())
+    )
+    
+    result = await db.execute(query)
+    videos = result.scalars().all()
+    
+    responses = []
+    for video in videos:
+        response = await video_to_response(db, video)
+        responses.append(response)
+    
+    return responses
+
+
 @router.post("/videos/{video_id}/save", response_model=VideoResponse)
 async def save_video(video_id: str, db: AsyncSession = Depends(get_db)):
     """
@@ -280,7 +316,16 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
     existing_video = existing.scalar_one_or_none()
     
     if existing_video:
-        # Return existing video with 200 status (handled by response_class)
+        # If video exists, update it to 'saved' status regardless of current status
+        # This allows re-saving previously discarded videos
+        existing_video.status = 'saved'
+        existing_video.saved_at = datetime.utcnow()
+        existing_video.discarded_at = None
+        
+        await db.commit()
+        await db.refresh(existing_video)
+        
+        # Return updated video with 200 status
         from fastapi.responses import JSONResponse
         response_data = await video_to_response(db, existing_video)
         return JSONResponse(

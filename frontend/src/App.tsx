@@ -4,6 +4,7 @@ import { Navigation } from './components/layout/Navigation';
 import { Inbox } from './pages/Inbox';
 import { Saved } from './pages/Saved';
 import { Channels } from './pages/Channels';
+import { Settings } from './pages/Settings';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
             <Route path="/" element={<Inbox />} />
             <Route path="/saved" element={<Saved />} />
             <Route path="/channels" element={<Channels />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </main>
       </div>

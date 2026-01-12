@@ -5,6 +5,7 @@ export function Navigation() {
     { to: '/', label: 'Inbox' },
     { to: '/saved', label: 'Saved' },
     { to: '/channels', label: 'Channels' },
+    { to: '/settings', label: 'Settings' },
   ];
 
   return (

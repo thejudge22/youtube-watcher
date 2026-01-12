@@ -22,6 +22,16 @@ export function useSavedVideos(params?: SavedVideosParams) {
   });
 }
 
+export function useDiscardedVideos(days?: number) {
+  return useQuery({
+    queryKey: ['videos', 'discarded', days],
+    queryFn: async () => {
+      const { data } = await videosApi.getDiscarded(days);
+      return data;
+    },
+  });
+}
+
 export function useSaveVideo() {
   const queryClient = useQueryClient();
 
@@ -30,6 +40,7 @@ export function useSaveVideo() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos', 'inbox'] });
       queryClient.invalidateQueries({ queryKey: ['videos', 'saved'] });
+      queryClient.invalidateQueries({ queryKey: ['videos', 'discarded'] });
     },
   });
 }
@@ -42,6 +53,7 @@ export function useDiscardVideo() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos', 'inbox'] });
       queryClient.invalidateQueries({ queryKey: ['videos', 'saved'] });
+      queryClient.invalidateQueries({ queryKey: ['videos', 'discarded'] });
     },
   });
 }
@@ -54,6 +66,7 @@ export function useBulkSaveVideos() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos', 'inbox'] });
       queryClient.invalidateQueries({ queryKey: ['videos', 'saved'] });
+      queryClient.invalidateQueries({ queryKey: ['videos', 'discarded'] });
     },
   });
 }
@@ -66,6 +79,7 @@ export function useBulkDiscardVideos() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos', 'inbox'] });
       queryClient.invalidateQueries({ queryKey: ['videos', 'saved'] });
+      queryClient.invalidateQueries({ queryKey: ['videos', 'discarded'] });
     },
   });
 }
@@ -77,6 +91,7 @@ export function useAddVideoFromUrl() {
     mutationFn: (url: string) => videosApi.fromUrl(url),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos', 'saved'] });
+      queryClient.invalidateQueries({ queryKey: ['videos', 'discarded'] });
     },
   });
 }
