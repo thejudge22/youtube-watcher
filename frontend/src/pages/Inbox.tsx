@@ -1,4 +1,3 @@
-import React from 'react';
 import { useInboxVideos, useSaveVideo, useDiscardVideo, useBulkSaveVideos, useBulkDiscardVideos, useRefreshAllChannels } from '../hooks/useVideos';
 import { VideoList } from '../components/video/VideoList';
 import { Button } from '../components/common/Button';

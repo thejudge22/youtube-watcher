@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { channelsApi, videosApi } from '../api/client';
-import type { SavedVideosParams, Video } from '../types';
+import type { SavedVideosParams } from '../types';
 
 export function useInboxVideos() {
   return useQuery({

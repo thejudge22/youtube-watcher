@@ -1,4 +1,3 @@
-import React from 'react';
 import type { Video } from '../../types';
 import { Button } from '../common/Button';
 

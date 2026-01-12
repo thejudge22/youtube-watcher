@@ -1,6 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { channelsApi } from '../api/client';
-import type { Channel } from '../types';
 
 export function useChannels() {
   return useQuery({

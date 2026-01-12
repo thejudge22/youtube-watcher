@@ -1,4 +1,3 @@
-import React from 'react';
 import type { Channel } from '../../types';
 import { Button } from '../common/Button';
 import { useDeleteChannel } from '../../hooks/useChannels';
