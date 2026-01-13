@@ -418,3 +418,24 @@ async def delete_video(video_id: str, db: AsyncSession = Depends(get_db)):
     # Delete the video
     await db.execute(delete(Video).where(Video.id == video_id))
     await db.commit()
+
+
+@router.delete("/videos/discarded/purge-all", status_code=status.HTTP_200_OK)
+async def purge_all_discarded_videos(db: AsyncSession = Depends(get_db)):
+    """
+    Permanently delete all discarded videos.
+    
+    Returns:
+        dict: Summary of deletion including count of deleted videos
+    """
+    # Count videos to be deleted
+    count_result = await db.execute(
+        select(func.count(Video.id)).where(Video.status == 'discarded')
+    )
+    count = count_result.scalar_one()
+    
+    # Delete all discarded videos
+    await db.execute(delete(Video).where(Video.status == 'discarded'))
+    await db.commit()
+    
+    return {"deleted_count": count, "message": f"Successfully deleted {count} discarded video(s)"}

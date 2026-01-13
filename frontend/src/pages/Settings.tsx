@@ -1,12 +1,16 @@
 import { useState } from 'react';
-import { useSavedVideos, useBulkDiscardVideos } from '../hooks/useVideos';
+import { useSavedVideos, useBulkDiscardVideos, useDiscardedVideos, usePurgeAllDiscarded } from '../hooks/useVideos';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
 
 export function Settings() {
   const { data: videos } = useSavedVideos();
+  const { data: discardedVideos } = useDiscardedVideos();
   const bulkDiscard = useBulkDiscardVideos();
+  const purgeAllDiscarded = usePurgeAllDiscarded();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isPurgeConfirmModalOpen, setIsPurgeConfirmModalOpen] = useState(false);
+  const [showDangerZone, setShowDangerZone] = useState(false);
 
   const handleRemoveAll = () => {
     if (videos && videos.length > 0) {
@@ -17,6 +21,14 @@ export function Settings() {
         },
       });
     }
+  };
+
+  const handlePurgeAll = () => {
+    purgeAllDiscarded.mutate(undefined, {
+      onSuccess: () => {
+        setIsPurgeConfirmModalOpen(false);
+      },
+    });
   };
 
   return (
@@ -30,21 +42,60 @@ export function Settings() {
         </p>
         
         <div className="border-t border-gray-700 pt-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-md font-medium text-white">Remove All Saved Videos</h3>
+              <h3 className="text-md font-medium text-white">Data Removal</h3>
               <p className="text-sm text-gray-400">
-                This will move all your currently saved videos to the recently deleted list.
+                Actions that remove or permanently delete data.
               </p>
             </div>
             <Button
-              variant="danger"
-              onClick={() => setIsConfirmModalOpen(true)}
-              disabled={!videos || videos.length === 0}
+              variant="secondary"
+              onClick={() => setShowDangerZone(!showDangerZone)}
             >
-              Remove All
+              {showDangerZone ? 'Hide' : 'Show'}
             </Button>
           </div>
+
+          {showDangerZone && (
+            <div className="space-y-4 mt-4">
+              <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-md font-medium text-white">Remove All Saved Videos</h3>
+                    <p className="text-sm text-gray-400">
+                      This will move all your currently saved videos to the recently deleted list.
+                    </p>
+                  </div>
+                  <Button
+                    variant="danger"
+                    onClick={() => setIsConfirmModalOpen(true)}
+                    disabled={!videos || videos.length === 0}
+                  >
+                    Remove All
+                  </Button>
+                </div>
+              </div>
+
+              <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-md font-medium text-red-400">Purge All Recently Deleted Videos</h3>
+                    <p className="text-sm text-red-300/70">
+                      Permanently delete all videos in the recently deleted list. This action cannot be undone.
+                    </p>
+                  </div>
+                  <Button
+                    variant="danger"
+                    onClick={() => setIsPurgeConfirmModalOpen(true)}
+                    disabled={!discardedVideos || discardedVideos.length === 0}
+                  >
+                    Purge All
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -72,6 +123,40 @@ export function Settings() {
             isLoading={bulkDiscard.isPending}
           >
             Yes, Remove All
+          </Button>
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={isPurgeConfirmModalOpen}
+        onClose={() => setIsPurgeConfirmModalOpen(false)}
+        title="⚠️ Permanent Deletion Warning"
+      >
+        <div className="mt-2">
+          <p className="text-sm text-gray-300 mb-3">
+            Are you sure you want to <span className="font-bold text-red-400">permanently delete</span> all recently deleted videos?
+          </p>
+          <p className="text-sm text-gray-400">
+            This will delete <span className="font-semibold text-white">{discardedVideos?.length || 0}</span> video(s) from the recently deleted list.
+          </p>
+          <p className="text-sm text-red-400 font-semibold mt-3">
+            This action cannot be undone!
+          </p>
+        </div>
+
+        <div className="mt-6 flex space-x-3 justify-end">
+          <Button
+            variant="secondary"
+            onClick={() => setIsPurgeConfirmModalOpen(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="danger"
+            onClick={handlePurgeAll}
+            isLoading={purgeAllDiscarded.isPending}
+          >
+            Yes, Permanently Delete All
           </Button>
         </div>
       </Modal>

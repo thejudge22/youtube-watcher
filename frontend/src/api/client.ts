@@ -32,4 +32,5 @@ export const videosApi = {
   bulkDiscard: (videoIds: string[]) => api.post<Video[]>('/videos/bulk-discard', { video_ids: videoIds }),
   fromUrl: (url: string) => api.post<Video>('/videos/from-url', { url }),
   delete: (id: string) => api.delete(`/videos/${id}`),
+  purgeAllDiscarded: () => api.delete<{ deleted_count: number; message: string }>('/videos/discarded/purge-all'),
 };

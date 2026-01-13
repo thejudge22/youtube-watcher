@@ -107,3 +107,14 @@ export function useRefreshAllChannels() {
     },
   });
 }
+
+export function usePurgeAllDiscarded() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: () => videosApi.purgeAllDiscarded(),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videos', 'discarded'] });
+    },
+  });
+}
