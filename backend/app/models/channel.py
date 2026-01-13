@@ -10,6 +10,7 @@ class Channel(Base):
     youtube_channel_id = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=False)
     rss_url = Column(String, nullable=False)
+    youtube_url = Column(String, nullable=False)
     thumbnail_url = Column(String)
     last_checked = Column(DateTime)
     last_video_id = Column(String)

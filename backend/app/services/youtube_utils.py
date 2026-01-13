@@ -160,6 +160,19 @@ def get_rss_url(channel_id: str) -> str:
     return f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
 
 
+def get_channel_url(channel_id: str) -> str:
+    """
+    Build the channel URL for a YouTube channel.
+
+    Args:
+        channel_id: YouTube channel ID
+
+    Returns:
+        Channel URL
+    """
+    return f"https://www.youtube.com/channel/{channel_id}"
+
+
 def extract_video_id(url: str) -> str:
     """
     Extract video ID from a YouTube URL.
