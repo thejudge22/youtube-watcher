@@ -68,3 +68,11 @@ class TestExtractChannelId:
         result2 = await extract_channel_id("https://www.youtube.com/@JoshuaWeissman")
         assert result2.startswith("UC")
         assert len(result2) == 24
+    
+    @pytest.mark.asyncio
+    @pytest.mark.integration
+    async def test_handle_with_dots(self):
+        # This is the case that failed according to the bug report
+        result = await extract_channel_id("https://www.youtube.com/@post.10")
+        assert result.startswith("UC")
+        assert len(result) == 24
