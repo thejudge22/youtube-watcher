@@ -13,7 +13,7 @@ from ..database import get_db
 from ..models.channel import Channel
 from ..models.video import Video
 from ..schemas.channel import ChannelCreate, ChannelResponse, RefreshSummary
-from ..services.youtube_utils import extract_channel_id, get_rss_url
+from ..services.youtube_utils import extract_channel_id, get_rss_url, get_channel_url
 from ..services.rss_parser import fetch_channel_info, fetch_videos
 
 router = APIRouter()
@@ -36,6 +36,7 @@ async def channel_to_response(db: AsyncSession, channel: Channel) -> ChannelResp
         id=channel.id,
         youtube_channel_id=channel.youtube_channel_id,
         name=channel.name,
+        youtube_url=channel.youtube_url,
         thumbnail_url=channel.thumbnail_url,
         last_checked=channel.last_checked,
         video_count=video_count
@@ -115,6 +116,7 @@ async def create_channel(channel_data: ChannelCreate, db: AsyncSession = Depends
         youtube_channel_id=youtube_channel_id,
         name=channel_info.name,
         rss_url=rss_url,
+        youtube_url=get_channel_url(youtube_channel_id),
         thumbnail_url=channel_info.thumbnail_url,
         last_checked=datetime.utcnow(),
         last_video_id=videos_info[0].video_id if videos_info else None

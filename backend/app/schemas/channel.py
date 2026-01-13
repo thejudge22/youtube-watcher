@@ -17,6 +17,7 @@ class ChannelResponse(BaseModel):
     id: str
     youtube_channel_id: str
     name: str
+    youtube_url: str
     thumbnail_url: Optional[str]
     last_checked: Optional[datetime]
     video_count: int  # Count of inbox + saved videos

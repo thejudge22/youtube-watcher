@@ -2,6 +2,7 @@ export interface Channel {
   id: string;
   youtube_channel_id: string;
   name: string;
+  youtube_url: string;
   thumbnail_url: string | null;
   last_checked: string | null;
   last_video_id: string | null;
