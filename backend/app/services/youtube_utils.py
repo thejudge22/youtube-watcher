@@ -34,17 +34,17 @@ async def extract_channel_id(url: str) -> str:
         return channel_match.group(1)
     
     # Handle format: /@username
-    handle_match = re.match(r'https?://(?:www\.)?youtube\.com/@([A-Za-z0-9_-]+)', url)
+    handle_match = re.match(r'https?://(?:www\.)?youtube\.com/@([A-Za-z0-9_.-]+)', url)
     if handle_match:
         return await _fetch_channel_id_from_handle(handle_match.group(1))
     
     # Custom URL format: /c/channelname
-    custom_match = re.match(r'https?://(?:www\.)?youtube\.com/c/([A-Za-z0-9_-]+)', url)
+    custom_match = re.match(r'https?://(?:www\.)?youtube\.com/c/([A-Za-z0-9_.-]+)', url)
     if custom_match:
         return await _fetch_channel_id_from_custom_url(custom_match.group(1))
     
     # Legacy user format: /user/username
-    user_match = re.match(r'https?://(?:www\.)?youtube\.com/user/([A-Za-z0-9_-]+)', url)
+    user_match = re.match(r'https?://(?:www\.)?youtube\.com/user/([A-Za-z0-9_.-]+)', url)
     if user_match:
         return await _fetch_channel_id_from_user(user_match.group(1))
     
