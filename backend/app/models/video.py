@@ -16,7 +16,7 @@ class Video(Base):
     published_at = Column(DateTime, nullable=False)
     status = Column(String, nullable=False, default='inbox', index=True) # 'inbox', 'saved', 'discarded'
     saved_at = Column(DateTime, index=True)
-    discarded_at = Column(DateTime)
+    discarded_at = Column(DateTime, index=True)
     created_at = Column(DateTime, default=func.now())
 
     channel = relationship("Channel")

@@ -73,7 +73,8 @@ async def sample_channel(db_session):
     channel = Channel(
         youtube_channel_id="UC-test123",
         name="Test Channel",
-        rss_url="https://www.youtube.com/feeds/videos.xml?channel_id=UC-test123"
+        rss_url="https://www.youtube.com/feeds/videos.xml?channel_id=UC-test123",
+        youtube_url="https://www.youtube.com/channel/UC-test123"
     )
     db_session.add(channel)
     await db_session.commit()

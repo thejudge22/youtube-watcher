@@ -7,6 +7,12 @@ import httpx
 from typing import Optional
 
 
+# Common HTTP headers for YouTube requests
+HTTP_HEADERS = {
+    "User-Agent": "Mozilla/5.0 (compatible; YouTubeWatcher/1.0; +https://github.com/thejudge22/youtube-watcher)"
+}
+
+
 async def extract_channel_id(url: str) -> str:
     """
     Extract channel ID from various YouTube URL formats.
@@ -119,7 +125,7 @@ async def _fetch_channel_id_from_page(url: str) -> str:
     Raises:
         ValueError: If channel ID cannot be found in the page
     """
-    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True, headers=HTTP_HEADERS) as client:
         response = await client.get(url)
         response.raise_for_status()
         html = response.text
@@ -141,7 +147,7 @@ async def _fetch_channel_id_from_page(url: str) -> str:
                 channel_id_match = re.search(r'UC[A-Za-z0-9_-]{22}', json_str)
                 if channel_id_match:
                     return channel_id_match.group(0)
-            except (json.JSONDecodeError, Exception):
+            except json.JSONDecodeError:
                 pass
         
         raise ValueError(f"Could not extract channel ID from page: {url}")

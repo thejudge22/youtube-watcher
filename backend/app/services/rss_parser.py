@@ -4,11 +4,11 @@ RSS feed parser for YouTube channels.
 
 import httpx
 import feedparser
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import List, Optional
 from pydantic import BaseModel
 
-from .youtube_utils import get_rss_url, get_video_url, extract_channel_id
+from .youtube_utils import get_rss_url, get_video_url, extract_channel_id, HTTP_HEADERS
 
 
 class ChannelInfo(BaseModel):
@@ -45,7 +45,7 @@ async def fetch_channel_info(channel_id: str) -> ChannelInfo:
     """
     rss_url = get_rss_url(channel_id)
     
-    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True, headers=HTTP_HEADERS) as client:
         response = await client.get(rss_url)
         response.raise_for_status()
         
@@ -99,7 +99,7 @@ async def fetch_videos(rss_url: str, limit: int = 15) -> List[VideoInfo]:
     Raises:
         ValueError: If RSS feed cannot be parsed
     """
-    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True, headers=HTTP_HEADERS) as client:
         response = await client.get(rss_url)
         response.raise_for_status()
         
@@ -178,7 +178,7 @@ async def fetch_videos(rss_url: str, limit: int = 15) -> List[VideoInfo]:
                 published_at = datetime(*time_struct[:6])
             else:
                 # Use current time as fallback
-                published_at = datetime.utcnow()
+                published_at = datetime.now(timezone.utc)
             
             # Build video URL
             video_url = get_video_url(video_id)
@@ -215,7 +215,7 @@ async def fetch_video_by_id(video_id: str) -> VideoInfo:
     # Use YouTube oEmbed endpoint to get video info
     oembed_url = f"https://www.youtube.com/oembed?url={video_url}&format=json"
     
-    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True, headers=HTTP_HEADERS) as client:
         response = await client.get(oembed_url)
         response.raise_for_status()
         
@@ -230,7 +230,7 @@ async def fetch_video_by_id(video_id: str) -> VideoInfo:
         if author_url:
             try:
                 channel_id = await extract_channel_id(author_url)
-            except (ValueError, Exception):
+            except ValueError:
                 # Fallback to empty if extraction fails
                 pass
         
@@ -238,7 +238,7 @@ async def fetch_video_by_id(video_id: str) -> VideoInfo:
         thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
         
         # Use current time as published_at since oEmbed doesn't provide it
-        published_at = datetime.utcnow()
+        published_at = datetime.now(timezone.utc)
         
         return VideoInfo(
             video_id=video_id,

@@ -1,4 +1,5 @@
-import { useInboxVideos, useSaveVideo, useDiscardVideo, useBulkSaveVideos, useBulkDiscardVideos, useRefreshAllChannels } from '../hooks/useVideos';
+import { useInboxVideos, useSaveVideo, useDiscardVideo, useBulkSaveVideos, useBulkDiscardVideos } from '../hooks/useVideos';
+import { useRefreshAllChannels } from '../hooks/useChannels';
 import { VideoList } from '../components/video/VideoList';
 import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';

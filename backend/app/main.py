@@ -1,17 +1,23 @@
+from contextlib import asynccontextmanager
+import os
+
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-import os
 
 from .routers import channels, videos
 
-app = FastAPI()
 
-@app.on_event("startup")
-async def startup_event():
-    # Ensure the data directory exists
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Ensure the data directory exists
     os.makedirs("data", exist_ok=True)
+    yield
+    # Shutdown: nothing to clean up
+
+
+app = FastAPI(lifespan=lifespan)
 
 # CORS Configuration
 origins = [
