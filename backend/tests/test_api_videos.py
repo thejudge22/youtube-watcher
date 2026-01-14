@@ -61,7 +61,8 @@ class TestListSavedVideos:
         channel2 = Channel(
             youtube_channel_id="UC-test456",
             name="Test Channel 2",
-            rss_url="https://www.youtube.com/feeds/videos.xml?channel_id=UC-test456"
+            rss_url="https://www.youtube.com/feeds/videos.xml?channel_id=UC-test456",
+            youtube_url="https://www.youtube.com/channel/UC-test456"
         )
         db_session.add(channel2)
         await db_session.commit()

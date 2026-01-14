@@ -56,7 +56,8 @@ class TestCreateChannel:
         channel = Channel(
             youtube_channel_id="UC-lHJZR3Gqxm24_Vd_AJ5Yw",
             name="PewDiePie",
-            rss_url="https://www.youtube.com/feeds/videos.xml?channel_id=UC-lHJZR3Gqxm24_Vd_AJ5Yw"
+            rss_url="https://www.youtube.com/feeds/videos.xml?channel_id=UC-lHJZR3Gqxm24_Vd_AJ5Yw",
+            youtube_url="https://www.youtube.com/channel/UC-lHJZR3Gqxm24_Vd_AJ5Yw"
         )
         db_session.add(channel)
         await db_session.commit()
@@ -100,7 +101,8 @@ class TestRefreshChannel:
         channel = Channel(
             youtube_channel_id="UC-lHJZR3Gqxm24_Vd_AJ5Yw",  # PewDiePie - stable channel
             name="PewDiePie",
-            rss_url="https://www.youtube.com/feeds/videos.xml?channel_id=UC-lHJZR3Gqxm24_Vd_AJ5Yw"
+            rss_url="https://www.youtube.com/feeds/videos.xml?channel_id=UC-lHJZR3Gqxm24_Vd_AJ5Yw",
+            youtube_url="https://www.youtube.com/channel/UC-lHJZR3Gqxm24_Vd_AJ5Yw"
         )
         db_session.add(channel)
         await db_session.commit()
@@ -140,7 +142,8 @@ class TestRefreshAllChannels:
         channel = Channel(
             youtube_channel_id="UC-lHJZR3Gqxm24_Vd_AJ5Yw",  # PewDiePie - stable channel
             name="PewDiePie",
-            rss_url="https://www.youtube.com/feeds/videos.xml?channel_id=UC-lHJZR3Gqxm24_Vd_AJ5Yw"
+            rss_url="https://www.youtube.com/feeds/videos.xml?channel_id=UC-lHJZR3Gqxm24_Vd_AJ5Yw",
+            youtube_url="https://www.youtube.com/channel/UC-lHJZR3Gqxm24_Vd_AJ5Yw"
         )
         db_session.add(channel)
         await db_session.commit()

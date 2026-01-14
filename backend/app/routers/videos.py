@@ -2,18 +2,20 @@
 Video management API router.
 """
 
+from datetime import datetime, timedelta, timezone
+from typing import List, Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete
 from sqlalchemy.orm import selectinload
-from datetime import datetime
-from typing import List, Optional
 
 from ..database import get_db
 from ..models.video import Video
 from ..models.channel import Channel
 from ..schemas.video import VideoResponse, VideoFromUrl, BulkVideoAction
-from ..services.youtube_utils import extract_video_id, get_video_url, get_rss_url
+from ..services.youtube_utils import extract_video_id, get_video_url, get_rss_url, get_channel_url
 from ..services.rss_parser import fetch_video_by_id, fetch_channel_info
 
 router = APIRouter()
@@ -42,24 +44,45 @@ async def video_to_response(db: AsyncSession, video: Video) -> VideoResponse:
 
 
 @router.get("/videos/inbox", response_model=List[VideoResponse])
-async def list_inbox_videos(db: AsyncSession = Depends(get_db)):
+async def list_inbox_videos(
+    limit: int = Query(100, ge=1, le=500, description="Maximum number of videos to return"),
+    offset: int = Query(0, ge=0, description="Number of videos to skip"),
+    db: AsyncSession = Depends(get_db)
+):
     """
-    List all videos with status='inbox'.
+    List all videos with status='inbox' with pagination.
+
+    Query params:
+        limit: Maximum number of videos to return (default: 100, max: 500)
+        offset: Number of videos to skip (default: 0)
     """
     result = await db.execute(
         select(Video)
         .options(selectinload(Video.channel))
         .where(Video.status == 'inbox')
         .order_by(Video.published_at.desc())
+        .limit(limit)
+        .offset(offset)
     )
     videos = result.scalars().all()
-    
-    responses = []
-    for video in videos:
-        response = await video_to_response(db, video)
-        responses.append(response)
-    
-    return responses
+
+    return [
+        VideoResponse(
+            id=video.id,
+            youtube_video_id=video.youtube_video_id,
+            channel_id=video.channel_id,
+            channel_name=video.channel.name if video.channel else None,
+            title=video.title,
+            description=video.description,
+            thumbnail_url=video.thumbnail_url,
+            video_url=video.video_url,
+            published_at=video.published_at,
+            status=video.status,
+            saved_at=video.saved_at,
+            discarded_at=video.discarded_at
+        )
+        for video in videos
+    ]
 
 
 @router.get("/videos/saved", response_model=List[VideoResponse])
@@ -67,15 +90,19 @@ async def list_saved_videos(
     channel_id: Optional[str] = Query(None, description="Filter by channel ID"),
     sort_by: str = Query("published_at", description="Sort by 'published_at' or 'saved_at'"),
     order: str = Query("desc", description="Order 'asc' or 'desc'"),
+    limit: int = Query(100, ge=1, le=500, description="Maximum number of videos to return"),
+    offset: int = Query(0, ge=0, description="Number of videos to skip"),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    List saved videos with filtering and sorting.
-    
+    List saved videos with filtering, sorting, and pagination.
+
     Query params:
         channel_id: Filter by channel (optional)
         sort_by: 'published_at' or 'saved_at'
         order: 'asc' or 'desc'
+        limit: Maximum number of videos to return (default: 100, max: 500)
+        offset: Number of videos to skip (default: 0)
     """
     # Validate sort_by
     if sort_by not in ['published_at', 'saved_at']:
@@ -83,59 +110,75 @@ async def list_saved_videos(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="sort_by must be 'published_at' or 'saved_at'"
         )
-    
+
     # Validate order
     if order not in ['asc', 'desc']:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="order must be 'asc' or 'desc'"
         )
-    
+
     # Build query
     query = (
         select(Video)
         .options(selectinload(Video.channel))
         .where(Video.status == 'saved')
     )
-    
+
     # Apply channel filter if provided
     if channel_id:
         query = query.where(Video.channel_id == channel_id)
-    
+
     # Apply sorting
     sort_column = Video.published_at if sort_by == 'published_at' else Video.saved_at
     if order == 'asc':
         query = query.order_by(sort_column.asc())
     else:
         query = query.order_by(sort_column.desc())
-    
+
+    # Apply pagination
+    query = query.limit(limit).offset(offset)
+
     result = await db.execute(query)
     videos = result.scalars().all()
-    
-    responses = []
-    for video in videos:
-        response = await video_to_response(db, video)
-        responses.append(response)
-    
-    return responses
+
+    return [
+        VideoResponse(
+            id=video.id,
+            youtube_video_id=video.youtube_video_id,
+            channel_id=video.channel_id,
+            channel_name=video.channel.name if video.channel else None,
+            title=video.title,
+            description=video.description,
+            thumbnail_url=video.thumbnail_url,
+            video_url=video.video_url,
+            published_at=video.published_at,
+            status=video.status,
+            saved_at=video.saved_at,
+            discarded_at=video.discarded_at
+        )
+        for video in videos
+    ]
 
 
 @router.get("/videos/discarded", response_model=List[VideoResponse])
 async def list_discarded_videos(
-    days: int = Query(30, description="Number of days to look back for discarded videos"),
+    days: int = Query(30, ge=1, le=365, description="Number of days to look back for discarded videos"),
+    limit: int = Query(100, ge=1, le=500, description="Maximum number of videos to return"),
+    offset: int = Query(0, ge=0, description="Number of videos to skip"),
     db: AsyncSession = Depends(get_db)
 ):
     """
-    List recently discarded videos (default: last 30 days).
-    
+    List recently discarded videos with pagination.
+
     Query params:
-        days: Number of days to look back (default: 30)
+        days: Number of days to look back (default: 30, max: 365)
+        limit: Maximum number of videos to return (default: 100, max: 500)
+        offset: Number of videos to skip (default: 0)
     """
-    from datetime import timedelta
-    
     # Calculate cutoff date
-    cutoff_date = datetime.utcnow() - timedelta(days=days)
-    
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+
     # Build query
     query = (
         select(Video)
@@ -143,17 +186,30 @@ async def list_discarded_videos(
         .where(Video.status == 'discarded')
         .where(Video.discarded_at >= cutoff_date)
         .order_by(Video.discarded_at.desc())
+        .limit(limit)
+        .offset(offset)
     )
-    
+
     result = await db.execute(query)
     videos = result.scalars().all()
-    
-    responses = []
-    for video in videos:
-        response = await video_to_response(db, video)
-        responses.append(response)
-    
-    return responses
+
+    return [
+        VideoResponse(
+            id=video.id,
+            youtube_video_id=video.youtube_video_id,
+            channel_id=video.channel_id,
+            channel_name=video.channel.name if video.channel else None,
+            title=video.title,
+            description=video.description,
+            thumbnail_url=video.thumbnail_url,
+            video_url=video.video_url,
+            published_at=video.published_at,
+            status=video.status,
+            saved_at=video.saved_at,
+            discarded_at=video.discarded_at
+        )
+        for video in videos
+    ]
 
 
 @router.post("/videos/{video_id}/save", response_model=VideoResponse)
@@ -177,7 +233,7 @@ async def save_video(video_id: str, db: AsyncSession = Depends(get_db)):
     
     # Update status and saved_at
     video.status = 'saved'
-    video.saved_at = datetime.utcnow()
+    video.saved_at = datetime.now(timezone.utc)
     video.discarded_at = None
     
     await db.commit()
@@ -207,7 +263,7 @@ async def discard_video(video_id: str, db: AsyncSession = Depends(get_db)):
     
     # Update status and discarded_at
     video.status = 'discarded'
-    video.discarded_at = datetime.utcnow()
+    video.discarded_at = datetime.now(timezone.utc)
     video.saved_at = None
     
     await db.commit()
@@ -233,7 +289,7 @@ async def bulk_save_videos(action: BulkVideoAction, db: AsyncSession = Depends(g
     videos = result.scalars().all()
     
     # Update each video
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     for video in videos:
         video.status = 'saved'
         video.saved_at = now
@@ -268,7 +324,7 @@ async def bulk_discard_videos(action: BulkVideoAction, db: AsyncSession = Depend
     videos = result.scalars().all()
     
     # Update each video
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     for video in videos:
         video.status = 'discarded'
         video.discarded_at = now
@@ -326,7 +382,6 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
         await db.refresh(existing_video)
         
         # Return updated video with 200 status
-        from fastapi.responses import JSONResponse
         response_data = await video_to_response(db, existing_video)
         return JSONResponse(
             status_code=status.HTTP_200_OK,
@@ -358,8 +413,9 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
                     youtube_channel_id=video_info.channel_id,
                     name=channel_data.name,
                     rss_url=get_rss_url(video_info.channel_id),
+                    youtube_url=get_channel_url(video_info.channel_id),
                     thumbnail_url=channel_data.thumbnail_url,
-                    last_checked=datetime.utcnow()
+                    last_checked=datetime.now(timezone.utc)
                 )
                 db.add(channel)
                 await db.flush() # Get the channel.id
@@ -372,7 +428,7 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
             channel_id = channel.id
     
     # Step 5: Create video with status='saved'
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     video = Video(
         youtube_video_id=video_info.video_id,
         channel_id=channel_id,
@@ -392,7 +448,6 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
     await db.refresh(video, ['channel'])
     
     # Return new video with 201 status
-    from fastapi.responses import JSONResponse
     response_data = await video_to_response(db, video)
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,

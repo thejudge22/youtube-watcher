@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { channelsApi, videosApi } from '../api/client';
+import { videosApi } from '../api/client';
 import type { SavedVideosParams } from '../types';
 
 export function useInboxVideos() {
@@ -92,18 +92,6 @@ export function useAddVideoFromUrl() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos', 'saved'] });
       queryClient.invalidateQueries({ queryKey: ['videos', 'discarded'] });
-    },
-  });
-}
-
-export function useRefreshAllChannels() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: () => channelsApi.refreshAll(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['channels'] });
-      queryClient.invalidateQueries({ queryKey: ['videos', 'inbox'] });
     },
   });
 }
