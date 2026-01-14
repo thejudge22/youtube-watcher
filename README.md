@@ -2,8 +2,6 @@
 
 A self-hosted, Docker-based web application for managing YouTube content discovery. Monitor YouTube channels via RSS feeds, triage new videos in an inbox-style interface, and maintain a personal watch later list.
 
-NOTE: This is an early WIP application, and a lot of features are probably not working yet.  Right now I've tested adding videos, removing them, and sorting / filtering work. Coming soon is adding a channel, finding new videos on a channel, and more.
-
 <img width="1280" height="714" alt="image" src="https://github.com/user-attachments/assets/f709ce63-3f6b-43c6-852f-5f291a81ec89" />
 
 
