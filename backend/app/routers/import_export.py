@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+import asyncio
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
@@ -244,33 +245,31 @@ async def import_videos(
                     skipped += 1
                 continue
 
-            # Fetch video info from YouTube
-            video_info = await fetch_video_by_id(video_data.youtube_video_id)
-            if not video_info:
-                errors.append(f"Could not fetch video: {video_data.youtube_video_id}")
-                continue
-
-            # Find or skip channel association
+            # Find or skip channel association using export data
             channel_id = None
-            if video_info.channel_id:
+            if video_data.channel_youtube_id:
                 channel_result = await db.execute(
                     select(Channel).where(
-                        Channel.youtube_channel_id == video_info.channel_id
+                        Channel.youtube_channel_id == video_data.channel_youtube_id
                     )
                 )
                 channel = channel_result.scalar_one_or_none()
                 if channel:
                     channel_id = channel.id
 
-            # Create new video as saved
+            # Use data from export (avoids unnecessary API calls)
+            # Generate thumbnail URL from video ID
+            thumbnail_url = f"https://i.ytimg.com/vi/{video_data.youtube_video_id}/hqdefault.jpg"
+
+            # Create new video as saved using export data
             new_video = Video(
-                youtube_video_id=video_info.video_id,
+                youtube_video_id=video_data.youtube_video_id,
                 channel_id=channel_id,
-                title=video_info.title,
-                description=video_info.description or "",
-                thumbnail_url=video_info.thumbnail_url,
-                video_url=video_info.video_url,
-                published_at=video_info.published_at,
+                title=video_data.title,
+                description="",  # Not included in export
+                thumbnail_url=thumbnail_url,
+                video_url=video_data.video_url,
+                published_at=video_data.published_at or datetime.now(timezone.utc),
                 status="saved",
                 saved_at=video_data.saved_at or datetime.now(timezone.utc),
             )
@@ -302,69 +301,86 @@ async def import_video_urls(
     skipped = 0
     errors: list[str] = []
 
-    for url in request.urls:
+    # Helper function to fetch video info with error handling
+    async def fetch_video_info(video_id: str, url: str):
+        try:
+            return await fetch_video_by_id(video_id)
+        except Exception as e:
+            return None
+
+    # Process URLs in parallel batches of 10 to avoid overwhelming the API
+    batch_size = 10
+    semaphore = asyncio.Semaphore(batch_size)
+
+    async def process_url(url: str):
+        nonlocal imported, skipped
+
         url = url.strip()
         if not url:
-            continue
+            return
 
-        try:
-            # Extract video ID from URL
-            video_id = extract_video_id(url)
-            if not video_id:
-                errors.append(f"Invalid YouTube URL: {url}")
-                continue
+        async with semaphore:
+            try:
+                # Extract video ID from URL
+                video_id = extract_video_id(url)
+                if not video_id:
+                    errors.append(f"Invalid YouTube URL: {url}")
+                    return
 
-            # Check if video already exists
-            existing = await db.execute(
-                select(Video).where(Video.youtube_video_id == video_id)
-            )
-            existing_video = existing.scalar_one_or_none()
-
-            if existing_video:
-                if existing_video.status != "saved":
-                    existing_video.status = "saved"
-                    existing_video.saved_at = datetime.now(timezone.utc)
-                    imported += 1
-                else:
-                    skipped += 1
-                continue
-
-            # Fetch video info from YouTube
-            video_info = await fetch_video_by_id(video_id)
-            if not video_info:
-                errors.append(f"Could not fetch video: {url}")
-                continue
-
-            # Find channel association
-            channel_id = None
-            if video_info.channel_id:
-                channel_result = await db.execute(
-                    select(Channel).where(
-                        Channel.youtube_channel_id == video_info.channel_id
-                    )
+                # Check if video already exists
+                existing = await db.execute(
+                    select(Video).where(Video.youtube_video_id == video_id)
                 )
-                channel = channel_result.scalar_one_or_none()
-                if channel:
-                    channel_id = channel.id
+                existing_video = existing.scalar_one_or_none()
 
-            # Create new video as saved
-            new_video = Video(
-                youtube_video_id=video_info.video_id,
-                channel_id=channel_id,
-                title=video_info.title,
-                description=video_info.description or "",
-                thumbnail_url=video_info.thumbnail_url,
-                video_url=video_info.video_url,
-                published_at=video_info.published_at,
-                status="saved",
-                saved_at=datetime.now(timezone.utc),
-            )
-            db.add(new_video)
-            await db.flush()
-            imported += 1
+                if existing_video:
+                    if existing_video.status != "saved":
+                        existing_video.status = "saved"
+                        existing_video.saved_at = datetime.now(timezone.utc)
+                        imported += 1
+                    else:
+                        skipped += 1
+                    return
 
-        except Exception as e:
-            errors.append(f"Error importing {url}: {str(e)}")
+                # Fetch video info from YouTube
+                video_info = await fetch_video_info(video_id, url)
+                if not video_info:
+                    errors.append(f"Could not fetch video: {url}")
+                    return
+
+                # Find channel association
+                channel_id = None
+                if video_info.channel_id:
+                    channel_result = await db.execute(
+                        select(Channel).where(
+                            Channel.youtube_channel_id == video_info.channel_id
+                        )
+                    )
+                    channel = channel_result.scalar_one_or_none()
+                    if channel:
+                        channel_id = channel.id
+
+                # Create new video as saved
+                new_video = Video(
+                    youtube_video_id=video_info.video_id,
+                    channel_id=channel_id,
+                    title=video_info.title,
+                    description=video_info.description or "",
+                    thumbnail_url=video_info.thumbnail_url,
+                    video_url=video_info.video_url,
+                    published_at=video_info.published_at,
+                    status="saved",
+                    saved_at=datetime.now(timezone.utc),
+                )
+                db.add(new_video)
+                await db.flush()
+                imported += 1
+
+            except Exception as e:
+                errors.append(f"Error importing {url}: {str(e)}")
+
+    # Process all URLs in parallel (with semaphore limiting concurrency)
+    await asyncio.gather(*[process_url(url) for url in request.urls])
 
     await db.commit()
 

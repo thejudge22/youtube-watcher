@@ -13,6 +13,7 @@ import { Button } from '../common/Button';
 export default function ImportExportSection() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
+  const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const urlFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -32,23 +33,40 @@ export default function ImportExportSection() {
 
     setImportResult(null);
     setImportError(null);
+    setImportProgress(null);
 
     try {
       const text = await file.text();
       const data: ExportData = JSON.parse(text);
 
       let result: ImportResult;
+      let totalItems = 0;
+
+      if (type === 'channels' || type === 'all') {
+        totalItems += data.channels?.length || 0;
+      }
+      if (type === 'videos' || type === 'all') {
+        totalItems += data.saved_videos?.length || 0;
+      }
+
+      let processedItems = 0;
 
       if (type === 'channels' || type === 'all') {
         if (data.channels && data.channels.length > 0) {
+          setImportProgress({ current: processedItems, total: totalItems });
           result = await importChannels.mutateAsync(data.channels);
+          processedItems += data.channels.length;
+          setImportProgress({ current: processedItems, total: totalItems });
           setImportResult(result);
         }
       }
 
       if (type === 'videos' || type === 'all') {
         if (data.saved_videos && data.saved_videos.length > 0) {
+          setImportProgress({ current: processedItems, total: totalItems });
           result = await importVideos.mutateAsync(data.saved_videos);
+          processedItems += data.saved_videos.length;
+          setImportProgress({ current: processedItems, total: totalItems });
           setImportResult(prev => prev ? {
             total: prev.total + result.total,
             imported: prev.imported + result.imported,
@@ -57,8 +75,11 @@ export default function ImportExportSection() {
           } : result);
         }
       }
+
+      setImportProgress(null);
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'Failed to parse file');
+      setImportProgress(null);
     }
 
     // Reset input
@@ -71,6 +92,7 @@ export default function ImportExportSection() {
 
     setImportResult(null);
     setImportError(null);
+    setImportProgress(null);
 
     try {
       const text = await file.text();
@@ -84,10 +106,13 @@ export default function ImportExportSection() {
         return;
       }
 
+      setImportProgress({ current: 0, total: urls.length });
       const result = await importVideoUrls.mutateAsync(urls);
+      setImportProgress(null);
       setImportResult(result);
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'Failed to process file');
+      setImportProgress(null);
     }
 
     // Reset input
@@ -187,6 +212,22 @@ export default function ImportExportSection() {
             </Button>
           </div>
         </div>
+
+        {/* Import Progress */}
+        {importProgress && (
+          <div className="mt-4 p-3 bg-blue-900/30 border border-blue-700/50 rounded">
+            <p className="font-medium text-blue-400">Importing...</p>
+            <p className="text-sm text-gray-300 mt-1">
+              Processing {importProgress.current} of {importProgress.total} items
+            </p>
+            <div className="mt-2 w-full bg-gray-700 rounded-full h-2">
+              <div
+                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
+              />
+            </div>
+          </div>
+        )}
 
         {/* Import Result */}
         {importResult && (
