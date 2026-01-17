@@ -34,7 +34,7 @@ export function Inbox() {
     const groups = new Map<string, { channelName: string; channelId: string; videos: Video[] }>();
 
     for (const video of videos) {
-      const channelId = video.channel_id;
+      const channelId = video.channel_id || 'unknown';
       const existing = groups.get(channelId);
 
       if (existing) {
