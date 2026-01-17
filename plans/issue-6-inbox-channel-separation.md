@@ -1,5 +1,9 @@
 # Issue #6: Inbox View Channel Separation - Development Plan
 
+**Status:** ✅ Completed in v1.2.0 (2026-01-17)
+
+---
+
 ## Overview
 
 Add the ability to view inbox videos grouped by channel with collapsible sections, making it easier to triage videos from one channel at a time.
