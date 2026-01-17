@@ -323,35 +323,37 @@ async def import_video_urls(
 ):
     """Import videos from a list of YouTube URLs. Videos are added as saved."""
     total = len(request.urls)
-    imported = 0
-    skipped = 0
-    errors: list[str] = []
 
     # Helper function to fetch video info with error handling
-    async def fetch_video_info(video_id: str, url: str):
+    async def fetch_video_info(video_id: str):
         try:
             return await fetch_video_by_id(video_id)
-        except Exception as e:
+        except Exception:
             return None
 
-    # Process URLs in parallel batches of 10 to avoid overwhelming the API
+    # Result container for each URL processing
+    class UrlProcessResult:
+        def __init__(self, imported: bool = False, skipped: bool = False, error: str = None):
+            self.imported = imported
+            self.skipped = skipped
+            self.error = error
+
+    # Process URLs in parallel batches to avoid overwhelming the API
     batch_size = 10
     semaphore = asyncio.Semaphore(batch_size)
 
-    async def process_url(url: str):
-        nonlocal imported, skipped
-
+    async def process_url(url: str) -> UrlProcessResult:
+        """Process a single URL and return the result without shared state mutation."""
         url = url.strip()
         if not url:
-            return
+            return UrlProcessResult()
 
         async with semaphore:
             try:
                 # Extract video ID from URL
                 video_id = extract_video_id(url)
                 if not video_id:
-                    errors.append(f"Invalid YouTube URL: {url}")
-                    return
+                    return UrlProcessResult(error=f"Invalid YouTube URL: {url}")
 
                 # Check if video already exists
                 existing = await db.execute(
@@ -363,16 +365,14 @@ async def import_video_urls(
                     if existing_video.status != "saved":
                         existing_video.status = "saved"
                         existing_video.saved_at = datetime.now(timezone.utc)
-                        imported += 1
+                        return UrlProcessResult(imported=True)
                     else:
-                        skipped += 1
-                    return
+                        return UrlProcessResult(skipped=True)
 
                 # Fetch video info from YouTube
-                video_info = await fetch_video_info(video_id, url)
+                video_info = await fetch_video_info(video_id)
                 if not video_info:
-                    errors.append(f"Could not fetch video: {url}")
-                    return
+                    return UrlProcessResult(error=f"Could not fetch video: {url}")
 
                 # Find or create channel association
                 channel_id = None
@@ -420,13 +420,18 @@ async def import_video_urls(
                 )
                 db.add(new_video)
                 await db.flush()
-                imported += 1
+                return UrlProcessResult(imported=True)
 
             except Exception as e:
-                errors.append(f"Error importing {url}: {str(e)}")
+                return UrlProcessResult(error=f"Error importing {url}: {str(e)}")
 
     # Process all URLs in parallel (with semaphore limiting concurrency)
-    await asyncio.gather(*[process_url(url) for url in request.urls])
+    results = await asyncio.gather(*[process_url(url) for url in request.urls])
+
+    # Aggregate results after all processing is complete
+    imported = sum(1 for r in results if r.imported)
+    skipped = sum(1 for r in results if r.skipped)
+    errors = [r.error for r in results if r.error]
 
     await db.commit()
 
