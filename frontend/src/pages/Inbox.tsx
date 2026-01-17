@@ -1,16 +1,56 @@
+import { useState, useEffect, useMemo } from 'react';
 import { useInboxVideos, useSaveVideo, useDiscardVideo, useBulkSaveVideos, useBulkDiscardVideos } from '../hooks/useVideos';
 import { useRefreshAllChannels } from '../hooks/useChannels';
 import { VideoList } from '../components/video/VideoList';
 import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { ChannelVideoGroup } from '../components/video/ChannelVideoGroup';
+import { InboxViewToggle, type InboxViewMode } from '../components/inbox/InboxViewToggle';
+import type { Video } from '../types';
 
 export function Inbox() {
+  const [viewMode, setViewMode] = useState<InboxViewMode>(() => {
+    const saved = localStorage.getItem('inbox-view-mode');
+    return (saved as InboxViewMode) || 'grouped';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('inbox-view-mode', viewMode);
+  }, [viewMode]);
+
   const { data: videos, isLoading, error, refetch } = useInboxVideos();
   const saveVideo = useSaveVideo();
   const discardVideo = useDiscardVideo();
   const bulkSave = useBulkSaveVideos();
   const bulkDiscard = useBulkDiscardVideos();
   const refreshAll = useRefreshAllChannels();
+
+  const [bulkActionChannelId, setBulkActionChannelId] = useState<string | null>(null);
+  const [bulkActionType, setBulkActionType] = useState<'save' | 'discard' | null>(null);
+
+  const groupedVideos = useMemo(() => {
+    if (!videos) return [];
+
+    const groups = new Map<string, { channelName: string; channelId: string; videos: Video[] }>();
+
+    for (const video of videos) {
+      const channelId = video.channel_id || 'unknown';
+      const existing = groups.get(channelId);
+
+      if (existing) {
+        existing.videos.push(video);
+      } else {
+        groups.set(channelId, {
+          channelId,
+          channelName: video.channel_name || 'Unknown Channel',
+          videos: [video],
+        });
+      }
+    }
+
+    // Sort by video count (most videos first)
+    return Array.from(groups.values()).sort((a, b) => b.videos.length - a.videos.length);
+  }, [videos]);
 
   const handleSave = (id: string) => {
     saveVideo.mutate(id);
@@ -31,6 +71,28 @@ export function Inbox() {
     if (videos && videos.length > 0) {
       const videoIds = videos.map((v) => v.id);
       bulkDiscard.mutate(videoIds);
+    }
+  };
+
+  const handleChannelSaveAll = async (channelId: string, videoIds: string[]) => {
+    setBulkActionChannelId(channelId);
+    setBulkActionType('save');
+    try {
+      await bulkSave.mutateAsync(videoIds);
+    } finally {
+      setBulkActionChannelId(null);
+      setBulkActionType(null);
+    }
+  };
+
+  const handleChannelDiscardAll = async (channelId: string, videoIds: string[]) => {
+    setBulkActionChannelId(channelId);
+    setBulkActionType('discard');
+    try {
+      await bulkDiscard.mutateAsync(videoIds);
+    } finally {
+      setBulkActionChannelId(null);
+      setBulkActionType(null);
     }
   };
 
@@ -79,6 +141,7 @@ export function Inbox() {
           )}
         </div>
         <div className="flex space-x-3">
+          <InboxViewToggle viewMode={viewMode} onChange={setViewMode} />
           <Button
             variant="secondary"
             onClick={handleRefresh}
@@ -107,12 +170,40 @@ export function Inbox() {
         </div>
       </div>
 
-      <VideoList
-        videos={videos || []}
-        onSave={handleSave}
-        onDiscard={handleDiscard}
-        emptyMessage="No videos in inbox. Add channels to start receiving video updates."
-      />
+      {viewMode === 'flat' ? (
+        <VideoList
+          videos={videos || []}
+          onSave={handleSave}
+          onDiscard={handleDiscard}
+          emptyMessage="No videos in inbox. Add channels to start receiving video updates."
+        />
+      ) : (
+        <div className="space-y-4">
+          {groupedVideos.length > 0 ? (
+            groupedVideos.map(group => (
+              <ChannelVideoGroup
+                key={group.channelId}
+                channelId={group.channelId}
+                channelName={group.channelName}
+                videos={group.videos}
+                onSave={handleSave}
+                onDiscard={handleDiscard}
+                onSaveAll={(ids) => handleChannelSaveAll(group.channelId, ids)}
+                onDiscardAll={(ids) => handleChannelDiscardAll(group.channelId, ids)}
+                isSavingAll={bulkActionChannelId === group.channelId && bulkActionType === 'save'}
+                isDiscardingAll={bulkActionChannelId === group.channelId && bulkActionType === 'discard'}
+              />
+            ))
+          ) : (
+            <VideoList
+              videos={[]}
+              onSave={handleSave}
+              onDiscard={handleDiscard}
+              emptyMessage="No videos in inbox. Add channels to start receiving video updates."
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -2,11 +2,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { videosApi } from '../api/client';
 import type { SavedVideosParams } from '../types';
 
-export function useInboxVideos() {
+export function useInboxVideos(channelId?: string) {
   return useQuery({
-    queryKey: ['videos', 'inbox'],
+    queryKey: ['videos', 'inbox', channelId],
     queryFn: async () => {
-      const { data } = await videosApi.getInbox();
+      const { data } = await videosApi.getInbox(channelId);
       return data;
     },
   });
