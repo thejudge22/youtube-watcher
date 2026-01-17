@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSavedVideos, useBulkDiscardVideos, useDiscardedVideos, usePurgeAllDiscarded } from '../hooks/useVideos';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
+import ImportExportSection from '../components/settings/ImportExportSection';
 
 export function Settings() {
   const { data: videos } = useSavedVideos();
@@ -34,7 +35,12 @@ export function Settings() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <h1 className="text-2xl font-bold text-white mb-6">Settings</h1>
-      
+
+      {/* Import/Export Section */}
+      <div className="bg-gray-800 rounded-lg p-6 shadow-lg mb-6">
+        <ImportExportSection />
+      </div>
+
       <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
         <h2 className="text-lg font-medium text-white mb-4">Data Management</h2>
         <p className="text-gray-400 mb-6">

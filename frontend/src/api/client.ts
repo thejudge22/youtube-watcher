@@ -12,6 +12,32 @@ interface RefreshSummary {
   errors: string[];
 }
 
+export interface ImportResult {
+  total: number;
+  imported: number;
+  skipped: number;
+  errors: string[];
+}
+
+export interface ExportData {
+  version: string;
+  exported_at: string;
+  channels: Array<{
+    youtube_channel_id: string;
+    name: string;
+    youtube_url: string;
+  }>;
+  saved_videos: Array<{
+    youtube_video_id: string;
+    title: string;
+    video_url: string;
+    channel_youtube_id: string | null;
+    channel_name: string | null;
+    saved_at: string | null;
+    published_at: string | null;
+  }>;
+}
+
 // Channel API
 export const channelsApi = {
   list: () => api.get<Channel[]>('/channels'),
@@ -36,4 +62,22 @@ export const videosApi = {
   fromUrl: (url: string) => api.post<Video>('/videos/from-url', { url }),
   delete: (id: string) => api.delete(`/videos/${id}`),
   purgeAllDiscarded: () => api.delete<{ deleted_count: number; message: string }>('/videos/discarded/purge-all'),
+};
+
+// Import/Export API
+export const importExportApi = {
+  // Export endpoints - these return file downloads
+  exportChannels: () => api.get<ExportData>('/import-export/export/channels'),
+  exportSavedVideos: () => api.get<ExportData>('/import-export/export/saved-videos'),
+  exportAll: () => api.get<ExportData>('/import-export/export/all'),
+
+  // Import endpoints
+  importChannels: (channels: ExportData['channels']) =>
+    api.post<ImportResult>('/import-export/import/channels', { channels }),
+
+  importVideos: (videos: ExportData['saved_videos']) =>
+    api.post<ImportResult>('/import-export/import/videos', { videos }),
+
+  importVideoUrls: (urls: string[]) =>
+    api.post<ImportResult>('/import-export/import/video-urls', { urls }),
 };
