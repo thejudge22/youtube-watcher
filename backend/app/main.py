@@ -6,7 +6,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from .routers import channels, videos
+from .routers import channels, videos, import_export
 
 
 @asynccontextmanager
@@ -40,6 +40,7 @@ async def health():
 # Include routers
 app.include_router(channels.router, prefix="/api")
 app.include_router(videos.router, prefix="/api")
+app.include_router(import_export.router, prefix="/api")
 
 # This logic is for the production Docker container, where the frontend is built and served by FastAPI.
 if os.path.exists("static"):

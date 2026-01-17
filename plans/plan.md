@@ -19,25 +19,25 @@
 
 ## Project Status
 
-| Phase | Name | Status | Git Tag |
-|-------|------|--------|---------|
-| 1A | Project Scaffold | ✅ Complete | `v0.1.0-scaffold` |
-| 1B | Docker Setup | ✅ Complete | `v0.1.1-docker` |
-| 2A | Database & Models | ✅ Complete | `v0.2.0-models` |
-| 2B | RSS Service | ✅ Complete | `v0.2.1-rss` |
-| 2C | Channel API | ✅ Complete | `v0.2.2-channels-api` |
-| 2D | Video API | ✅ Complete | `v0.2.3-videos-api` |
-| 3A | Frontend Scaffold | ✅ Complete | `v0.3.0-frontend-scaffold` |
-| 3B | API Client | ✅ Complete | `v0.3.1-api-client` |
-| 3C | Channel Management UI | ✅ Complete | `v0.3.2-channels-ui` |
-| 4A | Inbox Page | ✅ Complete | `v0.4.0-inbox` |
-| 4B | Saved Videos Page | ✅ Complete | `v0.4.1-saved` |
-| 5 | Direct URL Save | ✅ Complete | `v0.5.0-url-save` |
-| 6 | Polish | ✅ Complete | `v1.0.0` |
+| Phase | Name | Status |
+|-------|------|--------|
+| 1A | Project Scaffold | ✅ Complete |
+| 1B | Docker Setup | ✅ Complete |
+| 2A | Database & Models | ✅ Complete |
+| 2B | RSS Service | ✅ Complete |
+| 2C | Channel API | ✅ Complete |
+| 2D | Video API | ✅ Complete |
+| 3A | Frontend Scaffold | ✅ Complete |
+| 3B | API Client | ✅ Complete |
+| 3C | Channel Management UI | ✅ Complete |
+| 4A | Inbox Page | ✅ Complete |
+| 4B | Saved Videos Page | ✅ Complete |
+| 5 | Direct URL Save | ✅ Complete |
+| 6 | Polish | ✅ Complete |
 
 **Current Phase**: Phase 6 - Polish (Complete)
 
-**Next Phase**: Maintenance / v1.0.0 Release
+**Next Phase**: Maintenance and ongoing development
 
 ---
 
@@ -244,21 +244,21 @@ CREATE INDEX idx_videos_saved_at ON videos(saved_at);
 
 ### Overview
 
-| Phase | Name | Deliverables | Git Tag |
-|-------|------|--------------|---------|
-| 1A | Project Scaffold | Basic file structure, configs | `v0.1.0-scaffold` |
-| 1B | Docker Setup | Working containers | `v0.1.1-docker` |
-| 2A | Database & Models | SQLAlchemy models, migrations | `v0.2.0-models` |
-| 2B | RSS Service | Feed parsing, URL resolution | `v0.2.1-rss` |
-| 2C | Channel API | CRUD endpoints for channels | `v0.2.2-channels-api` |
-| 2D | Video API | Video management endpoints | `v0.2.3-videos-api` |
-| 3A | Frontend Scaffold | React app, routing, layout | `v0.3.0-frontend-scaffold` |
-| 3B | API Client | TypeScript API client | `v0.3.1-api-client` |
-| 3C | Channel Management UI | Channels page complete | `v0.3.2-channels-ui` |
-| 4A | Inbox Page | Video inbox with actions | `v0.4.0-inbox` |
-| 4B | Saved Videos Page | Filtering, sorting | `v0.4.1-saved` |
-| 5 | Direct URL Save | Paste URL feature | `v0.5.0-url-save` |
-| 6 | Polish | Error handling, loading states | `v1.0.0` |
+| Phase | Name | Deliverables |
+|-------|------|--------------|
+| 1A | Project Scaffold | Basic file structure, configs |
+| 1B | Docker Setup | Working containers |
+| 2A | Database & Models | SQLAlchemy models, migrations |
+| 2B | RSS Service | Feed parsing, URL resolution |
+| 2C | Channel API | CRUD endpoints for channels |
+| 2D | Video API | Video management endpoints |
+| 3A | Frontend Scaffold | React app, routing, layout |
+| 3B | API Client | TypeScript API client |
+| 3C | Channel Management UI | Channels page complete |
+| 4A | Inbox Page | Video inbox with actions |
+| 4B | Saved Videos Page | Filtering, sorting |
+| 5 | Direct URL Save | Paste URL feature |
+| 6 | Polish | Error handling, loading states |
 
 ---
 
@@ -850,8 +850,6 @@ assert all(v.video_id for v in videos)
 
 **Commit**: `feat: polish and documentation`
 
-**Tag**: `v1.0.0`
-
 ---
 
 ## Testing Guidelines
@@ -906,7 +904,8 @@ Types:
 2. Verify no regressions in existing functionality
 3. Stage changes: `git add .`
 4. Commit with descriptive message
-5. Tag milestone releases: `git tag v0.x.x`
+
+**Note**: Version tagging is handled through GitHub releases when publishing.
 
 ---
 
