@@ -4,6 +4,7 @@ Video management API router.
 
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
+import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import JSONResponse
@@ -19,6 +20,8 @@ from ..services.youtube_utils import extract_video_id, get_video_url, get_rss_ur
 from ..services.rss_parser import fetch_video_by_id, fetch_channel_info
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 
 async def video_to_response(db: AsyncSession, video: Video) -> VideoResponse:
@@ -428,9 +431,12 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
                 )
                 db.add(channel)
                 await db.flush() # Get the channel.id
-            except Exception:
+            except Exception as e:
                 # If channel creation fails, we still want to add the video
                 # but it won't be linked to a channel record
+                logger.warning(
+                    f"Failed to create channel from video URL (channel_id={video_info.channel_id}): {str(e)}"
+                )
                 channel = None
         
         if channel:

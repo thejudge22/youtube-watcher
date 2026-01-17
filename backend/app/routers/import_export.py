@@ -1,5 +1,6 @@
 from datetime import datetime, timezone
 import asyncio
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import JSONResponse
 from sqlalchemy import select
@@ -30,6 +31,8 @@ from ..services.youtube_utils import (
 )
 
 router = APIRouter(prefix="/import-export", tags=["import-export"])
+
+logger = logging.getLogger(__name__)
 
 
 # ============ EXPORT ENDPOINTS ============
@@ -276,9 +279,11 @@ async def import_videos(
                             )
                             db.add(channel)
                             await db.flush()
-                    except Exception:
+                    except Exception as e:
                         # If channel creation fails, continue without channel association
-                        pass
+                        logger.warning(
+                            f"Failed to create channel for import (channel_id={video_data.channel_youtube_id}): {str(e)}"
+                        )
 
                 if channel:
                     channel_id = channel.id
@@ -328,7 +333,8 @@ async def import_video_urls(
     async def fetch_video_info(video_id: str):
         try:
             return await fetch_video_by_id(video_id)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to fetch video info for video_id={video_id}: {str(e)}")
             return None
 
     # Result container for each URL processing
@@ -399,9 +405,11 @@ async def import_video_urls(
                                 )
                                 db.add(channel)
                                 await db.flush()
-                        except Exception:
+                        except Exception as e:
                             # If channel creation fails, continue without channel association
-                            pass
+                            logger.warning(
+                                f"Failed to create channel during URL import (channel_id={video_info.channel_id}): {str(e)}"
+                            )
 
                     if channel:
                         channel_id = channel.id
