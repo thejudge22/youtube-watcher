@@ -23,7 +23,10 @@ export const channelsApi = {
 
 // Video API
 export const videosApi = {
-  getInbox: () => api.get<Video[]>('/videos/inbox'),
+  getInbox: (channelId?: string) =>
+    api.get<Video[]>('/videos/inbox', {
+      params: channelId ? { channel_id: channelId } : undefined
+    }),
   getSaved: (params?: SavedVideosParams) => api.get<Video[]>('/videos/saved', { params }),
   getDiscarded: (days?: number) => api.get<Video[]>('/videos/discarded', { params: { days } }),
   save: (id: string) => api.post<Video>(`/videos/${id}/save`),

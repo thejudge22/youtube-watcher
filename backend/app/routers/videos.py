@@ -47,6 +47,7 @@ async def video_to_response(db: AsyncSession, video: Video) -> VideoResponse:
 async def list_inbox_videos(
     limit: int = Query(100, ge=1, le=500, description="Maximum number of videos to return"),
     offset: int = Query(0, ge=0, description="Number of videos to skip"),
+    channel_id: Optional[str] = Query(None, description="Filter by channel ID"),
     db: AsyncSession = Depends(get_db)
 ):
     """
@@ -55,15 +56,23 @@ async def list_inbox_videos(
     Query params:
         limit: Maximum number of videos to return (default: 100, max: 500)
         offset: Number of videos to skip (default: 0)
+        channel_id: Filter by channel (optional)
     """
-    result = await db.execute(
+    # Build query
+    query = (
         select(Video)
         .options(selectinload(Video.channel))
         .where(Video.status == 'inbox')
-        .order_by(Video.published_at.desc())
-        .limit(limit)
-        .offset(offset)
     )
+
+    # Apply channel filter if provided
+    if channel_id:
+        query = query.where(Video.channel_id == channel_id)
+
+    # Apply sorting and pagination
+    query = query.order_by(Video.published_at.desc()).limit(limit).offset(offset)
+
+    result = await db.execute(query)
     videos = result.scalars().all()
 
     return [
