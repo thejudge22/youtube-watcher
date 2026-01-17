@@ -14,6 +14,7 @@ class VideoExport(BaseModel):
     video_url: str
     channel_youtube_id: str | None = None
     channel_name: str | None = None
+    channel_url: str | None = None
     saved_at: datetime | None = None
     published_at: datetime | None = None
 

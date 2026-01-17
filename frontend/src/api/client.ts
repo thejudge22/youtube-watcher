@@ -33,6 +33,7 @@ export interface ExportData {
     video_url: string;
     channel_youtube_id: string | null;
     channel_name: string | null;
+    channel_url: string | null;
     saved_at: string | null;
     published_at: string | null;
   }>;

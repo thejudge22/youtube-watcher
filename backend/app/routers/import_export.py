@@ -82,6 +82,7 @@ async def export_saved_videos(db: AsyncSession = Depends(get_db)):
             video_url=v.video_url,
             channel_youtube_id=v.channel.youtube_channel_id if v.channel else None,
             channel_name=v.channel.name if v.channel else None,
+            channel_url=v.channel.youtube_url if v.channel else None,
             saved_at=v.saved_at,
             published_at=v.published_at,
         )
@@ -135,6 +136,7 @@ async def export_all(db: AsyncSession = Depends(get_db)):
             video_url=v.video_url,
             channel_youtube_id=v.channel.youtube_channel_id if v.channel else None,
             channel_name=v.channel.name if v.channel else None,
+            channel_url=v.channel.youtube_url if v.channel else None,
             saved_at=v.saved_at,
             published_at=v.published_at,
         )
@@ -245,7 +247,7 @@ async def import_videos(
                     skipped += 1
                 continue
 
-            # Find or skip channel association using export data
+            # Find or create channel association using export data
             channel_id = None
             if video_data.channel_youtube_id:
                 channel_result = await db.execute(
@@ -254,6 +256,27 @@ async def import_videos(
                     )
                 )
                 channel = channel_result.scalar_one_or_none()
+
+                if not channel and video_data.channel_url:
+                    # Channel doesn't exist, create it
+                    try:
+                        # Fetch full channel info from YouTube
+                        channel_info = await fetch_channel_info(video_data.channel_youtube_id)
+                        if channel_info:
+                            channel = Channel(
+                                youtube_channel_id=video_data.channel_youtube_id,
+                                name=channel_info.name,
+                                rss_url=get_rss_url(video_data.channel_youtube_id),
+                                youtube_url=video_data.channel_url,
+                                thumbnail_url=channel_info.thumbnail_url,
+                                last_checked=datetime.now(timezone.utc),
+                            )
+                            db.add(channel)
+                            await db.flush()
+                    except Exception:
+                        # If channel creation fails, continue without channel association
+                        pass
+
                 if channel:
                     channel_id = channel.id
 
@@ -348,7 +371,7 @@ async def import_video_urls(
                     errors.append(f"Could not fetch video: {url}")
                     return
 
-                # Find channel association
+                # Find or create channel association
                 channel_id = None
                 if video_info.channel_id:
                     channel_result = await db.execute(
@@ -357,6 +380,26 @@ async def import_video_urls(
                         )
                     )
                     channel = channel_result.scalar_one_or_none()
+
+                    if not channel:
+                        # Channel doesn't exist, create it
+                        try:
+                            channel_info = await fetch_channel_info(video_info.channel_id)
+                            if channel_info:
+                                channel = Channel(
+                                    youtube_channel_id=video_info.channel_id,
+                                    name=channel_info.name,
+                                    rss_url=get_rss_url(video_info.channel_id),
+                                    youtube_url=get_channel_url(video_info.channel_id),
+                                    thumbnail_url=channel_info.thumbnail_url,
+                                    last_checked=datetime.now(timezone.utc),
+                                )
+                                db.add(channel)
+                                await db.flush()
+                        except Exception:
+                            # If channel creation fails, continue without channel association
+                            pass
+
                     if channel:
                         channel_id = channel.id
 
