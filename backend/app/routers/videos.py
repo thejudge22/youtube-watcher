@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete
@@ -225,7 +225,10 @@ async def list_discarded_videos(
 
 
 @router.post("/videos/{video_id}/save", response_model=VideoResponse)
-async def save_video(video_id: str, db: AsyncSession = Depends(get_db)):
+async def save_video(
+    video_id: str = Path(..., pattern="^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Update video status to 'saved' and set saved_at to now.
     """
@@ -255,7 +258,10 @@ async def save_video(video_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/videos/{video_id}/discard", response_model=VideoResponse)
-async def discard_video(video_id: str, db: AsyncSession = Depends(get_db)):
+async def discard_video(
+    video_id: str = Path(..., pattern="^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Update video status to 'discarded' and set discarded_at to now.
     """
@@ -471,7 +477,10 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
 
 
 @router.delete("/videos/{video_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_video(video_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_video(
+    video_id: str = Path(..., pattern="^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Delete a video.
     """
