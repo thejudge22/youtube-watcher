@@ -99,11 +99,11 @@ export default function ImportExportSection() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Import / Export</h2>
+      <h2 className="text-xl font-semibold text-white">Import / Export</h2>
 
       {/* Export Section */}
       <div className="bg-gray-800 rounded-lg p-4 space-y-4">
-        <h3 className="font-medium">Export Data</h3>
+        <h3 className="font-medium text-white">Export Data</h3>
         <p className="text-sm text-gray-400">
           Download your data as JSON files for backup or migration.
         </p>
@@ -137,7 +137,7 @@ export default function ImportExportSection() {
 
       {/* Import Section */}
       <div className="bg-gray-800 rounded-lg p-4 space-y-4">
-        <h3 className="font-medium">Import Data</h3>
+        <h3 className="font-medium text-white">Import Data</h3>
         <p className="text-sm text-gray-400">
           Import channels and videos from JSON files or YouTube URLs.
         </p>
