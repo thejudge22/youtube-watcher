@@ -257,17 +257,20 @@ async def import_videos(
                 )
                 channel = channel_result.scalar_one_or_none()
 
-                if not channel and video_data.channel_url:
-                    # Channel doesn't exist, create it
+                if not channel:
+                    # Channel doesn't exist, create it by fetching from YouTube
                     try:
                         # Fetch full channel info from YouTube
                         channel_info = await fetch_channel_info(video_data.channel_youtube_id)
                         if channel_info:
+                            # Use channel_url from export if available, otherwise generate it
+                            channel_url = video_data.channel_url or get_channel_url(video_data.channel_youtube_id)
+
                             channel = Channel(
                                 youtube_channel_id=video_data.channel_youtube_id,
                                 name=channel_info.name,
                                 rss_url=get_rss_url(video_data.channel_youtube_id),
-                                youtube_url=video_data.channel_url,
+                                youtube_url=channel_url,
                                 thumbnail_url=channel_info.thumbnail_url,
                                 last_checked=datetime.now(timezone.utc),
                             )
