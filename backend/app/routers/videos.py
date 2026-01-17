@@ -384,7 +384,7 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
         # If video exists, update it to 'saved' status regardless of current status
         # This allows re-saving previously discarded videos
         existing_video.status = 'saved'
-        existing_video.saved_at = datetime.utcnow()
+        existing_video.saved_at = datetime.now(timezone.utc)
         existing_video.discarded_at = None
         
         await db.commit()
