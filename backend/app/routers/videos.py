@@ -4,8 +4,9 @@ Video management API router.
 
 from datetime import datetime, timedelta, timezone
 from typing import List, Optional
+import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete
@@ -19,6 +20,8 @@ from ..services.youtube_utils import extract_video_id, get_video_url, get_rss_ur
 from ..services.rss_parser import fetch_video_by_id, fetch_channel_info
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 
 async def video_to_response(db: AsyncSession, video: Video) -> VideoResponse:
@@ -222,7 +225,10 @@ async def list_discarded_videos(
 
 
 @router.post("/videos/{video_id}/save", response_model=VideoResponse)
-async def save_video(video_id: str, db: AsyncSession = Depends(get_db)):
+async def save_video(
+    video_id: str = Path(..., pattern="^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Update video status to 'saved' and set saved_at to now.
     """
@@ -252,7 +258,10 @@ async def save_video(video_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/videos/{video_id}/discard", response_model=VideoResponse)
-async def discard_video(video_id: str, db: AsyncSession = Depends(get_db)):
+async def discard_video(
+    video_id: str = Path(..., pattern="^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Update video status to 'discarded' and set discarded_at to now.
     """
@@ -384,7 +393,7 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
         # If video exists, update it to 'saved' status regardless of current status
         # This allows re-saving previously discarded videos
         existing_video.status = 'saved'
-        existing_video.saved_at = datetime.utcnow()
+        existing_video.saved_at = datetime.now(timezone.utc)
         existing_video.discarded_at = None
         
         await db.commit()
@@ -428,9 +437,12 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
                 )
                 db.add(channel)
                 await db.flush() # Get the channel.id
-            except Exception:
+            except Exception as e:
                 # If channel creation fails, we still want to add the video
                 # but it won't be linked to a channel record
+                logger.warning(
+                    f"Failed to create channel from video URL (channel_id={video_info.channel_id}): {str(e)}"
+                )
                 channel = None
         
         if channel:
@@ -465,7 +477,10 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
 
 
 @router.delete("/videos/{video_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_video(video_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_video(
+    video_id: str = Path(..., pattern="^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Delete a video.
     """

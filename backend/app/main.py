@@ -19,19 +19,22 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
-# CORS Configuration
-origins = [
-    "http://localhost:5173",
-    "http://localhost:8000",
-]
+# CORS Configuration - only for development
+# In production (single container), CORS is not needed since API and frontend
+# are served from the same origin
+if os.getenv("ENV", "production") == "development":
+    origins = [
+        "http://localhost:5173",
+        "http://localhost:8000",
+    ]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
 @app.get("/api/health")
 async def health():

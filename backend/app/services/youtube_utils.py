@@ -5,6 +5,7 @@ YouTube URL utilities for extracting channel IDs and video IDs from various URL 
 import re
 import httpx
 from typing import Optional
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 
 # Common HTTP headers for YouTube requests
@@ -108,6 +109,11 @@ async def _fetch_channel_id_from_user(username: str) -> str:
     return await _fetch_channel_id_from_page(url)
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException)),
+)
 async def _fetch_channel_id_from_page(url: str) -> str:
     """
     Fetch a YouTube page and extract the channel ID from the page content.
@@ -115,6 +121,8 @@ async def _fetch_channel_id_from_page(url: str) -> str:
     The channel ID can be found in various places in the page:
     - In meta tags: <meta itemprop="channelId" content="UC...">
     - In the page's embedded JSON data
+
+    Retries up to 3 times with exponential backoff on HTTP errors.
 
     Args:
         url: YouTube channel page URL

@@ -7,6 +7,7 @@ import feedparser
 from datetime import datetime, timezone
 from typing import List, Optional
 from pydantic import BaseModel
+from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from .youtube_utils import get_rss_url, get_video_url, extract_channel_id, HTTP_HEADERS
 
@@ -30,9 +31,16 @@ class VideoInfo(BaseModel):
     published_at: datetime
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException)),
+)
 async def fetch_channel_info(channel_id: str) -> ChannelInfo:
     """
     Fetch channel information from the RSS feed.
+
+    Retries up to 3 times with exponential backoff on HTTP errors.
 
     Args:
         channel_id: YouTube channel ID
@@ -85,9 +93,16 @@ async def fetch_channel_info(channel_id: str) -> ChannelInfo:
         )
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException)),
+)
 async def fetch_videos(rss_url: str, limit: int = 15) -> List[VideoInfo]:
     """
     Fetch videos from a YouTube RSS feed.
+
+    Retries up to 3 times with exponential backoff on HTTP errors.
 
     Args:
         rss_url: RSS feed URL
@@ -197,9 +212,16 @@ async def fetch_videos(rss_url: str, limit: int = 15) -> List[VideoInfo]:
         return videos
 
 
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException)),
+)
 async def fetch_video_by_id(video_id: str) -> VideoInfo:
     """
     Fetch video information using the YouTube oEmbed endpoint.
+
+    Retries up to 3 times with exponential backoff on HTTP errors.
 
     Args:
         video_id: YouTube video ID

@@ -1,5 +1,6 @@
 import type { Video } from '../../types';
 import { VideoCard } from './VideoCard';
+import { ViewMode } from '../common/ViewModeToggle';
 
 interface VideoListProps {
   videos: Video[];
@@ -8,6 +9,10 @@ interface VideoListProps {
   emptyMessage?: string;
   showSaveButton?: boolean;
   showDiscardButton?: boolean;
+  viewMode?: ViewMode;
+  isSelectionMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }
 
 export function VideoList({
@@ -17,6 +22,10 @@ export function VideoList({
   emptyMessage,
   showSaveButton = true,
   showDiscardButton = true,
+  viewMode = 'large',
+  isSelectionMode = false,
+  selectedIds = new Set(),
+  onToggleSelect,
 }: VideoListProps) {
   if (videos.length === 0) {
     return (
@@ -42,8 +51,14 @@ export function VideoList({
     );
   }
 
+  const containerClasses = {
+    large: 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4',
+    compact: 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4',
+    list: 'flex flex-col gap-2',
+  };
+
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+    <div className={containerClasses[viewMode]}>
       {videos.map((video) => (
         <VideoCard
           key={video.id}
@@ -52,6 +67,10 @@ export function VideoList({
           onDiscard={onDiscard}
           showSaveButton={showSaveButton}
           showDiscardButton={showDiscardButton}
+          viewMode={viewMode}
+          isSelectionMode={isSelectionMode}
+          isSelected={selectedIds.has(video.id)}
+          onToggleSelect={onToggleSelect}
         />
       ))}
     </div>

@@ -3,7 +3,7 @@ Channel management API router.
 """
 
 import asyncio
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete
 from sqlalchemy.orm import selectinload
@@ -168,7 +168,10 @@ async def create_channel(channel_data: ChannelCreate, db: AsyncSession = Depends
 
 
 @router.delete("/channels/{channel_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_channel(channel_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_channel(
+    channel_id: str = Path(..., pattern="^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Delete a channel and all its videos.
     
@@ -191,7 +194,10 @@ async def delete_channel(channel_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/channels/{channel_id}/refresh", response_model=ChannelResponse)
-async def refresh_channel(channel_id: str, db: AsyncSession = Depends(get_db)):
+async def refresh_channel(
+    channel_id: str = Path(..., pattern="^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$"),
+    db: AsyncSession = Depends(get_db)
+):
     """
     Check for new videos for a specific channel.
 

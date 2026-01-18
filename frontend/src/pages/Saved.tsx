@@ -1,10 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import { useSavedVideos, useDiscardVideo } from '../hooks/useVideos';
+import { useSavedVideos, useDiscardVideo, useBulkDiscardVideos } from '../hooks/useVideos';
 import { useChannels } from '../hooks/useChannels';
 import { VideoList } from '../components/video/VideoList';
 import { RecentlyDeletedModal } from '../components/video/RecentlyDeletedModal';
 import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import ViewModeToggle, { ViewMode } from '../components/common/ViewModeToggle';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { SavedVideosParams } from '../types';
 
 type SortBy = 'published_at' | 'saved_at';
@@ -22,6 +24,9 @@ export function Saved() {
   const [sortBy, setSortBy] = useState<SortBy>('published_at');
   const [order, setOrder] = useState<Order>('desc');
   const [showRecentlyDeleted, setShowRecentlyDeleted] = useState(false);
+  const [viewMode, setViewMode] = useLocalStorage<ViewMode>('saved-view-mode', 'large');
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const params: SavedVideosParams = useMemo(() => {
     const p: SavedVideosParams = {};
@@ -40,9 +45,45 @@ export function Saved() {
   const { data: videos, isLoading, error, refetch } = useSavedVideos(params);
   const { data: channels } = useChannels();
   const discardVideo = useDiscardVideo();
+  const bulkDiscard = useBulkDiscardVideos();
 
   const handleDiscard = (id: string) => {
     discardVideo.mutate(id);
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = () => {
+    setSelectedIds(new Set(videos?.map(v => v.id) || []));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedIds(new Set());
+  };
+
+  const handleRemoveSelected = () => {
+    const ids = Array.from(selectedIds);
+    bulkDiscard.mutate(ids, {
+      onSuccess: () => {
+        setSelectedIds(new Set());
+        setIsSelectionMode(false);
+      }
+    });
+  };
+
+  const handleToggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    setSelectedIds(new Set()); // Clear selections when toggling mode
   };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -91,6 +132,12 @@ export function Saved() {
         </div>
         <div className="flex flex-wrap gap-3">
           <Button
+            variant={isSelectionMode ? "primary" : "secondary"}
+            onClick={handleToggleSelectionMode}
+          >
+            {isSelectionMode ? 'Cancel Selection' : 'Select Videos'}
+          </Button>
+          <Button
             variant="secondary"
             onClick={() => setShowRecentlyDeleted(true)}
           >
@@ -101,7 +148,7 @@ export function Saved() {
 
       {/* Filters */}
       <div className="bg-gray-800 rounded-lg p-4 mb-6">
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-4 items-end">
           {/* Channel Filter */}
           <div className="flex-1 min-w-[200px]">
             <label htmlFor="channel-filter" className="block text-sm font-medium text-gray-300 mb-1">
@@ -140,14 +187,48 @@ export function Saved() {
               ))}
             </select>
           </div>
+
+          {/* View Mode Toggle */}
+          <div>
+            <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
+          </div>
         </div>
       </div>
+
+      {/* Selection Toolbar - shown when in selection mode */}
+      {isSelectionMode && (
+        <div className="bg-gray-800 rounded-lg p-4 mb-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <span className="text-gray-300">
+              {selectedIds.size} video{selectedIds.size !== 1 ? 's' : ''} selected
+            </span>
+            <Button variant="secondary" onClick={handleSelectAll} className="px-3 py-1.5 text-sm">
+              Select All
+            </Button>
+            <Button variant="secondary" onClick={handleDeselectAll} className="px-3 py-1.5 text-sm">
+              Deselect All
+            </Button>
+          </div>
+          <Button
+            variant="danger"
+            onClick={handleRemoveSelected}
+            disabled={selectedIds.size === 0}
+          >
+            Remove Selected ({selectedIds.size})
+          </Button>
+        </div>
+      )}
 
       <VideoList
         videos={videos || []}
         onDiscard={handleDiscard}
         showSaveButton={false}
+        showDiscardButton={false}
         emptyMessage="No saved videos. Save videos from the inbox to watch later."
+        viewMode={viewMode}
+        isSelectionMode={isSelectionMode}
+        selectedIds={selectedIds}
+        onToggleSelect={handleToggleSelect}
       />
 
       <RecentlyDeletedModal
