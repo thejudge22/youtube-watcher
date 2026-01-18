@@ -146,7 +146,7 @@ export function VideoCard({
       <div className="flex items-start gap-2 h-full">
         {/* Checkbox - only visible in selection mode */}
         {isSelectionMode && (
-          <div className="flex-shrink-0 pt-2">
+          <div className="flex-shrink-0 self-center">
             <input
               type="checkbox"
               checked={isSelected}
@@ -157,15 +157,16 @@ export function VideoCard({
         )}
 
         <div
-          className="flex-1 flex flex-col bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors relative"
+          className="flex-1 flex flex-col bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors relative h-full"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          {/* Thumbnail */}
+          {/* Thumbnail - fixed aspect ratio */}
           <a
             href={video.video_url}
             target="_blank"
             rel="noopener noreferrer"
+            className="flex-shrink-0"
           >
             <div className="aspect-video relative bg-gray-700">
               {video.thumbnail_url ? (
@@ -183,8 +184,8 @@ export function VideoCard({
             </div>
           </a>
 
-          {/* Content */}
-          <div className="p-2 flex-1 flex flex-col">
+          {/* Content - fills remaining space */}
+          <div className="p-2 flex-1 flex flex-col min-h-0">
             <a
               href={video.video_url}
               target="_blank"
@@ -231,7 +232,7 @@ export function VideoCard({
     <div className="flex items-start gap-2 h-full">
       {/* Checkbox - only visible in selection mode */}
       {isSelectionMode && (
-        <div className="flex-shrink-0 pt-2">
+        <div className="flex-shrink-0 self-center">
           <input
             type="checkbox"
             checked={isSelected}
@@ -241,12 +242,13 @@ export function VideoCard({
         </div>
       )}
 
-      <div className="flex-1 flex flex-col bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors">
+      <div className="flex-1 flex flex-col bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors h-full">
+        {/* Thumbnail - fixed aspect ratio */}
         <a
           href={video.video_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block"
+          className="flex-shrink-0"
         >
           <div className="aspect-video relative bg-gray-700">
             {video.thumbnail_url ? (
@@ -263,7 +265,9 @@ export function VideoCard({
             )}
           </div>
         </a>
-        <div className="p-4 flex-1 flex flex-col">
+
+        {/* Content - fills remaining space */}
+        <div className="p-4 flex-1 flex flex-col min-h-0">
           <a
             href={video.video_url}
             target="_blank"
@@ -274,6 +278,7 @@ export function VideoCard({
               {video.title}
             </h3>
           </a>
+
           <div className="mt-auto pt-3">
             {video.channel_name && (
               <p className="text-gray-400 text-sm">{video.channel_name}</p>
