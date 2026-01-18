@@ -5,6 +5,8 @@ import { VideoList } from '../components/video/VideoList';
 import { RecentlyDeletedModal } from '../components/video/RecentlyDeletedModal';
 import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import ViewModeToggle, { ViewMode } from '../components/common/ViewModeToggle';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import type { SavedVideosParams } from '../types';
 
 type SortBy = 'published_at' | 'saved_at';
@@ -22,6 +24,7 @@ export function Saved() {
   const [sortBy, setSortBy] = useState<SortBy>('published_at');
   const [order, setOrder] = useState<Order>('desc');
   const [showRecentlyDeleted, setShowRecentlyDeleted] = useState(false);
+  const [viewMode, setViewMode] = useLocalStorage<ViewMode>('saved-view-mode', 'large');
 
   const params: SavedVideosParams = useMemo(() => {
     const p: SavedVideosParams = {};
@@ -101,7 +104,7 @@ export function Saved() {
 
       {/* Filters */}
       <div className="bg-gray-800 rounded-lg p-4 mb-6">
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-4 items-end">
           {/* Channel Filter */}
           <div className="flex-1 min-w-[200px]">
             <label htmlFor="channel-filter" className="block text-sm font-medium text-gray-300 mb-1">
@@ -140,6 +143,11 @@ export function Saved() {
               ))}
             </select>
           </div>
+
+          {/* View Mode Toggle */}
+          <div>
+            <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
+          </div>
         </div>
       </div>
 
@@ -148,6 +156,7 @@ export function Saved() {
         onDiscard={handleDiscard}
         showSaveButton={false}
         emptyMessage="No saved videos. Save videos from the inbox to watch later."
+        viewMode={viewMode}
       />
 
       <RecentlyDeletedModal

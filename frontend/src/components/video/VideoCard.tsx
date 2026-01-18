@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import type { Video } from '../../types';
 import { Button } from '../common/Button';
+import { ViewMode } from '../common/ViewModeToggle';
 
 interface VideoCardProps {
   video: Video;
@@ -7,6 +9,7 @@ interface VideoCardProps {
   onDiscard: (id: string) => void;
   showSaveButton?: boolean;
   showDiscardButton?: boolean;
+  viewMode?: ViewMode;
 }
 
 export function VideoCard({
@@ -15,7 +18,9 @@ export function VideoCard({
   onDiscard,
   showSaveButton = true,
   showDiscardButton = true,
+  viewMode = 'large',
 }: VideoCardProps) {
+  const [isHovered, setIsHovered] = useState(false);
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return new Intl.DateTimeFormat('en-US', {
@@ -36,6 +41,158 @@ export function VideoCard({
     }).format(date);
   };
 
+  // List view - horizontal layout
+  if (viewMode === 'list') {
+    return (
+      <div className="flex items-center gap-4 p-2 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors">
+        {/* Thumbnail - fixed width */}
+        <a
+          href={video.video_url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex-shrink-0 w-40"
+        >
+          <div className="aspect-video rounded overflow-hidden bg-gray-700">
+            {video.thumbnail_url ? (
+              <img
+                src={video.thumbnail_url}
+                alt={video.title}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+                No thumbnail
+              </div>
+            )}
+          </div>
+        </a>
+
+        {/* Content - flexible */}
+        <div className="flex-1 min-w-0">
+          <a
+            href={video.video_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-white hover:text-blue-400 line-clamp-1 block"
+          >
+            {video.title}
+          </a>
+          <div className="text-sm text-gray-400 mt-1">
+            {video.channel_name && (
+              <>
+                <span>{video.channel_name}</span>
+                <span className="mx-2">•</span>
+              </>
+            )}
+            <span>{formatDate(video.published_at)}</span>
+            {video.saved_at && (
+              <>
+                <span className="mx-2">•</span>
+                <span className="text-blue-400">Saved {formatSavedDate(video.saved_at)}</span>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* Actions - fixed right */}
+        <div className="flex-shrink-0 flex gap-2">
+          {showSaveButton && onSave && (
+            <Button
+              variant="primary"
+              onClick={() => onSave(video.id)}
+              className="text-sm px-3 py-1"
+            >
+              Save
+            </Button>
+          )}
+          {showDiscardButton && (
+            <Button
+              variant="danger"
+              onClick={() => onDiscard(video.id)}
+              className="text-sm px-3 py-1"
+            >
+              {showSaveButton && onSave ? 'Discard' : 'Remove'}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Compact view - smaller cards with hover actions
+  if (viewMode === 'compact') {
+    return (
+      <div
+        className="bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors relative"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Thumbnail */}
+        <a
+          href={video.video_url}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <div className="aspect-video relative bg-gray-700">
+            {video.thumbnail_url ? (
+              <img
+                src={video.thumbnail_url}
+                alt={video.title}
+                className="w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
+                No thumbnail
+              </div>
+            )}
+          </div>
+        </a>
+
+        {/* Content */}
+        <div className="p-2">
+          <a
+            href={video.video_url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-white hover:text-blue-400 line-clamp-1 block"
+          >
+            {video.title}
+          </a>
+          <div className="text-xs text-gray-400 mt-1">
+            {formatDate(video.published_at)}
+          </div>
+        </div>
+
+        {/* Hover actions overlay */}
+        {isHovered && (showSaveButton && onSave || showDiscardButton) && (
+          <div className="absolute inset-0 bg-black/60 flex items-center justify-center gap-2">
+            {showSaveButton && onSave && (
+              <Button
+                variant="primary"
+                onClick={() => onSave(video.id)}
+                className="text-sm px-3 py-1"
+              >
+                Save
+              </Button>
+            )}
+            {showDiscardButton && (
+              <Button
+                variant="danger"
+                onClick={() => onDiscard(video.id)}
+                className="text-sm px-3 py-1"
+              >
+                {showSaveButton && onSave ? 'Discard' : 'Remove'}
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // Large view (default) - original layout
   return (
     <div className="bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors">
       <a
