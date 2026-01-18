@@ -10,6 +10,9 @@ interface VideoListProps {
   showSaveButton?: boolean;
   showDiscardButton?: boolean;
   viewMode?: ViewMode;
+  isSelectionMode?: boolean;
+  selectedIds?: Set<string>;
+  onToggleSelect?: (id: string) => void;
 }
 
 export function VideoList({
@@ -20,6 +23,9 @@ export function VideoList({
   showSaveButton = true,
   showDiscardButton = true,
   viewMode = 'large',
+  isSelectionMode = false,
+  selectedIds = new Set(),
+  onToggleSelect,
 }: VideoListProps) {
   if (videos.length === 0) {
     return (
@@ -62,6 +68,9 @@ export function VideoList({
           showSaveButton={showSaveButton}
           showDiscardButton={showDiscardButton}
           viewMode={viewMode}
+          isSelectionMode={isSelectionMode}
+          isSelected={selectedIds.has(video.id)}
+          onToggleSelect={onToggleSelect}
         />
       ))}
     </div>
