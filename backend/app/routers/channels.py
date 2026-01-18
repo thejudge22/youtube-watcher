@@ -16,6 +16,7 @@ from ..models.video import Video
 from ..schemas.channel import ChannelCreate, ChannelResponse, RefreshSummary
 from ..services.youtube_utils import extract_channel_id, get_rss_url, get_channel_url
 from ..services.rss_parser import fetch_channel_info, fetch_videos, VideoInfo
+from ..exceptions import NotFoundError, AlreadyExistsError, ValidationError, ExternalServiceError
 
 router = APIRouter()
 
@@ -99,39 +100,27 @@ async def create_channel(channel_data: ChannelCreate, db: AsyncSession = Depends
     try:
         youtube_channel_id = await extract_channel_id(channel_data.url)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise ValidationError(str(e), field="url")
     
     # Step 2: Check if channel already exists
     existing = await db.execute(
         select(Channel).where(Channel.youtube_channel_id == youtube_channel_id)
     )
     if existing.scalar_one_or_none():
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT,
-            detail=f"Channel with ID {youtube_channel_id} already exists"
-        )
+        raise AlreadyExistsError("Channel", youtube_channel_id)
     
     # Step 3: Fetch channel info
     try:
         channel_info = await fetch_channel_info(youtube_channel_id)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to fetch channel info: {str(e)}"
-        )
+        raise ExternalServiceError("YouTube", "fetch channel info", str(e))
     
     # Step 4: Fetch last 15 videos
     rss_url = get_rss_url(youtube_channel_id)
     try:
         videos_info = await fetch_videos(rss_url, limit=15)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to fetch videos: {str(e)}"
-        )
+        raise ExternalServiceError("YouTube", "fetch videos", str(e))
     
     # Step 5: Create channel record
     channel = Channel(
@@ -181,12 +170,9 @@ async def delete_channel(
     # Check if channel exists
     result = await db.execute(select(Channel).where(Channel.id == channel_id))
     channel = result.scalar_one_or_none()
-    
+
     if not channel:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Channel with ID {channel_id} not found"
-        )
+        raise NotFoundError("Channel", channel_id)
     
     # Delete the channel (cascade will delete videos)
     await db.execute(delete(Channel).where(Channel.id == channel_id))
@@ -212,19 +198,13 @@ async def refresh_channel(
     channel = result.scalar_one_or_none()
 
     if not channel:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Channel with ID {channel_id} not found"
-        )
+        raise NotFoundError("Channel", channel_id)
 
     # Fetch current RSS feed
     try:
         videos_info = await fetch_videos(channel.rss_url, limit=50)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to fetch videos: {str(e)}"
-        )
+        raise ExternalServiceError("YouTube", "fetch videos", str(e))
 
     # Add new videos and update channel
     new_videos_added = await _process_new_videos(db, channel, videos_info)

@@ -1,9 +1,31 @@
 import axios from 'axios';
 import type { Channel, Video, SavedVideosParams } from '../types';
 
+// API client with explicit configuration to ensure consistent behavior
 const api = axios.create({
   baseURL: '/api',
+  headers: {
+    'Content-Type': 'application/json', // Explicitly set JSON content type
+    'Accept': 'application/json', // Explicitly request JSON responses
+  },
+  timeout: 30000, // 30 second timeout for all requests
 });
+
+// Add response interceptor to handle structured error responses
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Handle structured error responses from backend
+    if (error.response?.data?.error) {
+      const { code, message, details } = error.response.data.error;
+      // Attach structured error info to the error object for easier handling
+      error.errorCode = code;
+      error.errorMessage = message;
+      error.errorDetails = details;
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Response types based on API responses
 interface RefreshSummary {

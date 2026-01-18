@@ -18,6 +18,7 @@ from ..models.channel import Channel
 from ..schemas.video import VideoResponse, VideoFromUrl, BulkVideoAction
 from ..services.youtube_utils import extract_video_id, get_video_url, get_rss_url, get_channel_url
 from ..services.rss_parser import fetch_video_by_id, fetch_channel_info
+from ..exceptions import NotFoundError, ValidationError, ExternalServiceError
 
 router = APIRouter()
 
@@ -118,17 +119,11 @@ async def list_saved_videos(
     """
     # Validate sort_by
     if sort_by not in ['published_at', 'saved_at']:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="sort_by must be 'published_at' or 'saved_at'"
-        )
+        raise ValidationError("sort_by must be 'published_at' or 'saved_at'", field="sort_by")
 
     # Validate order
     if order not in ['asc', 'desc']:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="order must be 'asc' or 'desc'"
-        )
+        raise ValidationError("order must be 'asc' or 'desc'", field="order")
 
     # Build query
     query = (
@@ -239,21 +234,18 @@ async def save_video(
         .where(Video.id == video_id)
     )
     video = result.scalar_one_or_none()
-    
+
     if not video:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Video with ID {video_id} not found"
-        )
-    
+        raise NotFoundError("Video", video_id)
+
     # Update status and saved_at
     video.status = 'saved'
     video.saved_at = datetime.now(timezone.utc)
     video.discarded_at = None
-    
+
     await db.commit()
     await db.refresh(video)
-    
+
     return await video_to_response(db, video)
 
 
@@ -272,13 +264,10 @@ async def discard_video(
         .where(Video.id == video_id)
     )
     video = result.scalar_one_or_none()
-    
+
     if not video:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Video with ID {video_id} not found"
-        )
-    
+        raise NotFoundError("Video", video_id)
+
     # Update status and discarded_at
     video.status = 'discarded'
     video.discarded_at = datetime.now(timezone.utc)
@@ -376,10 +365,7 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
     try:
         youtube_video_id = extract_video_id(video_data.url)
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        )
+        raise ValidationError(str(e), field="url")
     
     # Step 2: Check if video already exists
     existing = await db.execute(
@@ -410,10 +396,7 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
     try:
         video_info = await fetch_video_by_id(youtube_video_id)
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Failed to fetch video info: {str(e)}"
-        )
+        raise ExternalServiceError("YouTube", "fetch video info", str(e))
     
     # Step 4: Try to find or create the channel
     channel_id = None
@@ -487,12 +470,9 @@ async def delete_video(
     # Check if video exists
     result = await db.execute(select(Video).where(Video.id == video_id))
     video = result.scalar_one_or_none()
-    
+
     if not video:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Video with ID {video_id} not found"
-        )
+        raise NotFoundError("Video", video_id)
     
     # Delete the video
     await db.execute(delete(Video).where(Video.id == video_id))
