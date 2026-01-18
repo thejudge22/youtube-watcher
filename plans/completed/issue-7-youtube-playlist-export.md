@@ -1,5 +1,8 @@
 # Issue #7: YouTube Playlist Export (Phase 1) - Development Plan
 
+> **Status:** ✅ Completed (v1.5.0)
+> **Completion Date:** January 18, 2026
+
 ## Overview
 
 Add video selection functionality and "Play as Playlist" feature that generates a YouTube watch_videos URL to play selected videos as a temporary playlist.
@@ -762,3 +765,33 @@ This is out of scope for Phase 1 and can be implemented as a separate issue.
 - Selection is limited to videos currently displayed (doesn't persist across filter changes)
 - Consider adding keyboard shortcuts (Shift+click for range select) as a future enhancement
 - The selection hook is reusable and could be applied to Inbox page if desired
+
+---
+
+## Implementation Summary
+
+**Completed:** v1.5.0
+
+### What Was Implemented
+
+The selection UI infrastructure was already in place from the v1.4.0 release (selection mode, checkboxes, bulk remove). This release added the playlist generation capability:
+
+1. **Created `frontend/src/utils/playlist.ts`**
+   - `generatePlaylistUrl()` - Generates YouTube watch_videos URL from video array
+   - `openPlaylist()` - Opens playlist in new tab
+   - Supports up to 50 videos (URL length limit)
+
+2. **Updated `frontend/src/pages/Saved.tsx`**
+   - Added `handlePlayAsPlaylist()` function
+   - Added "Play as Playlist" button to selection toolbar
+   - Button disabled when no videos selected
+   - Exits selection mode after opening playlist
+
+### Files Changed
+- `frontend/src/utils/playlist.ts` (created)
+- `frontend/src/pages/Saved.tsx` (modified)
+
+### Not Implemented (Out of Scope)
+- `useVideoSelection` hook - Selection logic was already implemented inline in Saved.tsx
+- `SelectionBar` component - Selection toolbar was already built inline in Saved.tsx
+- VideoCard/VideoList selection props - Already implemented in v1.4.0
