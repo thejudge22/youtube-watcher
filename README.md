@@ -11,6 +11,11 @@ A self-hosted, Docker-based web application for managing YouTube content discove
 - **Video Inbox** - Review new videos from your channels with save/discard options
 - **Bulk Actions** - Save or discard all videos in your inbox with one click
 - **Saved Videos Library** - View and manage your saved videos with filtering and sorting
+- **Video Selection Mode** - Select multiple saved videos for bulk operations
+- **Play as Playlist** - Generate a YouTube playlist from selected videos (up to 50)
+- **Multiple View Modes** - Choose between Large, Compact, or List view layouts
+- **Bulk Remove** - Remove multiple selected videos at once
+- **Recently Deleted** - Restore accidentally deleted videos within a retention period
 - **Direct URL Save** - Add any YouTube video URL directly to your saved list
 - **YouTube Shorts Support** - Full support for YouTube Shorts URLs
 - **RSS-based** - No YouTube API key required, uses RSS feeds
@@ -82,7 +87,12 @@ The application uses SQLite for data storage. The database file is stored in `./
 - View all your saved videos
 - Filter by channel
 - Sort by published date or saved date
-- Click **Remove** to discard a saved video
+- Switch between Large, Compact, and List view modes
+- Select multiple videos for bulk operations
+- Play selected videos as a YouTube playlist (opens in new tab)
+- Remove selected videos in bulk
+- Click **Remove** to discard a single saved video
+- View and restore recently deleted videos
 
 **Direct URL:**
 - Click the **+** button to add any YouTube URL directly to your saved videos

@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { PlayIcon } from '@heroicons/react/24/outline';
 import { useSavedVideos, useDiscardVideo, useBulkDiscardVideos } from '../hooks/useVideos';
 import { useChannels } from '../hooks/useChannels';
 import { VideoList } from '../components/video/VideoList';
@@ -7,6 +8,7 @@ import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import ViewModeToggle, { ViewMode } from '../components/common/ViewModeToggle';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { openPlaylist } from '../utils/playlist';
 import type { SavedVideosParams } from '../types';
 
 type SortBy = 'published_at' | 'saved_at';
@@ -86,6 +88,21 @@ export function Saved() {
     setSelectedIds(new Set()); // Clear selections when toggling mode
   };
 
+  const handlePlayAsPlaylist = () => {
+    if (!videos) return;
+
+    const selectedVideos = videos.filter(v => selectedIds.has(v.id));
+    const result = openPlaylist(selectedVideos);
+
+    if (result.truncated) {
+      console.log(`Playlist opened with ${result.videoCount} videos (some were truncated due to 50 video limit)`);
+    }
+
+    // Exit selection mode after playing
+    setIsSelectionMode(false);
+    setSelectedIds(new Set());
+  };
+
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selected = SORT_OPTIONS.find((opt) => opt.label === e.target.value);
     if (selected) {
@@ -121,7 +138,7 @@ export function Saved() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Saved Videos</h1>
           {videos && videos.length > 0 && (
@@ -130,7 +147,7 @@ export function Saved() {
             </p>
           )}
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 sm:flex-nowrap">
           <Button
             variant={isSelectionMode ? "primary" : "secondary"}
             onClick={handleToggleSelectionMode}
@@ -190,6 +207,9 @@ export function Saved() {
 
           {/* View Mode Toggle */}
           <div>
+            <label htmlFor="view-mode-toggle" className="block text-sm font-medium text-gray-300 mb-1">
+              View Mode
+            </label>
             <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
           </div>
         </div>
@@ -209,13 +229,23 @@ export function Saved() {
               Deselect All
             </Button>
           </div>
-          <Button
-            variant="danger"
-            onClick={handleRemoveSelected}
-            disabled={selectedIds.size === 0}
-          >
-            Remove Selected ({selectedIds.size})
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="primary"
+              onClick={handlePlayAsPlaylist}
+              disabled={selectedIds.size === 0}
+            >
+              <PlayIcon className="w-4 h-4 mr-2" />
+              Play as Playlist
+            </Button>
+            <Button
+              variant="danger"
+              onClick={handleRemoveSelected}
+              disabled={selectedIds.size === 0}
+            >
+              Remove Selected ({selectedIds.size})
+            </Button>
+          </div>
         </div>
       )}
 

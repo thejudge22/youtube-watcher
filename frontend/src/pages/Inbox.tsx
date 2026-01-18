@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useInboxVideos, useSaveVideo, useDiscardVideo, useBulkSaveVideos, useBulkDiscardVideos } from '../hooks/useVideos';
 import { useRefreshAllChannels } from '../hooks/useChannels';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 import { VideoList } from '../components/video/VideoList';
 import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
@@ -9,14 +10,7 @@ import { InboxViewToggle, type InboxViewMode } from '../components/inbox/InboxVi
 import type { Video } from '../types';
 
 export function Inbox() {
-  const [viewMode, setViewMode] = useState<InboxViewMode>(() => {
-    const saved = localStorage.getItem('inbox-view-mode');
-    return (saved as InboxViewMode) || 'grouped';
-  });
-
-  useEffect(() => {
-    localStorage.setItem('inbox-view-mode', viewMode);
-  }, [viewMode]);
+  const [viewMode, setViewMode] = useLocalStorage<InboxViewMode>('inbox-view-mode', 'grouped');
 
   const { data: videos, isLoading, error, refetch } = useInboxVideos();
   const saveVideo = useSaveVideo();

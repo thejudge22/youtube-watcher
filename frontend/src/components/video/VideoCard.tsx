@@ -143,10 +143,10 @@ export function VideoCard({
   // Compact view - smaller cards with hover actions
   if (viewMode === 'compact') {
     return (
-      <div className="flex items-start gap-2">
+      <div className="flex items-start gap-2 h-full">
         {/* Checkbox - only visible in selection mode */}
         {isSelectionMode && (
-          <div className="flex-shrink-0 pt-2">
+          <div className="flex-shrink-0 self-center">
             <input
               type="checkbox"
               checked={isSelected}
@@ -157,15 +157,16 @@ export function VideoCard({
         )}
 
         <div
-          className="flex-1 bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors relative"
+          className="flex-1 flex flex-col bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors relative h-full"
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
         >
-          {/* Thumbnail */}
+          {/* Thumbnail - fixed aspect ratio */}
           <a
             href={video.video_url}
             target="_blank"
             rel="noopener noreferrer"
+            className="flex-shrink-0"
           >
             <div className="aspect-video relative bg-gray-700">
               {video.thumbnail_url ? (
@@ -183,13 +184,13 @@ export function VideoCard({
             </div>
           </a>
 
-          {/* Content */}
-          <div className="p-2">
+          {/* Content - fills remaining space */}
+          <div className="p-2 flex-1 flex flex-col min-h-0">
             <a
               href={video.video_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-medium text-white hover:text-blue-400 line-clamp-1 block"
+              className="text-sm font-medium text-white hover:text-blue-400 line-clamp-2 block"
             >
               {video.title}
             </a>
@@ -228,10 +229,10 @@ export function VideoCard({
 
   // Large view (default) - original layout
   return (
-    <div className="flex items-start gap-2">
+    <div className="flex items-start gap-2 h-full">
       {/* Checkbox - only visible in selection mode */}
       {isSelectionMode && (
-        <div className="flex-shrink-0 pt-2">
+        <div className="flex-shrink-0 self-center">
           <input
             type="checkbox"
             checked={isSelected}
@@ -241,12 +242,13 @@ export function VideoCard({
         </div>
       )}
 
-      <div className="flex-1 bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors">
+      <div className="flex-1 flex flex-col bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors h-full">
+        {/* Thumbnail - fixed aspect ratio */}
         <a
           href={video.video_url}
           target="_blank"
           rel="noopener noreferrer"
-          className="block"
+          className="flex-shrink-0"
         >
           <div className="aspect-video relative bg-gray-700">
             {video.thumbnail_url ? (
@@ -263,7 +265,9 @@ export function VideoCard({
             )}
           </div>
         </a>
-        <div className="p-4">
+
+        {/* Content - fills remaining space */}
+        <div className="p-4 flex-1 flex flex-col min-h-0">
           <a
             href={video.video_url}
             target="_blank"
@@ -274,39 +278,42 @@ export function VideoCard({
               {video.title}
             </h3>
           </a>
-          {video.channel_name && (
-            <p className="text-gray-400 text-sm mt-1">{video.channel_name}</p>
-          )}
-          <p className="text-gray-500 text-xs mt-1">
-            Published: {formatDate(video.published_at)}
-          </p>
-          {video.saved_at && (
-            <p className="text-blue-400 text-xs mt-1">
-              Saved: {formatSavedDate(video.saved_at)}
+
+          <div className="mt-auto pt-3">
+            {video.channel_name && (
+              <p className="text-gray-400 text-sm">{video.channel_name}</p>
+            )}
+            <p className="text-gray-500 text-xs mt-1">
+              Published: {formatDate(video.published_at)}
             </p>
-          )}
-          {!isSelectionMode && (showSaveButton && onSave || showDiscardButton) && (
-            <div className="flex space-x-2 mt-4">
-              {showSaveButton && onSave && (
-                <Button
-                  variant="primary"
-                  onClick={() => onSave(video.id)}
-                  className={showDiscardButton ? 'flex-1' : 'w-full'}
-                >
-                  Save
-                </Button>
-              )}
-              {showDiscardButton && (
-                <Button
-                  variant="danger"
-                  onClick={() => onDiscard(video.id)}
-                  className={showSaveButton && onSave ? 'flex-1' : 'w-full'}
-                >
-                  {showSaveButton && onSave ? 'Discard' : 'Remove'}
-                </Button>
-              )}
-            </div>
-          )}
+            {video.saved_at && (
+              <p className="text-blue-400 text-xs mt-1">
+                Saved: {formatSavedDate(video.saved_at)}
+              </p>
+            )}
+            {!isSelectionMode && (showSaveButton && onSave || showDiscardButton) && (
+              <div className="flex space-x-2 mt-4">
+                {showSaveButton && onSave && (
+                  <Button
+                    variant="primary"
+                    onClick={() => onSave(video.id)}
+                    className={showDiscardButton ? 'flex-1' : 'w-full'}
+                  >
+                    Save
+                  </Button>
+                )}
+                {showDiscardButton && (
+                  <Button
+                    variant="danger"
+                    onClick={() => onDiscard(video.id)}
+                    className={showSaveButton && onSave ? 'flex-1' : 'w-full'}
+                  >
+                    {showSaveButton && onSave ? 'Discard' : 'Remove'}
+                  </Button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
