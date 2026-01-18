@@ -138,7 +138,7 @@ export function Saved() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Saved Videos</h1>
           {videos && videos.length > 0 && (
@@ -147,7 +147,7 @@ export function Saved() {
             </p>
           )}
         </div>
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-3 sm:flex-nowrap">
           <Button
             variant={isSelectionMode ? "primary" : "secondary"}
             onClick={handleToggleSelectionMode}
@@ -207,6 +207,9 @@ export function Saved() {
 
           {/* View Mode Toggle */}
           <div>
+            <label htmlFor="view-mode-toggle" className="block text-sm font-medium text-gray-300 mb-1">
+              View Mode
+            </label>
             <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
           </div>
         </div>
