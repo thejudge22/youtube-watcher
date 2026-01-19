@@ -1,12 +1,15 @@
 from contextlib import asynccontextmanager
 import os
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from .routers import channels, videos, import_export, settings
+from .database import get_db
 
 
 @asynccontextmanager
@@ -54,8 +57,22 @@ if os.getenv("ENV", "production") == "development":
     )
 
 @app.get("/api/health")
-async def health():
-    return {"status": "ok"}
+async def health(db: AsyncSession = Depends(get_db)):
+    """
+    Health check endpoint that verifies database connectivity.
+    
+    Returns:
+        - 200 OK with status and database connection info on success
+        - 503 Service Unavailable if database connection fails
+    """
+    try:
+        await db.execute(text("SELECT 1"))
+        return {"status": "ok", "database": "connected"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=503,
+            detail="Service unavailable: database connection failed"
+        )
 
 # Include routers
 app.include_router(channels.router, prefix="/api")

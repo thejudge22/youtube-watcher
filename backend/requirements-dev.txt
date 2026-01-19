@@ -1,0 +1,9 @@
+# Development dependencies for youtube-watcher backend
+# Install with: pip install -r requirements-dev.txt
+
+# Include all production dependencies
+-r requirements.txt
+
+# Testing frameworks
+pytest==7.4.4
+pytest-asyncio==0.23.3

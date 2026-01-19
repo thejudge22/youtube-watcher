@@ -7,7 +7,10 @@ class Video(Base):
     __tablename__ = "videos"
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    youtube_video_id = Column(String, unique=True, nullable=False)
+    # Index on youtube_video_id for efficient lookups by YouTube video ID
+    # Note: unique=True creates an implicit index, but explicit index=True
+    # ensures clarity and allows SQLAlchemy to manage the index explicitly
+    youtube_video_id = Column(String, unique=True, nullable=False, index=True)
     channel_id = Column(String, ForeignKey("channels.id", ondelete="CASCADE"))
     title = Column(String, nullable=False)
     description = Column(String)

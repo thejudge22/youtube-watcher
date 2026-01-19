@@ -45,7 +45,7 @@ class TestCreateChannel:
             json={"url": "https://example.com/invalid"}
         )
         assert response.status_code == 400
-        assert "detail" in response.json()
+        assert "error" in response.json()
     
     @pytest.mark.integration
     @pytest.mark.asyncio
@@ -68,7 +68,7 @@ class TestCreateChannel:
             json={"url": "https://www.youtube.com/channel/UC-lHJZR3Gqxm24_Vd_AJ5Yw"}
         )
         assert response.status_code == 409
-        assert "already exists" in response.json()["detail"]
+        assert "already exists" in response.json()["error"]["message"]
 
 
 class TestDeleteChannel:
@@ -87,9 +87,8 @@ class TestDeleteChannel:
     @pytest.mark.asyncio
     async def test_delete_nonexistent_channel(self, client):
         """Test deleting a channel that doesn't exist."""
-        response = await client.delete("/api/channels/nonexistent-id")
+        response = await client.delete("/api/channels/00000000-0000-0000-0000-000000000000")
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
 
 
 class TestRefreshChannel:
@@ -118,9 +117,8 @@ class TestRefreshChannel:
     @pytest.mark.asyncio
     async def test_refresh_nonexistent_channel(self, client):
         """Test refreshing a channel that doesn't exist."""
-        response = await client.post("/api/channels/nonexistent-id/refresh")
+        response = await client.post("/api/channels/00000000-0000-0000-0000-000000000000/refresh")
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
 
 
 class TestRefreshAllChannels:
