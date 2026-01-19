@@ -4,6 +4,7 @@ RSS feed parser for YouTube channels.
 
 import httpx
 import feedparser
+import yt_dlp
 from datetime import datetime, timezone
 from typing import List, Optional
 from pydantic import BaseModel
@@ -215,13 +216,13 @@ async def fetch_videos(rss_url: str, limit: int = 15, timeout: float = 10.0) -> 
 @retry(
     stop=stop_after_attempt(3),
     wait=wait_exponential(multiplier=1, min=1, max=10),
-    retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException)),
+    retry=retry_if_exception_type((yt_dlp.utils.DownloadError,)),
 )
 async def fetch_video_by_id(video_id: str, timeout: float = 10.0) -> VideoInfo:
     """
-    Fetch video information using the YouTube oEmbed endpoint.
+    Fetch video information using yt-dlp.
 
-    Retries up to 3 times with exponential backoff on HTTP errors.
+    Retries up to 3 times with exponential backoff on download errors.
 
     Args:
         video_id: YouTube video ID
@@ -234,41 +235,44 @@ async def fetch_video_by_id(video_id: str, timeout: float = 10.0) -> VideoInfo:
     """
     video_url = get_video_url(video_id)
     
-    # Use YouTube oEmbed endpoint to get video info
-    oembed_url = f"https://www.youtube.com/oembed?url={video_url}&format=json"
-    
-    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers=HTTP_HEADERS) as client:
-        response = await client.get(oembed_url)
-        response.raise_for_status()
+    try:
+        # Configure yt-dlp to extract metadata without downloading
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+            'skip_download': True,
+            'extract_flat': False,  # We need full info for description/tags
+        }
         
-        data = response.json()
+        # Extract video information
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video_url, download=False)
         
-        title = data.get('title', '')
-        author_name = data.get('author_name', '')
-        author_url = data.get('author_url', '')
+        # Extract fields from yt-dlp output
+        title = info.get('title', '')
+        channel_name = info.get('uploader', '')
+        channel_id = info.get('channel_id', '')
+        description = info.get('description', None)
+        thumbnail_url = info.get('thumbnail', f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg")
         
-        # Extract channel ID from author_url if available
-        channel_id = ''
-        if author_url:
-            try:
-                channel_id = await extract_channel_id(author_url)
-            except ValueError:
-                # Fallback to empty if extraction fails
-                pass
-        
-        # Use default thumbnail URL since oEmbed doesn't provide it
-        thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
-        
-        # Use current time as published_at since oEmbed doesn't provide it
-        published_at = datetime.now(timezone.utc)
+        # Parse upload_date from YYYYMMDD string to datetime with UTC timezone
+        upload_date_str = info.get('upload_date')
+        if upload_date_str:
+            # Parse YYYYMMDD format
+            published_at = datetime.strptime(upload_date_str, '%Y%m%d').replace(tzinfo=timezone.utc)
+        else:
+            # Fallback to current time if upload_date is not available
+            published_at = datetime.now(timezone.utc)
         
         return VideoInfo(
             video_id=video_id,
             channel_id=channel_id,
-            channel_name=author_name,
+            channel_name=channel_name,
             title=title,
-            description=None,  # Not available from oEmbed
+            description=description,
             thumbnail_url=thumbnail_url,
             video_url=video_url,
             published_at=published_at
         )
+    except yt_dlp.utils.DownloadError as e:
+        raise ValueError(f"Failed to fetch video info for {video_id}: {str(e)}")

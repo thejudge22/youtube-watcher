@@ -48,8 +48,8 @@ export function ErrorFallback({ error, resetError, componentName }: ErrorFallbac
               <Button onClick={resetError} variant="primary">
                 Try Again
               </Button>
-              <Button onClick={() => window.location.reload()} variant="secondary">
-                Reload Page
+              <Button onClick={() => window.location.href = '/'} variant="secondary">
+                Go Home
               </Button>
             </div>
           </div>

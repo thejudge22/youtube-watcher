@@ -16,36 +16,16 @@ from ..database import get_db
 from ..models.video import Video
 from ..models.channel import Channel
 from ..schemas.video import VideoResponse, VideoFromUrl, BulkVideoAction
+from ..schemas.mappers import map_video_to_response
 from ..services.youtube_utils import extract_video_id, get_video_url, get_rss_url, get_channel_url
 from ..services.rss_parser import fetch_video_by_id, fetch_channel_info
 from ..services.settings_service import get_http_timeout
+from ..services.video_service import VideoService
 from ..exceptions import NotFoundError, ValidationError, ExternalServiceError
 
 router = APIRouter()
 
 logger = logging.getLogger(__name__)
-
-
-async def video_to_response(db: AsyncSession, video: Video) -> VideoResponse:
-    """Convert a Video model to VideoResponse with channel name."""
-    channel_name = None
-    if video.channel:
-        channel_name = video.channel.name
-    
-    return VideoResponse(
-        id=video.id,
-        youtube_video_id=video.youtube_video_id,
-        channel_id=video.channel_id,
-        channel_name=channel_name,
-        title=video.title,
-        description=video.description,
-        thumbnail_url=video.thumbnail_url,
-        video_url=video.video_url,
-        published_at=video.published_at,
-        status=video.status,
-        saved_at=video.saved_at,
-        discarded_at=video.discarded_at
-    )
 
 
 @router.get("/videos/inbox", response_model=List[VideoResponse])
@@ -63,22 +43,16 @@ async def list_inbox_videos(
         offset: Number of videos to skip (default: 0)
         channel_id: Filter by channel (optional)
     """
-    # Build query
-    query = (
-        select(Video)
-        .options(selectinload(Video.channel))
-        .where(Video.status == 'inbox')
+    # Use VideoService to fetch inbox videos
+    videos = await VideoService.get_videos(
+        db=db,
+        status='inbox',
+        limit=limit,
+        offset=offset,
+        channel_id=channel_id,
+        sort_by='published_at',
+        order='desc'
     )
-
-    # Apply channel filter if provided
-    if channel_id:
-        query = query.where(Video.channel_id == channel_id)
-
-    # Apply sorting and pagination
-    query = query.order_by(Video.published_at.desc()).limit(limit).offset(offset)
-
-    result = await db.execute(query)
-    videos = result.scalars().all()
 
     return [
         VideoResponse(
@@ -118,37 +92,17 @@ async def list_saved_videos(
         limit: Maximum number of videos to return (default: 100, max: 500)
         offset: Number of videos to skip (default: 0)
     """
-    # Validate sort_by
-    if sort_by not in ['published_at', 'saved_at']:
-        raise ValidationError("sort_by must be 'published_at' or 'saved_at'", field="sort_by")
-
-    # Validate order
-    if order not in ['asc', 'desc']:
-        raise ValidationError("order must be 'asc' or 'desc'", field="order")
-
-    # Build query
-    query = (
-        select(Video)
-        .options(selectinload(Video.channel))
-        .where(Video.status == 'saved')
+    # Use VideoService to fetch saved videos
+    # Validation is handled within VideoService.get_videos
+    videos = await VideoService.get_videos(
+        db=db,
+        status='saved',
+        limit=limit,
+        offset=offset,
+        channel_id=channel_id,
+        sort_by=sort_by,
+        order=order
     )
-
-    # Apply channel filter if provided
-    if channel_id:
-        query = query.where(Video.channel_id == channel_id)
-
-    # Apply sorting
-    sort_column = Video.published_at if sort_by == 'published_at' else Video.saved_at
-    if order == 'asc':
-        query = query.order_by(sort_column.asc())
-    else:
-        query = query.order_by(sort_column.desc())
-
-    # Apply pagination
-    query = query.limit(limit).offset(offset)
-
-    result = await db.execute(query)
-    videos = result.scalars().all()
 
     return [
         VideoResponse(
@@ -187,19 +141,13 @@ async def list_discarded_videos(
     # Calculate cutoff date
     cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
 
-    # Build query
-    query = (
-        select(Video)
-        .options(selectinload(Video.channel))
-        .where(Video.status == 'discarded')
-        .where(Video.discarded_at >= cutoff_date)
-        .order_by(Video.discarded_at.desc())
-        .limit(limit)
-        .offset(offset)
+    # Use VideoService to fetch discarded videos
+    videos = await VideoService.get_discarded_videos(
+        db=db,
+        cutoff_date=cutoff_date,
+        limit=limit,
+        offset=offset
     )
-
-    result = await db.execute(query)
-    videos = result.scalars().all()
 
     return [
         VideoResponse(
@@ -247,7 +195,7 @@ async def save_video(
     await db.commit()
     await db.refresh(video)
 
-    return await video_to_response(db, video)
+    return map_video_to_response(video)
 
 
 @router.post("/videos/{video_id}/discard", response_model=VideoResponse)
@@ -277,7 +225,7 @@ async def discard_video(
     await db.commit()
     await db.refresh(video)
     
-    return await video_to_response(db, video)
+    return map_video_to_response(video)
 
 
 @router.post("/videos/bulk-save", response_model=List[VideoResponse])
@@ -309,7 +257,7 @@ async def bulk_save_videos(action: BulkVideoAction, db: AsyncSession = Depends(g
     responses = []
     for video in videos:
         await db.refresh(video)
-        response = await video_to_response(db, video)
+        response = map_video_to_response(video)
         responses.append(response)
     
     return responses
@@ -344,7 +292,7 @@ async def bulk_discard_videos(action: BulkVideoAction, db: AsyncSession = Depend
     responses = []
     for video in videos:
         await db.refresh(video)
-        response = await video_to_response(db, video)
+        response = map_video_to_response(video)
         responses.append(response)
     
     return responses
@@ -387,7 +335,7 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
         await db.refresh(existing_video)
         
         # Return updated video with 200 status
-        response_data = await video_to_response(db, existing_video)
+        response_data = map_video_to_response(existing_video)
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content=response_data.model_dump(mode='json')
@@ -454,7 +402,7 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
     await db.refresh(video, ['channel'])
     
     # Return new video with 201 status
-    response_data = await video_to_response(db, video)
+    response_data = map_video_to_response(video)
     return JSONResponse(
         status_code=status.HTTP_201_CREATED,
         content=response_data.model_dump(mode='json')
