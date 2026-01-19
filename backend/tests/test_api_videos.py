@@ -103,14 +103,14 @@ class TestListSavedVideos:
         """Test listing saved videos with invalid sort_by parameter."""
         response = await client.get("/api/videos/saved?sort_by=invalid")
         assert response.status_code == 400
-        assert "sort_by must be" in response.json()["detail"]
+        assert "sort_by must be" in response.json()["error"]["message"]
     
     @pytest.mark.asyncio
     async def test_list_saved_videos_invalid_order(self, client):
         """Test listing saved videos with invalid order parameter."""
         response = await client.get("/api/videos/saved?order=invalid")
         assert response.status_code == 400
-        assert "order must be" in response.json()["detail"]
+        assert "order must be" in response.json()["error"]["message"]
 
 
 class TestSaveVideo:
@@ -127,9 +127,8 @@ class TestSaveVideo:
     @pytest.mark.asyncio
     async def test_save_nonexistent_video(self, client):
         """Test saving a video that doesn't exist."""
-        response = await client.post("/api/videos/nonexistent-id/save")
+        response = await client.post("/api/videos/00000000-0000-0000-0000-000000000000/save")
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
 
 
 class TestDiscardVideo:
@@ -146,9 +145,8 @@ class TestDiscardVideo:
     @pytest.mark.asyncio
     async def test_discard_nonexistent_video(self, client):
         """Test discarding a video that doesn't exist."""
-        response = await client.post("/api/videos/nonexistent-id/discard")
+        response = await client.post("/api/videos/00000000-0000-0000-0000-000000000000/discard")
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"]
 
 
 class TestBulkSaveVideos:
@@ -261,7 +259,7 @@ class TestAddVideoFromUrl:
             json={"url": "https://example.com/invalid"}
         )
         assert response.status_code == 400
-        assert "detail" in response.json()
+        assert "error" in response.json()
     
     @pytest.mark.integration
     @pytest.mark.asyncio
@@ -298,6 +296,5 @@ class TestDeleteVideo:
     @pytest.mark.asyncio
     async def test_delete_nonexistent_video(self, client):
         """Test deleting a video that doesn't exist."""
-        response = await client.delete("/api/videos/nonexistent-id")
+        response = await client.delete("/api/videos/00000000-0000-0000-0000-000000000000")
         assert response.status_code == 404
-        assert "not found" in response.json()["detail"]

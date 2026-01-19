@@ -18,13 +18,54 @@ Instead of just pushing, you can create a PR in one command:
 gh pr create --fill
 ```
 
-### 2. Managing Releases
+### 2. Release Process
 
-To create a new release for the project:
+**IMPORTANT**: Always follow this complete release process to prevent version mismatches (see Issue #23).
+
+#### Step-by-Step Release Guide
+
+1. **Create a version branch** with the version number:
+   ```bash
+   git checkout -b v1.4.0
+   ```
+
+2. **Run the version update script** to update version numbers in project files:
+   ```bash
+   ./scripts/update_version.sh
+   ```
+   This script updates `frontend/package.json` and ensures version consistency across the project.
+
+3. **Commit the version changes**:
+   ```bash
+   git add .
+   git commit -m "chore: bump version to 1.4.0"
+   ```
+
+4. **Push the branch and tags**:
+   ```bash
+   git push origin v1.4.0
+   git push origin --tags
+   ```
+
+5. **Create the GitHub release**:
+   ```bash
+   gh release create v1.4.0 --generate-notes
+   ```
+
+**Why this matters**: The version update script ensures that `frontend/package.json` follows semantic versioning and matches the release version. Skipping step 2 will result in version mismatches like Issue #23, where the frontend package version doesn't align with the release tag.
+
+#### Quick Release Command
+
+For experienced users, the process can be condensed:
 
 ```bash
-# Create a new release with automatically generated release notes
-gh release create v1.0.2 --generate-notes
+git checkout -b v1.4.0 && \
+./scripts/update_version.sh && \
+git add . && \
+git commit -m "chore: bump version to 1.4.0" && \
+git push origin v1.4.0 && \
+git push origin --tags && \
+gh release create v1.4.0 --generate-notes
 ```
 
 ### 3. Issue Resolution

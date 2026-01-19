@@ -152,6 +152,23 @@ docker compose -f docker-compose.dev.yml up --build
 
 API documentation is available at `/docs` when the application is running.
 
+#### Running Tests
+
+Tests require development dependencies. When using Docker:
+
+```bash
+# Run tests in the development container
+docker compose -f docker-compose.dev.yml exec backend pytest
+```
+
+For local development without Docker:
+
+```bash
+cd backend
+pip install -r requirements-dev.txt
+pytest
+```
+
 ## Tech Stack
 
 | Component | Technology |
