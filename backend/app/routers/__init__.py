@@ -2,4 +2,4 @@
 API routers module.
 """
 
-from . import channels
+from . import channels, settings

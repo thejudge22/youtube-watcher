@@ -16,6 +16,7 @@ from ..models.video import Video
 from ..schemas.channel import ChannelCreate, ChannelResponse, RefreshSummary
 from ..services.youtube_utils import extract_channel_id, get_rss_url, get_channel_url
 from ..services.rss_parser import fetch_channel_info, fetch_videos, VideoInfo
+from ..services.settings_service import get_http_timeout
 from ..exceptions import NotFoundError, AlreadyExistsError, ValidationError, ExternalServiceError
 
 router = APIRouter()
@@ -97,28 +98,29 @@ async def create_channel(channel_data: ChannelCreate, db: AsyncSession = Depends
     7. Return channel with video count
     """
     # Step 1: Extract channel ID
+    timeout = await get_http_timeout(db)
     try:
-        youtube_channel_id = await extract_channel_id(channel_data.url)
+        youtube_channel_id = await extract_channel_id(channel_data.url, timeout=timeout)
     except ValueError as e:
         raise ValidationError(str(e), field="url")
-    
+
     # Step 2: Check if channel already exists
     existing = await db.execute(
         select(Channel).where(Channel.youtube_channel_id == youtube_channel_id)
     )
     if existing.scalar_one_or_none():
         raise AlreadyExistsError("Channel", youtube_channel_id)
-    
+
     # Step 3: Fetch channel info
     try:
-        channel_info = await fetch_channel_info(youtube_channel_id)
+        channel_info = await fetch_channel_info(youtube_channel_id, timeout=timeout)
     except Exception as e:
         raise ExternalServiceError("YouTube", "fetch channel info", str(e))
-    
+
     # Step 4: Fetch last 15 videos
     rss_url = get_rss_url(youtube_channel_id)
     try:
-        videos_info = await fetch_videos(rss_url, limit=15)
+        videos_info = await fetch_videos(rss_url, limit=15, timeout=timeout)
     except Exception as e:
         raise ExternalServiceError("YouTube", "fetch videos", str(e))
     
@@ -201,8 +203,9 @@ async def refresh_channel(
         raise NotFoundError("Channel", channel_id)
 
     # Fetch current RSS feed
+    timeout = await get_http_timeout(db)
     try:
-        videos_info = await fetch_videos(channel.rss_url, limit=50)
+        videos_info = await fetch_videos(channel.rss_url, limit=50, timeout=timeout)
     except Exception as e:
         raise ExternalServiceError("YouTube", "fetch videos", str(e))
 
@@ -264,13 +267,13 @@ async def _process_new_videos(
     return new_videos_added
 
 
-async def _fetch_channel_videos(channel: Channel) -> tuple[Channel, List[VideoInfo] | None, str | None]:
+async def _fetch_channel_videos(channel: Channel, timeout: float) -> tuple[Channel, List[VideoInfo] | None, str | None]:
     """
     Fetch videos for a channel. Returns (channel, videos_info, error).
     Error is None on success.
     """
     try:
-        videos_info = await fetch_videos(channel.rss_url, limit=50)
+        videos_info = await fetch_videos(channel.rss_url, limit=50, timeout=timeout)
         return (channel, videos_info, None)
     except Exception as e:
         return (channel, None, str(e))
@@ -293,12 +296,15 @@ async def refresh_all_channels(db: AsyncSession = Depends(get_db)):
     if not channels:
         return RefreshSummary(channels_refreshed=0, new_videos_found=0, errors=[])
 
+    # Get timeout once for all requests
+    timeout = await get_http_timeout(db)
+
     # Fetch all RSS feeds in parallel with concurrency limit
     semaphore = asyncio.Semaphore(5)  # Limit to 5 concurrent requests
 
     async def fetch_with_semaphore(channel: Channel):
         async with semaphore:
-            return await _fetch_channel_videos(channel)
+            return await _fetch_channel_videos(channel, timeout)
 
     fetch_results = await asyncio.gather(
         *[fetch_with_semaphore(channel) for channel in channels]

@@ -19,4 +19,4 @@ class Video(Base):
     discarded_at = Column(DateTime, index=True)
     created_at = Column(DateTime, default=func.now())
 
-    channel = relationship("Channel")
+    channel = relationship("Channel", back_populates="videos")

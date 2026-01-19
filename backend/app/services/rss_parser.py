@@ -36,7 +36,7 @@ class VideoInfo(BaseModel):
     wait=wait_exponential(multiplier=1, min=1, max=10),
     retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException)),
 )
-async def fetch_channel_info(channel_id: str) -> ChannelInfo:
+async def fetch_channel_info(channel_id: str, timeout: float = 10.0) -> ChannelInfo:
     """
     Fetch channel information from the RSS feed.
 
@@ -53,7 +53,7 @@ async def fetch_channel_info(channel_id: str) -> ChannelInfo:
     """
     rss_url = get_rss_url(channel_id)
     
-    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True, headers=HTTP_HEADERS) as client:
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers=HTTP_HEADERS) as client:
         response = await client.get(rss_url)
         response.raise_for_status()
         
@@ -98,7 +98,7 @@ async def fetch_channel_info(channel_id: str) -> ChannelInfo:
     wait=wait_exponential(multiplier=1, min=1, max=10),
     retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException)),
 )
-async def fetch_videos(rss_url: str, limit: int = 15) -> List[VideoInfo]:
+async def fetch_videos(rss_url: str, limit: int = 15, timeout: float = 10.0) -> List[VideoInfo]:
     """
     Fetch videos from a YouTube RSS feed.
 
@@ -114,7 +114,7 @@ async def fetch_videos(rss_url: str, limit: int = 15) -> List[VideoInfo]:
     Raises:
         ValueError: If RSS feed cannot be parsed
     """
-    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True, headers=HTTP_HEADERS) as client:
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers=HTTP_HEADERS) as client:
         response = await client.get(rss_url)
         response.raise_for_status()
         
@@ -217,7 +217,7 @@ async def fetch_videos(rss_url: str, limit: int = 15) -> List[VideoInfo]:
     wait=wait_exponential(multiplier=1, min=1, max=10),
     retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException)),
 )
-async def fetch_video_by_id(video_id: str) -> VideoInfo:
+async def fetch_video_by_id(video_id: str, timeout: float = 10.0) -> VideoInfo:
     """
     Fetch video information using the YouTube oEmbed endpoint.
 
@@ -237,7 +237,7 @@ async def fetch_video_by_id(video_id: str) -> VideoInfo:
     # Use YouTube oEmbed endpoint to get video info
     oembed_url = f"https://www.youtube.com/oembed?url={video_url}&format=json"
     
-    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True, headers=HTTP_HEADERS) as client:
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers=HTTP_HEADERS) as client:
         response = await client.get(oembed_url)
         response.raise_for_status()
         

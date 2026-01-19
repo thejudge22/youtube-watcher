@@ -11,6 +11,11 @@ const api = axios.create({
   timeout: 30000, // 30 second timeout for all requests
 });
 
+// Settings types
+export interface AppSettings {
+  http_timeout: number;
+}
+
 // Add response interceptor to handle structured error responses
 api.interceptors.response.use(
   (response) => response,
@@ -103,4 +108,10 @@ export const importExportApi = {
 
   importVideoUrls: (urls: string[]) =>
     api.post<ImportResult>('/import-export/import/video-urls', { urls }),
+};
+
+// Settings API
+export const settingsApi = {
+  get: () => api.get<AppSettings>('/settings/settings'),
+  update: (settings: Partial<AppSettings>) => api.put<AppSettings>('/settings/settings', settings),
 };

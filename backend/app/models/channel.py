@@ -1,6 +1,7 @@
 import uuid
 from sqlalchemy import Column, String, DateTime, func
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from ..database import Base
 
 class Channel(Base):
@@ -16,3 +17,6 @@ class Channel(Base):
     last_video_id = Column(String)
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
+
+    # Relationship to videos
+    videos = relationship("Video", back_populates="channel", cascade="all, delete-orphan")
