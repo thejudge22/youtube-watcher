@@ -29,6 +29,7 @@ from ..services.youtube_utils import (
     get_rss_url,
     get_channel_url,
 )
+from ..services.settings_service import get_http_timeout
 
 router = APIRouter(prefix="/import-export", tags=["import-export"])
 
@@ -188,7 +189,8 @@ async def import_channels(
 
             # Fetch full channel info from YouTube
             channel_id = channel_data.youtube_channel_id
-            channel_info = await fetch_channel_info(channel_id)
+            timeout = await get_http_timeout(db)
+            channel_info = await fetch_channel_info(channel_id, timeout=timeout)
             if not channel_info:
                 errors.append(f"Could not fetch info for channel: {channel_data.name}")
                 continue
@@ -264,7 +266,8 @@ async def import_videos(
                     # Channel doesn't exist, create it by fetching from YouTube
                     try:
                         # Fetch full channel info from YouTube
-                        channel_info = await fetch_channel_info(video_data.channel_youtube_id)
+                        timeout = await get_http_timeout(db)
+                        channel_info = await fetch_channel_info(video_data.channel_youtube_id, timeout=timeout)
                         if channel_info:
                             # Use channel_url from export if available, otherwise generate it
                             channel_url = video_data.channel_url or get_channel_url(video_data.channel_youtube_id)
@@ -329,10 +332,13 @@ async def import_video_urls(
     """Import videos from a list of YouTube URLs. Videos are added as saved."""
     total = len(request.urls)
 
+    # Get timeout once for all requests
+    timeout = await get_http_timeout(db)
+
     # Helper function to fetch video info with error handling
     async def fetch_video_info(video_id: str):
         try:
-            return await fetch_video_by_id(video_id)
+            return await fetch_video_by_id(video_id, timeout=timeout)
         except Exception as e:
             logger.warning(f"Failed to fetch video info for video_id={video_id}: {str(e)}")
             return None
@@ -393,7 +399,7 @@ async def import_video_urls(
                     if not channel:
                         # Channel doesn't exist, create it
                         try:
-                            channel_info = await fetch_channel_info(video_info.channel_id)
+                            channel_info = await fetch_channel_info(video_info.channel_id, timeout=timeout)
                             if channel_info:
                                 channel = Channel(
                                     youtube_channel_id=video_info.channel_id,

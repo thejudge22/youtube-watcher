@@ -13,11 +13,14 @@ A self-hosted, Docker-based web application for managing YouTube content discove
 - **Saved Videos Library** - View and manage your saved videos with filtering and sorting
 - **Video Selection Mode** - Select multiple saved videos for bulk operations
 - **Play as Playlist** - Generate a YouTube playlist from selected videos (up to 50)
-- **Multiple View Modes** - Choose between Large, Compact, or List view layouts
+- **Multiple View Modes** - Choose between Large, Compact, or List view layouts for videos
+- **Channel List View** - Toggle between grid and list views for channels
 - **Bulk Remove** - Remove multiple selected videos at once
 - **Recently Deleted** - Restore accidentally deleted videos within a retention period
 - **Direct URL Save** - Add any YouTube video URL directly to your saved list
 - **YouTube Shorts Support** - Full support for YouTube Shorts URLs
+- **Configurable Timeouts** - Adjust HTTP request timeout via Settings page
+- **Import/Export** - Backup and restore your channels and saved videos
 - **RSS-based** - No YouTube API key required, uses RSS feeds
 - **Self-hosted** - Your data stays on your server
 - **Responsive Design** - Works on desktop and mobile devices
@@ -67,12 +70,30 @@ The application uses SQLite for data storage. The database file is stored in `./
 
 ## Usage
 
+### Settings
+
+The **Settings** page allows you to configure application preferences:
+
+- **HTTP Request Timeout** - Adjust how long to wait for YouTube/RSS API responses (1-300 seconds, default: 10). Increase this if you experience timeout errors on slow connections.
+- **Import/Export** - Backup your channels and saved videos to JSON files, or restore from previous backups
+- **Data Management** - Remove all saved videos or purge recently deleted videos
+
 ### Adding Channels
 
 1. Navigate to the **Channels** page
 2. Click **Add Channel**
 3. Paste a YouTube channel URL (supports `@handle`, channel ID, and custom URL formats)
 4. Click **Add** to start tracking
+
+**Channel View Modes:**
+- Toggle between **Grid** and **List** views using the buttons in the header
+- Grid view shows channels as cards with thumbnails
+- List view shows channels in a table with more details
+- Your view preference is saved automatically
+
+**Channel Actions:**
+- Click the **Refresh** button to check for new videos from a specific channel
+- Click the **Delete** button to remove a channel and all its videos
 
 ### Managing Videos
 

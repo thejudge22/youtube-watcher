@@ -14,7 +14,7 @@ HTTP_HEADERS = {
 }
 
 
-async def extract_channel_id(url: str) -> str:
+async def extract_channel_id(url: str, timeout: float = 10.0) -> str:
     """
     Extract channel ID from various YouTube URL formats.
 
@@ -43,22 +43,22 @@ async def extract_channel_id(url: str) -> str:
     # Handle format: /@username
     handle_match = re.match(r'https?://(?:www\.)?youtube\.com/@([A-Za-z0-9_.-]+)', url)
     if handle_match:
-        return await _fetch_channel_id_from_handle(handle_match.group(1))
-    
+        return await _fetch_channel_id_from_handle(handle_match.group(1), timeout=timeout)
+
     # Custom URL format: /c/channelname
     custom_match = re.match(r'https?://(?:www\.)?youtube\.com/c/([A-Za-z0-9_.-]+)', url)
     if custom_match:
-        return await _fetch_channel_id_from_custom_url(custom_match.group(1))
-    
+        return await _fetch_channel_id_from_custom_url(custom_match.group(1), timeout=timeout)
+
     # Legacy user format: /user/username
     user_match = re.match(r'https?://(?:www\.)?youtube\.com/user/([A-Za-z0-9_.-]+)', url)
     if user_match:
-        return await _fetch_channel_id_from_user(user_match.group(1))
+        return await _fetch_channel_id_from_user(user_match.group(1), timeout=timeout)
     
     raise ValueError(f"Unrecognized YouTube channel URL format: {url}")
 
 
-async def _fetch_channel_id_from_handle(handle: str) -> str:
+async def _fetch_channel_id_from_handle(handle: str, timeout: float = 10.0) -> str:
     """
     Fetch channel ID from a YouTube handle by fetching the page and extracting the ID.
 
@@ -72,10 +72,10 @@ async def _fetch_channel_id_from_handle(handle: str) -> str:
         ValueError: If channel ID cannot be found in the page
     """
     url = f"https://www.youtube.com/@{handle}"
-    return await _fetch_channel_id_from_page(url)
+    return await _fetch_channel_id_from_page(url, timeout=timeout)
 
 
-async def _fetch_channel_id_from_custom_url(custom_name: str) -> str:
+async def _fetch_channel_id_from_custom_url(custom_name: str, timeout: float = 10.0) -> str:
     """
     Fetch channel ID from a custom YouTube URL.
 
@@ -89,10 +89,10 @@ async def _fetch_channel_id_from_custom_url(custom_name: str) -> str:
         ValueError: If channel ID cannot be found in the page
     """
     url = f"https://www.youtube.com/c/{custom_name}"
-    return await _fetch_channel_id_from_page(url)
+    return await _fetch_channel_id_from_page(url, timeout=timeout)
 
 
-async def _fetch_channel_id_from_user(username: str) -> str:
+async def _fetch_channel_id_from_user(username: str, timeout: float = 10.0) -> str:
     """
     Fetch channel ID from a legacy YouTube username URL.
 
@@ -106,7 +106,7 @@ async def _fetch_channel_id_from_user(username: str) -> str:
         ValueError: If channel ID cannot be found in the page
     """
     url = f"https://www.youtube.com/user/{username}"
-    return await _fetch_channel_id_from_page(url)
+    return await _fetch_channel_id_from_page(url, timeout=timeout)
 
 
 @retry(
@@ -114,7 +114,7 @@ async def _fetch_channel_id_from_user(username: str) -> str:
     wait=wait_exponential(multiplier=1, min=1, max=10),
     retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException)),
 )
-async def _fetch_channel_id_from_page(url: str) -> str:
+async def _fetch_channel_id_from_page(url: str, timeout: float = 10.0) -> str:
     """
     Fetch a YouTube page and extract the channel ID from the page content.
 
@@ -133,7 +133,7 @@ async def _fetch_channel_id_from_page(url: str) -> str:
     Raises:
         ValueError: If channel ID cannot be found in the page
     """
-    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True, headers=HTTP_HEADERS) as client:
+    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers=HTTP_HEADERS) as client:
         response = await client.get(url)
         response.raise_for_status()
         html = response.text

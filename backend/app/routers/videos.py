@@ -18,6 +18,7 @@ from ..models.channel import Channel
 from ..schemas.video import VideoResponse, VideoFromUrl, BulkVideoAction
 from ..services.youtube_utils import extract_video_id, get_video_url, get_rss_url, get_channel_url
 from ..services.rss_parser import fetch_video_by_id, fetch_channel_info
+from ..services.settings_service import get_http_timeout
 from ..exceptions import NotFoundError, ValidationError, ExternalServiceError
 
 router = APIRouter()
@@ -393,8 +394,9 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
         )
     
     # Step 3: Fetch video info
+    timeout = await get_http_timeout(db)
     try:
-        video_info = await fetch_video_by_id(youtube_video_id)
+        video_info = await fetch_video_by_id(youtube_video_id, timeout=timeout)
     except Exception as e:
         raise ExternalServiceError("YouTube", "fetch video info", str(e))
     
@@ -409,7 +411,7 @@ async def add_video_from_url(video_data: VideoFromUrl, db: AsyncSession = Depend
         if not channel:
             # Create the channel if it doesn't exist so it shows up in filters
             try:
-                channel_data = await fetch_channel_info(video_info.channel_id)
+                channel_data = await fetch_channel_info(video_info.channel_id, timeout=timeout)
                 channel = Channel(
                     youtube_channel_id=video_info.channel_id,
                     name=channel_data.name,
