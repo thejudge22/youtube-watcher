@@ -24,8 +24,25 @@ async def run_migrations() -> None:
 
     This is called during application startup to ensure the database
     schema is up to date before any database queries are made.
+
+    Order of operations:
+    1. Create all tables using SQLAlchemy metadata (creates settings table)
+    2. Run Alembic migrations (may add/modify columns in existing tables)
     """
-    # Construct path to alembic.ini (from backend/ directory)
+    # First, create all tables using SQLAlchemy metadata
+    # This ensures tables like 'settings' exist before migrations run
+    try:
+        engine = create_async_engine(settings.database_url)
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+
+        logger.info("Database tables created from SQLAlchemy metadata")
+        await engine.dispose()
+    except Exception as e:
+        logger.error(f"Error creating tables: {e}")
+        raise
+
+    # Then, run Alembic migrations
     backend_dir = Path(__file__).parent.parent.parent
     alembic_ini_path = backend_dir / "alembic.ini"
 
@@ -56,18 +73,4 @@ async def run_migrations() -> None:
         logger.warning("Alembic command not found, skipping migrations")
     except Exception as e:
         logger.error(f"Error running migrations: {e}")
-        raise
-
-    # Create any tables not tracked by Alembic (like settings table)
-    # This is needed because some tables are created lazily via the API
-    # rather than through migrations
-    try:
-        engine = create_async_engine(settings.database_url)
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
-        logger.info("Database schema synchronized")
-        await engine.dispose()
-    except Exception as e:
-        logger.error(f"Error creating missing tables: {e}")
         raise
