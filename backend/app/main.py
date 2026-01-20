@@ -11,7 +11,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .routers import channels, videos, import_export, settings, backup
 from .database import get_db
 from .models.setting import Setting
-from .routers.settings import _ensure_settings_table
 # Issue #12: Scheduled Backups
 from .services.backup_scheduler import (
     start_scheduler,
@@ -19,6 +18,7 @@ from .services.backup_scheduler import (
     configure_backup_schedule,
     get_async_session
 )
+from .services.migration_runner import run_migrations
 
 
 @asynccontextmanager
@@ -26,15 +26,16 @@ async def lifespan(app: FastAPI):
     # Startup: Ensure the data directory exists
     os.makedirs("data", exist_ok=True)
 
+    # Run database migrations to ensure schema is up to date
+    # This is critical for fresh installs
+    await run_migrations()
+
     # Issue #12: Start the backup scheduler
     start_scheduler()
 
     # Load backup settings and configure schedule if enabled
     try:
         async with await get_async_session() as db:
-            # Ensure the settings table exists before querying (fresh install scenario)
-            await _ensure_settings_table(db)
-
             result = await db.execute(select(Setting).where(Setting.id == "1"))
             settings_obj = result.scalar_one_or_none()
 
