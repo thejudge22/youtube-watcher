@@ -88,6 +88,9 @@ async def sample_video(db_session, sample_channel):
     video = Video(
         youtube_video_id="test-video-123",
         channel_id=sample_channel.id,
+        channel_youtube_id=sample_channel.youtube_channel_id,
+        channel_name=sample_channel.name,
+        channel_thumbnail_url=sample_channel.thumbnail_url,
         title="Test Video",
         description="Test Description",
         video_url="https://www.youtube.com/watch?v=test-video-123",

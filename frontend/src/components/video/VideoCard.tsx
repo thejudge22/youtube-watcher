@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { Video } from '../../types';
 import { Button } from '../common/Button';
 import { ViewMode } from '../common/ViewModeToggle';
+import { ShortsBadge } from './ShortsBadge';
 
 interface VideoCardProps {
   video: Video;
@@ -70,7 +71,7 @@ export function VideoCard({
           rel="noopener noreferrer"
           className="flex-shrink-0 w-40"
         >
-          <div className="aspect-video rounded overflow-hidden bg-gray-700">
+          <div className="aspect-video rounded overflow-hidden bg-gray-700 relative">
             {video.thumbnail_url ? (
               <img
                 src={video.thumbnail_url}
@@ -82,6 +83,10 @@ export function VideoCard({
               <div className="w-full h-full flex items-center justify-center text-gray-500 text-xs">
                 No thumbnail
               </div>
+            )}
+            {/* Issue #8: Shorts badge */}
+            {video.is_short && (
+              <ShortsBadge className="absolute top-1 left-1" />
             )}
           </div>
         </a>
@@ -181,6 +186,10 @@ export function VideoCard({
                   No thumbnail
                 </div>
               )}
+              {/* Issue #8: Shorts badge */}
+              {video.is_short && (
+                <ShortsBadge className="absolute top-1 left-1" />
+              )}
             </div>
           </a>
 
@@ -262,6 +271,10 @@ export function VideoCard({
               <div className="w-full h-full flex items-center justify-center text-gray-500">
                 No thumbnail
               </div>
+            )}
+            {/* Issue #8: Shorts badge */}
+            {video.is_short && (
+              <ShortsBadge className="absolute top-2 left-2" />
             )}
           </div>
         </a>

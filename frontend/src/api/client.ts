@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Channel, Video, SavedVideosParams } from '../types';
+import type { Channel, Video, SavedVideosParams, ChannelFilterOption } from '../types';
 
 // API client with explicit configuration to ensure consistent behavior
 const api = axios.create({
@@ -77,11 +77,15 @@ export const channelsApi = {
 
 // Video API
 export const videosApi = {
-  getInbox: (channelId?: string) =>
+  getInbox: (channelId?: string, isShort?: boolean | null) =>
     api.get<Video[]>('/videos/inbox', {
-      params: channelId ? { channel_id: channelId } : undefined
+      params: {
+        ...(channelId ? { channel_id: channelId } : {}),
+        ...(isShort !== undefined && isShort !== null ? { is_short: isShort } : {})
+      }
     }),
   getSaved: (params?: SavedVideosParams) => api.get<Video[]>('/videos/saved', { params }),
+  getSavedChannels: () => api.get<ChannelFilterOption[]>('/videos/saved/channels'),
   getDiscarded: (days?: number) => api.get<Video[]>('/videos/discarded', { params: { days } }),
   save: (id: string) => api.post<Video>(`/videos/${id}/save`),
   discard: (id: string) => api.post<Video>(`/videos/${id}/discard`),
@@ -90,6 +94,9 @@ export const videosApi = {
   fromUrl: (url: string) => api.post<Video>('/videos/from-url', { url }),
   delete: (id: string) => api.delete(`/videos/${id}`),
   purgeAllDiscarded: () => api.delete<{ deleted_count: number; message: string }>('/videos/discarded/purge-all'),
+  // Issue #8: Shorts detection endpoints
+  detectShort: (videoId: string) => api.post<Video>(`/videos/${videoId}/detect-short`),
+  detectShortsBatch: (videoIds?: string[]) => api.post<{ total_checked: number; updated_count: number }>('/videos/detect-shorts-batch', { video_ids: videoIds }),
 };
 
 // Import/Export API

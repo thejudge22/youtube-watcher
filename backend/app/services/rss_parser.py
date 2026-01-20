@@ -11,6 +11,7 @@ from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
 from .youtube_utils import get_rss_url, get_video_url, extract_channel_id, HTTP_HEADERS
+from .shorts_detector import is_short_from_video_info
 
 
 class ChannelInfo(BaseModel):
@@ -30,6 +31,7 @@ class VideoInfo(BaseModel):
     thumbnail_url: Optional[str] = None
     video_url: str
     published_at: datetime
+    is_short: bool = False  # Issue #8: YouTube Shorts detection
 
 
 @retry(
@@ -224,6 +226,8 @@ async def fetch_video_by_id(video_id: str, timeout: float = 10.0) -> VideoInfo:
 
     Retries up to 3 times with exponential backoff on download errors.
 
+    Includes Shorts detection based on URL pattern (Issue #8).
+
     Args:
         video_id: YouTube video ID
 
@@ -234,7 +238,7 @@ async def fetch_video_by_id(video_id: str, timeout: float = 10.0) -> VideoInfo:
         ValueError: If video info cannot be fetched
     """
     video_url = get_video_url(video_id)
-    
+
     try:
         # Configure yt-dlp to extract metadata without downloading
         ydl_opts = {
@@ -243,18 +247,21 @@ async def fetch_video_by_id(video_id: str, timeout: float = 10.0) -> VideoInfo:
             'skip_download': True,
             'extract_flat': False,  # We need full info for description/tags
         }
-        
+
         # Extract video information
         with yt_dlp.YoutubeDL(ydl_opts) as ydl:
             info = ydl.extract_info(video_url, download=False)
-        
+
         # Extract fields from yt-dlp output
         title = info.get('title', '')
         channel_name = info.get('uploader', '')
         channel_id = info.get('channel_id', '')
         description = info.get('description', None)
         thumbnail_url = info.get('thumbnail', f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg")
-        
+
+        # Detect if this is a Short based on URL (Issue #8)
+        is_short = is_short_from_video_info(info)
+
         # Parse upload_date from YYYYMMDD string to datetime with UTC timezone
         upload_date_str = info.get('upload_date')
         if upload_date_str:
@@ -263,7 +270,7 @@ async def fetch_video_by_id(video_id: str, timeout: float = 10.0) -> VideoInfo:
         else:
             # Fallback to current time if upload_date is not available
             published_at = datetime.now(timezone.utc)
-        
+
         return VideoInfo(
             video_id=video_id,
             channel_id=channel_id,
@@ -272,7 +279,8 @@ async def fetch_video_by_id(video_id: str, timeout: float = 10.0) -> VideoInfo:
             description=description,
             thumbnail_url=thumbnail_url,
             video_url=video_url,
-            published_at=published_at
+            published_at=published_at,
+            is_short=is_short  # Issue #8: Include Shorts status
         )
     except yt_dlp.utils.DownloadError as e:
         raise ValueError(f"Failed to fetch video info for {video_id}: {str(e)}")

@@ -23,6 +23,8 @@ class VideoService:
         limit: int,
         offset: int,
         channel_id: Optional[str] = None,
+        channel_youtube_id: Optional[str] = None,
+        is_short: Optional[bool] = None,  # Issue #8: Shorts filter
         sort_by: Optional[str] = None,
         order: str = 'desc'
     ) -> List[Video]:
@@ -34,7 +36,9 @@ class VideoService:
             status: Video status to filter by ('inbox', 'saved', 'discarded')
             limit: Maximum number of videos to return
             offset: Number of videos to skip
-            channel_id: Optional channel ID to filter by
+            channel_id: Optional internal channel ID to filter by (for inbox)
+            channel_youtube_id: Optional YouTube channel ID to filter by (for saved videos)
+            is_short: Optional Shorts filter (True=only Shorts, False=only regular, None=all) - Issue #8
             sort_by: Column to sort by ('published_at', 'saved_at', 'discarded_at')
             order: Sort order ('asc' or 'desc')
 
@@ -59,15 +63,21 @@ class VideoService:
             .where(Video.status == status)
         )
 
-        # Apply channel filter if provided
+        # Apply channel filters
         if channel_id:
             query = query.where(Video.channel_id == channel_id)
+        if channel_youtube_id:
+            query = query.where(Video.channel_youtube_id == channel_youtube_id)
+
+        # Apply Shorts filter (Issue #8)
+        if is_short is not None:
+            query = query.where(Video.is_short == is_short)
 
         # Apply sorting
         # Default to published_at if no sort_by is specified
         sort_column_name = sort_by if sort_by else 'published_at'
         sort_column = getattr(Video, sort_column_name)
-        
+
         if order == 'asc':
             query = query.order_by(sort_column.asc())
         else:

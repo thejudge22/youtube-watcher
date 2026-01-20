@@ -1,7 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { PlayIcon } from '@heroicons/react/24/outline';
-import { useSavedVideos, useDiscardVideo, useBulkDiscardVideos } from '../hooks/useVideos';
-import { useChannels } from '../hooks/useChannels';
+import { useSavedVideos, useDiscardVideo, useBulkDiscardVideos, useSavedVideoChannels } from '../hooks/useVideos';
 import { VideoList } from '../components/video/VideoList';
 import { RecentlyDeletedModal } from '../components/video/RecentlyDeletedModal';
 import { Button } from '../components/common/Button';
@@ -22,7 +21,7 @@ const SORT_OPTIONS: { label: string; value: SortBy; order: Order }[] = [
 ];
 
 export function Saved() {
-  const [channelId, setChannelId] = useState<string>('');
+  const [channelYoutubeId, setChannelYoutubeId] = useState<string>('');
   const [sortBy, setSortBy] = useState<SortBy>('published_at');
   const [order, setOrder] = useState<Order>('desc');
   const [showRecentlyDeleted, setShowRecentlyDeleted] = useState(false);
@@ -32,8 +31,8 @@ export function Saved() {
 
   const params: SavedVideosParams = useMemo(() => {
     const p: SavedVideosParams = {};
-    if (channelId) {
-      p.channel_id = channelId;
+    if (channelYoutubeId) {
+      p.channel_youtube_id = channelYoutubeId;
     }
     if (sortBy) {
       p.sort_by = sortBy;
@@ -42,10 +41,10 @@ export function Saved() {
       p.order = order;
     }
     return p;
-  }, [channelId, sortBy, order]);
+  }, [channelYoutubeId, sortBy, order]);
 
   const { data: videos, isLoading, error, refetch } = useSavedVideos(params);
-  const { data: channels } = useChannels();
+  const { data: channelOptions } = useSavedVideoChannels();
   const discardVideo = useDiscardVideo();
   const bulkDiscard = useBulkDiscardVideos();
 
@@ -173,14 +172,14 @@ export function Saved() {
             </label>
             <select
               id="channel-filter"
-              value={channelId}
-              onChange={(e) => setChannelId(e.target.value)}
+              value={channelYoutubeId}
+              onChange={(e) => setChannelYoutubeId(e.target.value)}
               className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">All Channels</option>
-              {channels?.map((channel) => (
-                <option key={channel.id} value={channel.id}>
-                  {channel.name}
+              {channelOptions?.map((option) => (
+                <option key={option.channel_youtube_id} value={option.channel_youtube_id}>
+                  {option.channel_name} ({option.video_count})
                 </option>
               ))}
             </select>

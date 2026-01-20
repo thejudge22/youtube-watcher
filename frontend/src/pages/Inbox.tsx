@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useInboxVideos, useSaveVideo, useDiscardVideo, useBulkSaveVideos, useBulkDiscardVideos } from '../hooks/useVideos';
+import { useInboxVideos, useSaveVideo, useDiscardVideo, useBulkSaveVideos, useBulkDiscardVideos, useDetectShortsBatch } from '../hooks/useVideos';
 import { useRefreshAllChannels } from '../hooks/useChannels';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { VideoList } from '../components/video/VideoList';
@@ -7,17 +7,20 @@ import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ChannelVideoGroup } from '../components/video/ChannelVideoGroup';
 import { InboxViewToggle, type InboxViewMode } from '../components/inbox/InboxViewToggle';
-import type { Video } from '../types';
+import { ShortsFilterToggle } from '../components/inbox/ShortsFilterToggle';
+import type { Video, ShortsFilter } from '../types';
 
 export function Inbox() {
   const [viewMode, setViewMode] = useLocalStorage<InboxViewMode>('inbox-view-mode', 'grouped');
+  const [shortsFilter, setShortsFilter] = useLocalStorage<ShortsFilter>('inbox-shorts-filter', 'all');
 
-  const { data: videos, isLoading, error, refetch } = useInboxVideos();
+  const { data: videos, isLoading, error, refetch } = useInboxVideos(undefined, shortsFilter);
   const saveVideo = useSaveVideo();
   const discardVideo = useDiscardVideo();
   const bulkSave = useBulkSaveVideos();
   const bulkDiscard = useBulkDiscardVideos();
   const refreshAll = useRefreshAllChannels();
+  const detectShortsBatch = useDetectShortsBatch();  // Issue #8: Shorts detection
 
   const [bulkActionChannelId, setBulkActionChannelId] = useState<string | null>(null);
   const [bulkActionType, setBulkActionType] = useState<'save' | 'discard' | null>(null);
@@ -98,6 +101,15 @@ export function Inbox() {
     });
   };
 
+  // Issue #8: Handle Shorts detection
+  const handleDetectShorts = () => {
+    detectShortsBatch.mutate(undefined, {
+      onSuccess: () => {
+        refetch();
+      },
+    });
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -131,11 +143,26 @@ export function Inbox() {
           {videos && videos.length > 0 && (
             <p className="text-gray-400 text-sm mt-1">
               {videos.length} video{videos.length !== 1 ? 's' : ''} to review
+              {shortsFilter !== 'all' && (
+                <span className="ml-2">
+                  ({shortsFilter === 'shorts' ? 'Shorts only' : 'Videos only'})
+                </span>
+              )}
             </p>
           )}
         </div>
-        <div className="flex space-x-3">
+        <div className="flex space-x-3 items-center">
+          {/* Issue #8: Shorts filter toggle */}
+          <ShortsFilterToggle value={shortsFilter} onChange={setShortsFilter} />
           <InboxViewToggle viewMode={viewMode} onChange={setViewMode} />
+          <Button
+            variant="secondary"
+            onClick={handleDetectShorts}
+            isLoading={detectShortsBatch.isPending}
+            title="Detect which videos are Shorts"
+          >
+            Detect Shorts
+          </Button>
           <Button
             variant="secondary"
             onClick={handleRefresh}

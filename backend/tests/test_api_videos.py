@@ -38,6 +38,9 @@ class TestListSavedVideos:
         video = Video(
             youtube_video_id="saved-video-123",
             channel_id=sample_channel.id,
+            channel_youtube_id=sample_channel.youtube_channel_id,
+            channel_name=sample_channel.name,
+            channel_thumbnail_url=sample_channel.thumbnail_url,
             title="Saved Video",
             video_url="https://www.youtube.com/watch?v=saved-video-123",
             published_at=datetime.now(UTC),
@@ -46,7 +49,7 @@ class TestListSavedVideos:
         )
         db_session.add(video)
         await db_session.commit()
-        
+
         response = await client.get("/api/videos/saved")
         assert response.status_code == 200
         data = response.json()
@@ -67,11 +70,14 @@ class TestListSavedVideos:
         db_session.add(channel2)
         await db_session.commit()
         await db_session.refresh(channel2)
-        
+
         # Create videos for both channels
         video1 = Video(
             youtube_video_id="saved-video-1",
             channel_id=sample_channel.id,
+            channel_youtube_id=sample_channel.youtube_channel_id,
+            channel_name=sample_channel.name,
+            channel_thumbnail_url=sample_channel.thumbnail_url,
             title="Saved Video 1",
             video_url="https://www.youtube.com/watch?v=saved-video-1",
             published_at=datetime.now(UTC),
@@ -81,6 +87,9 @@ class TestListSavedVideos:
         video2 = Video(
             youtube_video_id="saved-video-2",
             channel_id=channel2.id,
+            channel_youtube_id=channel2.youtube_channel_id,
+            channel_name=channel2.name,
+            channel_thumbnail_url=channel2.thumbnail_url,
             title="Saved Video 2",
             video_url="https://www.youtube.com/watch?v=saved-video-2",
             published_at=datetime.now(UTC),
@@ -90,9 +99,9 @@ class TestListSavedVideos:
         db_session.add(video1)
         db_session.add(video2)
         await db_session.commit()
-        
-        # Filter by first channel
-        response = await client.get(f"/api/videos/saved?channel_id={sample_channel.id}")
+
+        # Filter by first channel's youtube_channel_id
+        response = await client.get(f"/api/videos/saved?channel_youtube_id={sample_channel.youtube_channel_id}")
         assert response.status_code == 200
         data = response.json()
         assert len(data) == 1
@@ -159,6 +168,9 @@ class TestBulkSaveVideos:
             video = Video(
                 youtube_video_id=f"video-{i}",
                 channel_id=sample_channel.id,
+                channel_youtube_id=sample_channel.youtube_channel_id,
+                channel_name=sample_channel.name,
+                channel_thumbnail_url=sample_channel.thumbnail_url,
                 title=f"Video {i}",
                 video_url=f"https://www.youtube.com/watch?v=video-{i}",
                 published_at=datetime.now(UTC),
@@ -168,7 +180,7 @@ class TestBulkSaveVideos:
             await db_session.flush()
             video_ids.append(video.id)
         await db_session.commit()
-        
+
         # Bulk save videos
         response = await client.post(
             "/api/videos/bulk-save",
@@ -202,6 +214,9 @@ class TestBulkDiscardVideos:
             video = Video(
                 youtube_video_id=f"video-{i}",
                 channel_id=sample_channel.id,
+                channel_youtube_id=sample_channel.youtube_channel_id,
+                channel_name=sample_channel.name,
+                channel_thumbnail_url=sample_channel.thumbnail_url,
                 title=f"Video {i}",
                 video_url=f"https://www.youtube.com/watch?v=video-{i}",
                 published_at=datetime.now(UTC),
@@ -211,7 +226,7 @@ class TestBulkDiscardVideos:
             await db_session.flush()
             video_ids.append(video.id)
         await db_session.commit()
-        
+
         # Bulk discard videos
         response = await client.post(
             "/api/videos/bulk-discard",

@@ -296,9 +296,14 @@ async def import_videos(
             thumbnail_url = f"https://i.ytimg.com/vi/{video_data.youtube_video_id}/hqdefault.jpg"
 
             # Create new video as saved using export data
+            # Include embedded channel info for Issue #14
+            # is_short defaults to False for imported videos (Issue #8)
             new_video = Video(
                 youtube_video_id=video_data.youtube_video_id,
                 channel_id=channel_id,
+                channel_youtube_id=video_data.channel_youtube_id,  # Add embedded channel info
+                channel_name=video_data.channel_name,  # Add embedded channel info
+                channel_thumbnail_url=None,  # Can be fetched separately if needed
                 title=video_data.title,
                 description="",  # Not included in export
                 thumbnail_url=thumbnail_url,
@@ -306,6 +311,7 @@ async def import_videos(
                 published_at=video_data.published_at or datetime.now(timezone.utc),
                 status="saved",
                 saved_at=video_data.saved_at or datetime.now(timezone.utc),
+                is_short=False,  # Issue #8: Default to False, can be detected later
             )
             db.add(new_video)
             await db.flush()
@@ -421,9 +427,14 @@ async def import_video_urls(
                         channel_id = channel.id
 
                 # Create new video as saved
+                # Include embedded channel info for Issue #14
+                # Include Shorts detection from video_info (Issue #8)
                 new_video = Video(
                     youtube_video_id=video_info.video_id,
                     channel_id=channel_id,
+                    channel_youtube_id=video_info.channel_id,  # Add embedded channel info
+                    channel_name=video_info.channel_name,  # Add embedded channel info
+                    channel_thumbnail_url=None,  # Can be fetched separately if needed
                     title=video_info.title,
                     description=video_info.description or "",
                     thumbnail_url=video_info.thumbnail_url,
@@ -431,6 +442,7 @@ async def import_video_urls(
                     published_at=video_info.published_at,
                     status="saved",
                     saved_at=datetime.now(timezone.utc),
+                    is_short=video_info.is_short,  # Issue #8: Include Shorts detection
                 )
                 db.add(new_video)
                 await db.flush()
