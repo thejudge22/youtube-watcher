@@ -5,11 +5,9 @@ This ensures database schema is up to date on fresh installs.
 import asyncio
 import logging
 from pathlib import Path
+import subprocess
 
-from alembic.config import Config
-from alembic import command
-from sqlalchemy import pool
-from sqlalchemy.ext.asyncio import async_engine_from_config
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from ..config import settings
 from ..database import Base
@@ -35,37 +33,41 @@ async def run_migrations() -> None:
         logger.warning(f"Alembic config not found at {alembic_ini_path}, skipping migrations")
         return
 
-    # Create Alembic config
-    config = Config(str(alembic_ini_path))
-    config.set_main_option("sqlalchemy.url", settings.database_url)
-
-    # Create engine for running migrations
-    engine = async_engine_from_config(
-        {"sqlalchemy.url": settings.database_url},
-        prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
-    )
-
     try:
-        # Run Alembic migrations first
-        def do_upgrade(connection):
-            config.attributes["connection"] = connection
-            command.upgrade(config, "head")
+        # Run alembic upgrade using subprocess
+        # This avoids async/await issues with Alembic's internal asyncio.run()
+        result = subprocess.run(
+            ["alembic", "upgrade", "head"],
+            cwd=str(backend_dir),
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
 
-        async with engine.connect() as connection:
-            await connection.run_sync(do_upgrade)
+        if result.returncode != 0:
+            logger.error(f"Migration failed: {result.stderr}")
+            raise RuntimeError(f"Alembic migration failed: {result.stderr}")
 
         logger.info("Database migrations completed successfully")
+    except subprocess.TimeoutExpired:
+        logger.error("Migration timed out")
+        raise
+    except FileNotFoundError:
+        logger.warning("Alembic command not found, skipping migrations")
+    except Exception as e:
+        logger.error(f"Error running migrations: {e}")
+        raise
 
-        # Create any tables not tracked by Alembic (like settings table)
-        # This is needed because some tables are created lazily via the API
-        # rather than through migrations
+    # Create any tables not tracked by Alembic (like settings table)
+    # This is needed because some tables are created lazily via the API
+    # rather than through migrations
+    try:
+        engine = create_async_engine(settings.database_url)
         async with engine.begin() as conn:
             await conn.run_sync(Base.metadata.create_all)
 
         logger.info("Database schema synchronized")
-    except Exception as e:
-        logger.error(f"Error running migrations: {e}")
-        raise
-    finally:
         await engine.dispose()
+    except Exception as e:
+        logger.error(f"Error creating missing tables: {e}")
+        raise
