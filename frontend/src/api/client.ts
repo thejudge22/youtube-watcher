@@ -122,3 +122,13 @@ export const settingsApi = {
   get: () => api.get<AppSettings>('/settings/settings'),
   update: (settings: Partial<AppSettings>) => api.put<AppSettings>('/settings/settings', settings),
 };
+
+// Issue #12: Scheduled Backups - Backup API
+export const backupApi = {
+  getSettings: () => api.get<any>('/backup/settings'),
+  updateSettings: (settings: any) => api.put<any>('/backup/settings', settings),
+  getStatus: () => api.get<any>('/backup/status'),
+  listBackups: () => api.get<any>('/backup/list'),
+  runBackup: (format: string = 'json') => api.post<any>('/backup/run', { format }),
+  cleanup: () => api.delete('/backup/cleanup'),
+};

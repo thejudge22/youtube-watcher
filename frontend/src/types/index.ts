@@ -44,3 +44,37 @@ export interface SavedVideosParams {
 
 // Issue #8: Shorts filter type for inbox
 export type ShortsFilter = 'all' | 'shorts' | 'regular';
+
+// Issue #12: Scheduled Backups - Backup-related types
+export interface BackupSettings {
+  backup_enabled: boolean;
+  backup_schedule: 'daily' | 'weekly' | 'monthly';
+  backup_time: string;
+  backup_format: 'json' | 'database' | 'both';
+  backup_retention_days: number;
+}
+
+export interface BackupStatus {
+  last_backup_at: string | null;
+  last_backup_status: 'success' | 'failed' | null;
+  last_backup_error: string | null;
+}
+
+export interface BackupInfo {
+  filename: string;
+  format: string;
+  size_bytes: number;
+  created_at: string;
+}
+
+export interface BackupListResponse {
+  backups: BackupInfo[];
+  total_count: number;
+  total_size_bytes: number;
+}
+
+export interface ManualBackupResponse {
+  success: boolean;
+  filenames: string[];
+  error: string | null;
+}

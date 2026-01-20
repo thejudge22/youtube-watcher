@@ -5,19 +5,48 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import text
+from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .routers import channels, videos, import_export, settings
+from .routers import channels, videos, import_export, settings, backup
 from .database import get_db
+from .models.setting import Setting
+# Issue #12: Scheduled Backups
+from .services.backup_scheduler import (
+    start_scheduler,
+    stop_scheduler,
+    configure_backup_schedule,
+    get_async_session
+)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Ensure the data directory exists
     os.makedirs("data", exist_ok=True)
+
+    # Issue #12: Start the backup scheduler
+    start_scheduler()
+
+    # Load backup settings and configure schedule if enabled
+    try:
+        async with await get_async_session() as db:
+            result = await db.execute(select(Setting).where(Setting.id == "1"))
+            settings_obj = result.scalar_one_or_none()
+
+            if settings_obj and settings_obj.backup_enabled:
+                await configure_backup_schedule(
+                    settings_obj.backup_schedule,
+                    settings_obj.backup_time
+                )
+    except Exception as e:
+        import logging
+        logging.warning(f"Could not initialize backup schedule: {e}")
+
     yield
-    # Shutdown: nothing to clean up
+
+    # Shutdown: Stop scheduler
+    stop_scheduler()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -79,6 +108,8 @@ app.include_router(channels.router, prefix="/api")
 app.include_router(videos.router, prefix="/api")
 app.include_router(import_export.router, prefix="/api")
 app.include_router(settings.router, prefix="/api")
+# Issue #12: Scheduled Backups
+app.include_router(backup.router, prefix="/api")
 
 # This logic is for the production Docker container, where the frontend is built and served by FastAPI.
 if os.path.exists("static"):

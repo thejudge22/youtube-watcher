@@ -4,6 +4,7 @@ import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
 import ImportExportSection from '../components/settings/ImportExportSection';
 import AppSettingsSection from '../components/settings/AppSettingsSection';
+import { BackupSettingsSection } from '../components/settings/BackupSettingsSection';
 
 export function Settings() {
   const { data: videos } = useSavedVideos();
@@ -40,6 +41,11 @@ export function Settings() {
       {/* Application Settings Section */}
       <div className="bg-gray-800 rounded-lg p-6 shadow-lg mb-6">
         <AppSettingsSection />
+      </div>
+
+      {/* Issue #12: Scheduled Backups Section */}
+      <div className="bg-gray-800 rounded-lg p-6 shadow-lg mb-6">
+        <BackupSettingsSection />
       </div>
 
       {/* Import/Export Section */}
