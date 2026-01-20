@@ -2,17 +2,11 @@
 Utility to run Alembic migrations programmatically during application startup.
 This ensures database schema is up to date on fresh installs.
 """
-import asyncio
 import logging
 from pathlib import Path
 import subprocess
 
-from sqlalchemy.ext.asyncio import create_async_engine
-
 from ..config import settings
-from ..database import Base
-# Import all models to ensure they're registered with Base.metadata
-from ..models import *  # noqa
 
 
 logger = logging.getLogger(__name__)
@@ -24,25 +18,10 @@ async def run_migrations() -> None:
 
     This is called during application startup to ensure the database
     schema is up to date before any database queries are made.
-
-    Order of operations:
-    1. Create all tables using SQLAlchemy metadata (creates settings table)
-    2. Run Alembic migrations (may add/modify columns in existing tables)
+    
+    All schema management is handled by Alembic migrations.
     """
-    # First, create all tables using SQLAlchemy metadata
-    # This ensures tables like 'settings' exist before migrations run
-    try:
-        engine = create_async_engine(settings.database_url)
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-
-        logger.info("Database tables created from SQLAlchemy metadata")
-        await engine.dispose()
-    except Exception as e:
-        logger.error(f"Error creating tables: {e}")
-        raise
-
-    # Then, run Alembic migrations
+    # Run Alembic migrations
     backend_dir = Path(__file__).parent.parent.parent
     alembic_ini_path = backend_dir / "alembic.ini"
 
