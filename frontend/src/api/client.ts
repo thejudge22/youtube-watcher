@@ -1,6 +1,12 @@
 import axios from 'axios';
 import type { Channel, Video, SavedVideosParams, ChannelFilterOption } from '../types';
 
+// Default timeout for most requests
+const DEFAULT_TIMEOUT = 30000; // 30 seconds
+
+// Extended timeout for long-running operations like imports
+const LONG_TIMEOUT = 300000; // 5 minutes
+
 // API client with explicit configuration to ensure consistent behavior
 const api = axios.create({
   baseURL: '/api',
@@ -8,7 +14,7 @@ const api = axios.create({
     'Content-Type': 'application/json', // Explicitly set JSON content type
     'Accept': 'application/json', // Explicitly request JSON responses
   },
-  timeout: 30000, // 30 second timeout for all requests
+  timeout: DEFAULT_TIMEOUT,
 });
 
 // Settings types
@@ -106,15 +112,15 @@ export const importExportApi = {
   exportSavedVideos: () => api.get<ExportData>('/import-export/export/saved-videos'),
   exportAll: () => api.get<ExportData>('/import-export/export/all'),
 
-  // Import endpoints
+  // Import endpoints - use extended timeout for long-running operations
   importChannels: (channels: ExportData['channels']) =>
-    api.post<ImportResult>('/import-export/import/channels', { channels }),
+    api.post<ImportResult>('/import-export/import/channels', { channels }, { timeout: LONG_TIMEOUT }),
 
   importVideos: (videos: ExportData['saved_videos']) =>
-    api.post<ImportResult>('/import-export/import/videos', { videos }),
+    api.post<ImportResult>('/import-export/import/videos', { videos }, { timeout: LONG_TIMEOUT }),
 
   importVideoUrls: (urls: string[]) =>
-    api.post<ImportResult>('/import-export/import/video-urls', { urls }),
+    api.post<ImportResult>('/import-export/import/video-urls', { urls }, { timeout: LONG_TIMEOUT }),
 };
 
 // Settings API
