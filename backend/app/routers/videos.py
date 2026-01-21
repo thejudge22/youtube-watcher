@@ -15,7 +15,7 @@ from sqlalchemy.orm import selectinload
 from ..database import get_db
 from ..models.video import Video
 from ..models.channel import Channel
-from ..schemas.video import VideoResponse, VideoFromUrl, BulkVideoAction, ChannelFilterOption
+from ..schemas.video import VideoResponse, VideoFromUrl, BulkVideoAction, ChannelFilterOption, PaginatedVideosResponse
 from pydantic import BaseModel
 from ..schemas.mappers import map_video_to_response
 from ..services.youtube_utils import extract_video_id, get_video_url, get_rss_url, get_channel_url
@@ -80,7 +80,7 @@ async def list_inbox_videos(
     ]
 
 
-@router.get("/videos/saved", response_model=List[VideoResponse])
+@router.get("/videos/saved", response_model=PaginatedVideosResponse)
 async def list_saved_videos(
     channel_youtube_id: Optional[str] = Query(None, description="Filter by channel YouTube ID"),
     channel_id: Optional[str] = Query(None, description="Filter by channel ID (deprecated)"),
@@ -113,6 +113,13 @@ async def list_saved_videos(
         if channel_record:
             filter_channel_youtube_id = channel_record
 
+    # Get total count for pagination
+    count_query = select(func.count(Video.id)).where(Video.status == 'saved')
+    if filter_channel_youtube_id:
+        count_query = count_query.where(Video.channel_youtube_id == filter_channel_youtube_id)
+    count_result = await db.execute(count_query)
+    total = count_result.scalar_one()
+
     # Use VideoService to fetch saved videos
     # Validation is handled within VideoService.get_videos
     videos = await VideoService.get_videos(
@@ -125,7 +132,7 @@ async def list_saved_videos(
         order=order
     )
 
-    return [
+    video_responses = [
         VideoResponse(
             id=video.id,
             youtube_video_id=video.youtube_video_id,
@@ -145,6 +152,14 @@ async def list_saved_videos(
         )
         for video in videos
     ]
+
+    return PaginatedVideosResponse(
+        videos=video_responses,
+        total=total,
+        limit=limit,
+        offset=offset,
+        has_more=(offset + len(video_responses)) < total
+    )
 
 
 @router.get("/videos/saved/channels", response_model=List[ChannelFilterOption])

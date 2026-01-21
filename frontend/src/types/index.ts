@@ -40,6 +40,16 @@ export interface SavedVideosParams {
   channel_youtube_id?: string;
   sort_by?: 'published_at' | 'saved_at';
   order?: 'asc' | 'desc';
+  limit?: number;
+  offset?: number;
+}
+
+export interface PaginatedVideosResponse {
+  videos: Video[];
+  total: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
 }
 
 // Issue #8: Shorts filter type for inbox

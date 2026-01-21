@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { PlayIcon } from '@heroicons/react/24/outline';
+import { PlayIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useSavedVideos, useDiscardVideo, useBulkDiscardVideos, useSavedVideoChannels } from '../hooks/useVideos';
 import { VideoList } from '../components/video/VideoList';
 import { RecentlyDeletedModal } from '../components/video/RecentlyDeletedModal';
@@ -28,6 +28,7 @@ export function Saved() {
   const [viewMode, setViewMode] = useLocalStorage<ViewMode>('saved-view-mode', 'large');
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
 
   const params: SavedVideosParams = useMemo(() => {
     const p: SavedVideosParams = {};
@@ -40,10 +41,17 @@ export function Saved() {
     if (order) {
       p.order = order;
     }
+    p.limit = 100;
+    p.offset = (currentPage - 1) * 100;
     return p;
-  }, [channelYoutubeId, sortBy, order]);
+  }, [channelYoutubeId, sortBy, order, currentPage]);
 
-  const { data: videos, isLoading, error, refetch } = useSavedVideos(params);
+  // Reset to page 1 when filters change
+  const handleFilterChange = () => {
+    setCurrentPage(1);
+  };
+
+  const { data, isLoading, error, refetch } = useSavedVideos(params);
   const { data: channelOptions } = useSavedVideoChannels();
   const discardVideo = useDiscardVideo();
   const bulkDiscard = useBulkDiscardVideos();
@@ -107,8 +115,18 @@ export function Saved() {
     if (selected) {
       setSortBy(selected.value);
       setOrder(selected.order);
+      handleFilterChange();
     }
   };
+
+  const handleChannelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setChannelYoutubeId(e.target.value);
+    handleFilterChange();
+  };
+
+  const videos = data?.videos ?? [];
+  const totalCount = data?.total ?? 0;
+  const totalPages = Math.ceil(totalCount / 100);
 
   if (isLoading) {
     return (
@@ -140,9 +158,9 @@ export function Saved() {
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6 gap-4">
         <div>
           <h1 className="text-2xl font-bold text-white">Saved Videos</h1>
-          {videos && videos.length > 0 && (
+          {totalCount > 0 && (
             <p className="text-gray-400 text-sm mt-1">
-              {videos.length} video{videos.length !== 1 ? 's' : ''} saved
+              {totalCount} video{totalCount !== 1 ? 's' : ''} saved
             </p>
           )}
         </div>
@@ -173,7 +191,7 @@ export function Saved() {
             <select
               id="channel-filter"
               value={channelYoutubeId}
-              onChange={(e) => setChannelYoutubeId(e.target.value)}
+              onChange={handleChannelChange}
               className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">All Channels</option>
@@ -249,7 +267,7 @@ export function Saved() {
       )}
 
       <VideoList
-        videos={videos || []}
+        videos={videos}
         onDiscard={handleDiscard}
         showSaveButton={false}
         showDiscardButton={false}
@@ -259,6 +277,63 @@ export function Saved() {
         selectedIds={selectedIds}
         onToggleSelect={handleToggleSelect}
       />
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex items-center justify-center gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-2"
+          >
+            <ChevronLeftIcon className="w-5 h-5" />
+          </Button>
+
+          <div className="flex items-center gap-1">
+            {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
+              // Show first page, last page, current page, and pages around current
+              let pageNum: number;
+              if (totalPages <= 10) {
+                pageNum = i + 1;
+              } else if (currentPage <= 5) {
+                pageNum = i < 7 ? i + 1 : (i === 7 ? -1 : totalPages);
+              } else if (currentPage >= totalPages - 4) {
+                pageNum = i < 2 ? i + 1 : (i === 2 ? -1 : totalPages - 6 + i);
+              } else {
+                pageNum = i < 2 ? i + 1 : (i === 2 ? -1 : (i === 7 ? -1 : currentPage - 3 + i));
+              }
+
+              if (pageNum === -1) {
+                return <span key={i} className="px-2 text-gray-500">...</span>;
+              }
+
+              return (
+                <button
+                  key={i}
+                  onClick={() => setCurrentPage(pageNum)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    currentPage === pageNum
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  {pageNum}
+                </button>
+              );
+            })}
+          </div>
+
+          <Button
+            variant="secondary"
+            onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-2"
+          >
+            <ChevronRightIcon className="w-5 h-5" />
+          </Button>
+        </div>
+      )}
 
       <RecentlyDeletedModal
         isOpen={showRecentlyDeleted}

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Channel, Video, SavedVideosParams, ChannelFilterOption } from '../types';
+import type { Channel, Video, SavedVideosParams, ChannelFilterOption, PaginatedVideosResponse } from '../types';
 
 // Default timeout for most requests
 const DEFAULT_TIMEOUT = 30000; // 30 seconds
@@ -90,7 +90,7 @@ export const videosApi = {
         ...(isShort !== undefined && isShort !== null ? { is_short: isShort } : {})
       }
     }),
-  getSaved: (params?: SavedVideosParams) => api.get<Video[]>('/videos/saved', { params }),
+  getSaved: (params?: SavedVideosParams) => api.get<PaginatedVideosResponse>('/videos/saved', { params }),
   getSavedChannels: () => api.get<ChannelFilterOption[]>('/videos/saved/channels'),
   getDiscarded: (days?: number) => api.get<Video[]>('/videos/discarded', { params: { days } }),
   save: (id: string) => api.post<Video>(`/videos/${id}/save`),

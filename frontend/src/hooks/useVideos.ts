@@ -15,7 +15,7 @@ export function useInboxVideos(channelId?: string, shortsFilter?: ShortsFilter) 
   });
 }
 
-export function useSavedVideos(params?: SavedVideosParams) {
+export function useSavedVideos(params: SavedVideosParams) {
   return useQuery({
     queryKey: ['videos', 'saved', params],
     queryFn: async () => {

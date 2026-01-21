@@ -7,13 +7,15 @@ import AppSettingsSection from '../components/settings/AppSettingsSection';
 import { BackupSettingsSection } from '../components/settings/BackupSettingsSection';
 
 export function Settings() {
-  const { data: videos } = useSavedVideos();
+  const { data: savedVideosData } = useSavedVideos({ limit: 100, offset: 0 });
   const { data: discardedVideos } = useDiscardedVideos();
   const bulkDiscard = useBulkDiscardVideos();
   const purgeAllDiscarded = usePurgeAllDiscarded();
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [isPurgeConfirmModalOpen, setIsPurgeConfirmModalOpen] = useState(false);
   const [showDangerZone, setShowDangerZone] = useState(false);
+
+  const videos = savedVideosData?.videos ?? [];
 
   const handleRemoveAll = () => {
     if (videos && videos.length > 0) {

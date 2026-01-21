@@ -42,3 +42,12 @@ class VideoFromUrl(BaseModel):
 class BulkVideoAction(BaseModel):
     """Schema for bulk video actions."""
     video_ids: List[str]
+
+
+class PaginatedVideosResponse(BaseModel):
+    """Response schema for paginated video lists."""
+    videos: List[VideoResponse]
+    total: int
+    limit: int
+    offset: int
+    has_more: bool
