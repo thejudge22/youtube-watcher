@@ -106,10 +106,44 @@ export default function ImportExportSection() {
         return;
       }
 
+      // Process in batches of 10 to avoid timeout issues
+      const BATCH_SIZE = 10;
+      const batches: string[][] = [];
+      for (let i = 0; i < urls.length; i += BATCH_SIZE) {
+        batches.push(urls.slice(i, i + BATCH_SIZE));
+      }
+
       setImportProgress({ current: 0, total: urls.length });
-      const result = await importVideoUrls.mutateAsync(urls);
+
+      // Aggregate results across all batches
+      const aggregatedResult: ImportResult = {
+        total: 0,
+        imported: 0,
+        skipped: 0,
+        errors: [],
+      };
+
+      let processedCount = 0;
+      for (const batch of batches) {
+        try {
+          const batchResult = await importVideoUrls.mutateAsync(batch);
+          aggregatedResult.total += batchResult.total;
+          aggregatedResult.imported += batchResult.imported;
+          aggregatedResult.skipped += batchResult.skipped;
+          aggregatedResult.errors.push(...batchResult.errors);
+          processedCount += batch.length;
+          setImportProgress({ current: processedCount, total: urls.length });
+        } catch (batchErr) {
+          // If a batch fails, record the error but continue with remaining batches
+          const errorMsg = batchErr instanceof Error ? batchErr.message : 'Batch import failed';
+          aggregatedResult.errors.push(`Batch error (URLs ${processedCount + 1}-${processedCount + batch.length}): ${errorMsg}`);
+          processedCount += batch.length;
+          setImportProgress({ current: processedCount, total: urls.length });
+        }
+      }
+
       setImportProgress(null);
-      setImportResult(result);
+      setImportResult(aggregatedResult);
     } catch (err) {
       setImportError(err instanceof Error ? err.message : 'Failed to process file');
       setImportProgress(null);
