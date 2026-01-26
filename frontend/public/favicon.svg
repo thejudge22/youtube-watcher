@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <style>
+      .cls-1 { fill: #fff; stroke: #212121; stroke-width: 32px; stroke-miterlimit: 10; }
+      .cls-2 { fill: #212121; }
+      .cls-3 { fill: #f00; stroke: #f00; stroke-width: 12px; stroke-linejoin: round; }
+    </style>
+  </defs>
+  
+  <!-- Bridge - Drawn first to be behind lenses if needed, or between -->
+  <rect x="236" y="231" width="40" height="50" rx="8" class="cls-2"/>
+  
+  <!-- Left Lens Container -->
+  <circle cx="160" cy="256" r="110" class="cls-1"/>
+  
+  <!-- Right Lens Container -->
+  <circle cx="352" cy="256" r="110" class="cls-1"/>
+  
+  <!-- Left Play Button (Red) -->
+  <!-- Centered at 160, 256 -->
+  <!-- Triangle pointing right. Center of mass logic: Tip at (r, 0), Base at (-r/2, +/- r*sin60).
+       Adjust visually to look centered.
+       Tip: x=200? Base x=130?
+       Let's use simple coordinates.
+       Center 160. Width ~70. 
+       X: 135 to 195. 
+       Y: 221 to 291.
+  -->
+  <path d="M140 220 L200 256 L140 292 Z" class="cls-3"/>
+
+  <!-- Right Play Button (Red) -->
+  <!-- Centered at 352, 256 -->
+  <path d="M332 220 L392 256 L332 292 Z" class="cls-3"/>
+</svg>
