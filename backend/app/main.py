@@ -1,5 +1,10 @@
 from contextlib import asynccontextmanager
 import os
+import logging
+
+# Configure logging for debugging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
@@ -125,4 +130,8 @@ if os.path.exists("static"):
         # This will serve the index.html for any path that is not an API endpoint or a static asset.
         # This is necessary for single-page applications like React.
         if not full_path.startswith("api/"):
+            # Check if the requested file exists in the static directory (e.g., favicon.jpg)
+            static_file_path = os.path.join("static", full_path)
+            if os.path.isfile(static_file_path):
+                return FileResponse(static_file_path)
             return FileResponse("static/index.html")
