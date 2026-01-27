@@ -13,19 +13,6 @@ YouTube-Watcher is a self-hosted, Docker-based web application for managing YouT
 - YouTube RSS feeds for data (no API key required)
 - User-initiated video checks (no scheduled tasks)
 
-## Current Development Status
-
-**Phase:** Phase 6: Polish (Complete)
-
-**Status:**
-- [x] Development plan created (`plans/development-plan.md`)
-- [x] Phase 1: Project Setup & Infrastructure
-- [x] Phase 2: Core Backend Development
-- [x] Phase 3: Frontend - Channel Management
-- [x] Phase 4: Frontend - Video Inbox
-- [x] Phase 5: Frontend - Saved Videos
-- [x] Phase 6: Polish & Testing
-
 ## Technology Stack
 
 | Component | Technology |
@@ -85,7 +72,6 @@ docker compose down
 | File | Purpose |
 |------|---------|
 | `plans/development-plan.md` | High-level development plan |
-| `plans/plan.md` | Detailed LLM implementation guide |
 | `agents.md` | This file - AI context |
 | `Dockerfile` | Single-container production build |
 | `docker-compose.yml` | Production deployment |
