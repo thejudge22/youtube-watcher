@@ -45,8 +45,10 @@ export function Inbox() {
       }
     }
 
-    // Sort by video count (most videos first)
-    return Array.from(groups.values()).sort((a, b) => b.videos.length - a.videos.length);
+    // Sort alphabetically by channel name (case-insensitive) for stable ordering
+    return Array.from(groups.values()).sort((a, b) =>
+      a.channelName.localeCompare(b.channelName, undefined, { sensitivity: 'base' })
+    );
   }, [videos]);
 
   const handleSave = (id: string) => {
