@@ -60,7 +60,13 @@ export function AddChannelModal({ isOpen, onClose }: AddChannelModalProps) {
         {error && (
           <div className="p-3 bg-red-900/50 border border-red-700 rounded-md">
             <p className="text-sm text-red-300">
-              {error instanceof Error ? error.message : 'Failed to add channel'}
+              {(error as any)?.errorCode === 'CHANNEL_ALREADY_EXISTS'
+                ? 'This channel has already been added'
+                : (error as any)?.errorMessage
+                  ? (error as any).errorMessage
+                  : error instanceof Error
+                    ? error.message
+                    : 'Failed to add channel'}
             </p>
           </div>
         )}
