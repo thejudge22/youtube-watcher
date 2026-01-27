@@ -70,7 +70,7 @@ async def list_channels(db: AsyncSession = Depends(get_db)):
     """
     List all channels with video counts.
     """
-    result = await db.execute(select(Channel).order_by(Channel.name))
+    result = await db.execute(select(Channel).order_by(func.lower(Channel.name)))
     channels = result.scalars().all()
 
     # Get all video counts in a single query
