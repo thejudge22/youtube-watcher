@@ -1,11 +1,44 @@
+# Git
 .git
 .gitignore
+.gitattributes
+
+# Documentation
+*.md
+plans/
+screenshots/
+
+# Development files
 .env
 .env.*
-*.md
-**/*.pyc
-**/__pycache__
-backend/venv
-frontend/node_modules
-frontend/dist
-data/
+docker-compose*.yml
+Dockerfile.dev
+
+# Node modules
+frontend/node_modules/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db

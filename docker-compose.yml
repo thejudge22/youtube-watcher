@@ -1,6 +1,7 @@
 services:
-  app:
-    build: .
+  youtube-watcher:
+    image: ghcr.io/thejudge22/youtube-watcher:latest
+    # Or use specific version: ghcr.io/thejudge22/youtube-watcher:v1.0.0
     ports:
       - "38000:8000"
     volumes:
@@ -8,3 +9,4 @@ services:
     environment:
       - DATABASE_URL=sqlite+aiosqlite:///./data/youtube-watcher.db
     user: "1000:1000"
+    restart: unless-stopped

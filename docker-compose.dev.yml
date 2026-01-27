@@ -11,6 +11,7 @@ services:
     environment:
       - DATABASE_URL=sqlite+aiosqlite:///./data/youtube-watcher.db
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    restart: unless-stopped
 
   frontend:
     image: node:20-alpine
@@ -21,3 +22,4 @@ services:
       - ./frontend:/app
       - /app/node_modules
     command: sh ./entrypoint.sh
+    restart: unless-stopped
