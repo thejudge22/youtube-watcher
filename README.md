@@ -32,12 +32,22 @@ A self-hosted, Docker-based web application for managing YouTube content discove
 - Docker and Docker Compose
 - Git
 
-### Quick Start
 
-1. Clone the repository:
-```bash
-git clone https://github.com/yourusername/youtube-watcher.git
-cd youtube-watcher
+#### Quick Start with Pre-built Images
+
+1. Create a `docker-compose.yml` file:
+```yaml
+services:
+  youtube-watcher:
+    image: ghcr.io/thejudge22/youtube-watcher:latest
+    ports:
+      - "38000:8000"
+    volumes:
+      - ./data:/app/data
+    environment:
+      - DATABASE_URL=sqlite+aiosqlite:///./data/youtube-watcher.db
+    user: "1000:1000"
+    restart: unless-stopped
 ```
 
 2. Create the data directory:
@@ -47,7 +57,7 @@ mkdir -p data
 
 3. Start the application:
 ```bash
-docker compose up --build
+docker compose up -d
 ```
 
 4. Access the application at http://localhost:38000
@@ -64,9 +74,20 @@ docker compose -f docker-compose.dev.yml up --build
 - Backend API: http://localhost:8000
 - API Documentation: http://localhost:8000/docs
 
-### Environment Variables
 
-The application uses SQLite for data storage. The database file is stored in `./data/youtube-watcher.db`.
+
+#### Data Persistence
+
+The application uses a volume mount to persist data:
+```yaml
+volumes:
+  - ./data:/app/data
+```
+
+This ensures your database and application data persists across container updates and restarts. The SQLite database file is stored at `./data/youtube-watcher.db`.
+
+
+
 
 ## Usage
 
@@ -129,45 +150,14 @@ The **Settings** page allows you to configure application preferences:
 | Shorts | `/shorts/...` | `https://www.youtube.com/shorts/mccyHdidiG8` |
 | Short URL | `youtu.be/...` | `https://youtu.be/dQw4w9WgXcQ` |
 
-## Docker Commands
 
-```bash
-# Start services
-docker compose up -d
 
-# View logs
-docker compose logs -f
-
-# Stop services
-docker compose down
-
-# Rebuild and start
-docker compose up --build
-
-# Development mode
-docker compose -f docker-compose.dev.yml up --build
-```
 
 ## API Documentation
 
 API documentation is available at `/docs` when the application is running.
 
-#### Running Tests
 
-Tests require development dependencies. When using Docker:
-
-```bash
-# Run tests in the development container
-docker compose -f docker-compose.dev.yml exec backend pytest
-```
-
-For local development without Docker:
-
-```bash
-cd backend
-pip install -r requirements-dev.txt
-pytest
-```
 
 ## Tech Stack
 
@@ -182,6 +172,7 @@ pytest
 ## License
 
 MIT License - feel free to use and modify for your own purposes.
+
 
 ## Contributing
 
