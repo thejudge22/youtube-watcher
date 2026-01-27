@@ -13,7 +13,7 @@ interface VideoCardProps {
   viewMode?: ViewMode;
   isSelectionMode?: boolean;
   isSelected?: boolean;
-  onToggleSelect?: (id: string) => void;
+  onToggleSelect?: (id: string, shiftKey: boolean) => void;
 }
 
 export function VideoCard({
@@ -58,7 +58,7 @@ export function VideoCard({
             <input
               type="checkbox"
               checked={isSelected}
-              onChange={() => onToggleSelect?.(video.id)}
+              onChange={(e) => onToggleSelect?.(video.id, (e.nativeEvent as MouseEvent).shiftKey)}
               className="w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
             />
           </div>
@@ -155,7 +155,7 @@ export function VideoCard({
             <input
               type="checkbox"
               checked={isSelected}
-              onChange={() => onToggleSelect?.(video.id)}
+              onChange={(e) => onToggleSelect?.(video.id, (e.nativeEvent as MouseEvent).shiftKey)}
               className="w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
             />
           </div>
@@ -245,7 +245,7 @@ export function VideoCard({
           <input
             type="checkbox"
             checked={isSelected}
-            onChange={() => onToggleSelect?.(video.id)}
+            onChange={(e) => onToggleSelect?.(video.id, (e.nativeEvent as MouseEvent).shiftKey)}
             className="w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
           />
         </div>

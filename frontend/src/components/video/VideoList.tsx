@@ -12,7 +12,7 @@ interface VideoListProps {
   viewMode?: ViewMode;
   isSelectionMode?: boolean;
   selectedIds?: Set<string>;
-  onToggleSelect?: (id: string) => void;
+  onToggleSelect?: (id: string, shiftKey: boolean) => void;
 }
 
 export function VideoList({

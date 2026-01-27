@@ -28,6 +28,7 @@ export function Saved() {
   const [viewMode, setViewMode] = useLocalStorage<ViewMode>('saved-view-mode', 'large');
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [lastClickedId, setLastClickedId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
   const params: SavedVideosParams = useMemo(() => {
@@ -49,6 +50,7 @@ export function Saved() {
   // Reset to page 1 when filters change
   const handleFilterChange = () => {
     setCurrentPage(1);
+    setLastClickedId(null); // Reset last clicked ID when filters change
   };
 
   const { data, isLoading, error, refetch } = useSavedVideos(params);
@@ -60,16 +62,45 @@ export function Saved() {
     discardVideo.mutate(id);
   };
 
-  const handleToggleSelect = (id: string) => {
+  const handleToggleSelect = (id: string, shiftKey: boolean = false) => {
     setSelectedIds(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
+
+      if (shiftKey && lastClickedId) {
+        // Shift-click: Select range between lastClickedId and current id
+        const lastIndex = videos.findIndex(v => v.id === lastClickedId);
+        const currentIndex = videos.findIndex(v => v.id === id);
+
+        if (lastIndex !== -1 && currentIndex !== -1) {
+          const start = Math.min(lastIndex, currentIndex);
+          const end = Math.max(lastIndex, currentIndex);
+
+          // Add all IDs in the range to the selection
+          for (let i = start; i <= end; i++) {
+            newSet.add(videos[i].id);
+          }
+        } else {
+          // If indices not found, treat as normal click
+          if (newSet.has(id)) {
+            newSet.delete(id);
+          } else {
+            newSet.add(id);
+          }
+        }
       } else {
-        newSet.add(id);
+        // Normal click: Toggle selection
+        if (newSet.has(id)) {
+          newSet.delete(id);
+        } else {
+          newSet.add(id);
+        }
       }
+
       return newSet;
     });
+
+    // Always update lastClickedId
+    setLastClickedId(id);
   };
 
   const handleSelectAll = () => {
@@ -93,6 +124,7 @@ export function Saved() {
   const handleToggleSelectionMode = () => {
     setIsSelectionMode(!isSelectionMode);
     setSelectedIds(new Set()); // Clear selections when toggling mode
+    setLastClickedId(null); // Reset last clicked ID when toggling mode
   };
 
   const handlePlayAsPlaylist = () => {
@@ -108,6 +140,7 @@ export function Saved() {
     // Exit selection mode after playing
     setIsSelectionMode(false);
     setSelectedIds(new Set());
+    setLastClickedId(null);
   };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
