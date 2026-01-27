@@ -1,6 +1,7 @@
 services:
   app:
-    image: ghcr.io/thejudge22/youtube-watcher:latest
+    build: .
+    #image: ghcr.io/thejudge22/youtube-watcher:latest
     # Or use specific version: ghcr.io/thejudge22/youtube-watcher:v1.0.0
     ports:
       - "38000:8000"
