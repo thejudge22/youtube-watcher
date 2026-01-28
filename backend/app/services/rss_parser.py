@@ -284,3 +284,60 @@ async def fetch_video_by_id(video_id: str, timeout: float = 10.0) -> VideoInfo:
         )
     except yt_dlp.utils.DownloadError as e:
         raise ValueError(f"Failed to fetch video info for {video_id}: {str(e)}")
+
+
+@retry(
+    stop=stop_after_attempt(3),
+    wait=wait_exponential(multiplier=1, min=1, max=10),
+    retry=retry_if_exception_type((yt_dlp.utils.DownloadError,)),
+)
+async def fetch_playlist_video_ids(playlist_url: str, timeout: float = 30.0) -> list[str]:
+    """
+    Fetch all video IDs from a YouTube playlist using yt-dlp.
+
+    Uses extract_flat=True to efficiently get video IDs without fetching full metadata.
+
+    Args:
+        playlist_url: YouTube playlist URL
+        timeout: Request timeout in seconds
+
+    Returns:
+        List of video IDs
+
+    Raises:
+        ValueError: If playlist cannot be fetched or contains no videos
+    """
+    try:
+        # Configure yt-dlp to extract playlist info efficiently
+        ydl_opts = {
+            'quiet': True,
+            'no_warnings': True,
+            'extract_flat': True,  # Only get video IDs, not full metadata
+            'skip_download': True,
+        }
+
+        # Extract playlist information
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(playlist_url, download=False)
+
+        if not info:
+            raise ValueError(f"Could not extract playlist info from: {playlist_url}")
+
+        # Extract video IDs from playlist entries
+        entries = info.get('entries', [])
+        if not entries:
+            raise ValueError(f"Playlist contains no videos: {playlist_url}")
+
+        video_ids = []
+        for entry in entries:
+            video_id = entry.get('id')
+            if video_id:
+                video_ids.append(video_id)
+
+        if not video_ids:
+            raise ValueError(f"Could not extract any video IDs from playlist: {playlist_url}")
+
+        return video_ids
+
+    except yt_dlp.utils.DownloadError as e:
+        raise ValueError(f"Failed to fetch playlist {playlist_url}: {str(e)}")

@@ -4,7 +4,8 @@ from app.services.youtube_utils import (
     extract_channel_id,
     get_rss_url,
     extract_video_id,
-    get_video_url
+    get_video_url,
+    extract_playlist_id,
 )
 
 # Test extract_video_id - Synchronous (no network)
@@ -76,3 +77,44 @@ class TestExtractChannelId:
         result = await extract_channel_id("https://www.youtube.com/@post.10")
         assert result.startswith("UC")
         assert len(result) == 24
+
+
+# Test extract_playlist_id - Synchronous (no network)
+class TestExtractPlaylistId:
+    def test_standard_playlist_url(self):
+        assert extract_playlist_id(
+            "https://www.youtube.com/playlist?list=PLSxDqWtr5iWGc1uDbQxAzRHygDAqbx5nc"
+        ) == "PLSxDqWtr5iWGc1uDbQxAzRHygDAqbx5nc"
+
+    def test_playlist_url_without_www(self):
+        assert extract_playlist_id(
+            "https://youtube.com/playlist?list=PLSxDqWtr5iWGc1uDbQxAzRHygDAqbx5nc"
+        ) == "PLSxDqWtr5iWGc1uDbQxAzRHygDAqbx5nc"
+
+    def test_watch_url_with_playlist(self):
+        assert extract_playlist_id(
+            "https://www.youtube.com/watch?v=dQw4w9WgXcQ&list=PLSxDqWtr5iWGc1uDbQxAzRHygDAqbx5nc"
+        ) == "PLSxDqWtr5iWGc1uDbQxAzRHygDAqbx5nc"
+
+    def test_watch_url_with_playlist_first_param(self):
+        assert extract_playlist_id(
+            "https://www.youtube.com/watch?list=PLSxDqWtr5iWGc1uDbQxAzRHygDAqbx5nc&v=dQw4w9WgXcQ"
+        ) == "PLSxDqWtr5iWGc1uDbQxAzRHygDAqbx5nc"
+
+    def test_youtu_be_with_playlist(self):
+        assert extract_playlist_id(
+            "https://youtu.be/dQw4w9WgXcQ?list=PLSxDqWtr5iWGc1uDbQxAzRHygDAqbx5nc"
+        ) == "PLSxDqWtr5iWGc1uDbQxAzRHygDAqbx5nc"
+
+    def test_embed_url_with_playlist(self):
+        assert extract_playlist_id(
+            "https://www.youtube.com/embed/dQw4w9WgXcQ?list=PLSxDqWtr5iWGc1uDbQxAzRHygDAqbx5nc"
+        ) == "PLSxDqWtr5iWGc1uDbQxAzRHygDAqbx5nc"
+
+    def test_invalid_url_raises(self):
+        with pytest.raises(ValueError):
+            extract_playlist_id("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+
+    def test_invalid_domain_raises(self):
+        with pytest.raises(ValueError):
+            extract_playlist_id("https://example.com/playlist?list=PLxxx")

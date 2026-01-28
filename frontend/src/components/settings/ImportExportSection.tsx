@@ -6,6 +6,7 @@ import {
   useImportChannels,
   useImportVideos,
   useImportVideoUrls,
+  useImportPlaylist,
 } from '../../hooks/useImportExport';
 import { ExportData, ImportResult } from '../../api/client';
 import { Button } from '../common/Button';
@@ -14,6 +15,7 @@ export default function ImportExportSection() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const [importProgress, setImportProgress] = useState<{ current: number; total: number } | null>(null);
+  const [playlistUrl, setPlaylistUrl] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const urlFileInputRef = useRef<HTMLInputElement>(null);
 
@@ -23,6 +25,7 @@ export default function ImportExportSection() {
   const importChannels = useImportChannels();
   const importVideos = useImportVideos();
   const importVideoUrls = useImportVideoUrls();
+  const importPlaylist = useImportPlaylist();
 
   const handleFileUpload = async (
     event: React.ChangeEvent<HTMLInputElement>,
@@ -153,8 +156,31 @@ export default function ImportExportSection() {
     event.target.value = '';
   };
 
+  const handlePlaylistImport = async () => {
+    const url = playlistUrl.trim();
+    if (!url) {
+      setImportError('Please enter a playlist URL');
+      return;
+    }
+
+    setImportResult(null);
+    setImportError(null);
+    setImportProgress({ current: 0, total: 1 });
+
+    try {
+      const result = await importPlaylist.mutateAsync(url);
+      setImportProgress({ current: 1, total: 1 });
+      setImportResult(result);
+      setPlaylistUrl('');
+    } catch (err) {
+      setImportError(err instanceof Error ? err.message : 'Failed to import playlist');
+    } finally {
+      setImportProgress(null);
+    }
+  };
+
   const isExporting = exportChannels.isPending || exportSavedVideos.isPending || exportAll.isPending;
-  const isImporting = importChannels.isPending || importVideos.isPending || importVideoUrls.isPending;
+  const isImporting = importChannels.isPending || importVideos.isPending || importVideoUrls.isPending || importPlaylist.isPending;
 
   return (
     <div className="space-y-6">
@@ -198,7 +224,7 @@ export default function ImportExportSection() {
       <div className="bg-gray-800 rounded-lg p-4 space-y-4">
         <h3 className="font-medium text-white">Import Data</h3>
         <p className="text-sm text-gray-400">
-          Import channels and videos from JSON files or YouTube URLs.
+          Import channels and videos from JSON files, YouTube URLs, or playlists.
         </p>
 
         <div className="space-y-3">
@@ -244,6 +270,31 @@ export default function ImportExportSection() {
             >
               Choose URL File
             </Button>
+          </div>
+
+          {/* Playlist Import */}
+          <div>
+            <label className="block text-sm text-gray-400 mb-2">
+              Import from YouTube Playlist
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={playlistUrl}
+                onChange={(e) => setPlaylistUrl(e.target.value)}
+                placeholder="https://www.youtube.com/playlist?list=..."
+                className="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                disabled={isImporting}
+              />
+              <Button
+                variant="secondary"
+                onClick={handlePlaylistImport}
+                isLoading={importPlaylist.isPending}
+                disabled={isImporting || !playlistUrl.trim()}
+              >
+                Import Playlist
+              </Button>
+            </div>
           </div>
         </div>
 

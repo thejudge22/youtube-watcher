@@ -38,6 +38,10 @@ class ImportUrlsRequest(BaseModel):
     urls: list[str]
 
 
+class ImportPlaylistRequest(BaseModel):
+    url: str
+
+
 class ImportResult(BaseModel):
     total: int
     imported: int

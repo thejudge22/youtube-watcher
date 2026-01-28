@@ -17,12 +17,14 @@ from ..schemas.import_export import (
     ImportChannelsRequest,
     ImportVideosRequest,
     ImportUrlsRequest,
+    ImportPlaylistRequest,
     ChannelImportResult,
     VideoImportResult,
 )
 from ..services.rss_parser import (
     fetch_channel_info,
     fetch_video_by_id,
+    fetch_playlist_video_ids,
 )
 from ..services.youtube_utils import (
     extract_video_id,
@@ -509,6 +511,188 @@ async def import_video_urls(
 
     await db.commit()
     logger.info(f"Import complete: {imported} imported, {skipped} skipped, {len(errors)} errors")
+
+    return VideoImportResult(
+        total=total,
+        imported=imported,
+        skipped=skipped,
+        errors=errors,
+    )
+
+
+@router.post("/import/playlist", response_model=VideoImportResult)
+async def import_playlist(
+    request: ImportPlaylistRequest,
+    db: AsyncSession = Depends(get_db),
+):
+    """Import videos from a YouTube playlist URL. Videos are added as saved.
+
+    This implementation follows the same pattern as import_video_urls:
+    1. Fetch playlist video IDs using yt-dlp
+    2. Parallel network fetching for video metadata (batched)
+    3. Sequential database operations to avoid SQLAlchemy session concurrency issues
+    """
+    # Get timeout once for all requests
+    timeout = await get_http_timeout(db)
+
+    # Phase 1: Fetch video IDs from playlist
+    try:
+        video_ids = await fetch_playlist_video_ids(request.url, timeout=timeout)
+        logger.info(f"Found {len(video_ids)} videos in playlist")
+    except ValueError as e:
+        # Return error as a single error in the errors list
+        return VideoImportResult(
+            total=0,
+            imported=0,
+            skipped=0,
+            errors=[str(e)],
+        )
+
+    total = len(video_ids)
+
+    # Data class to hold fetched video/channel info for later DB processing
+    class FetchResult:
+        def __init__(
+            self,
+            video_id: str,
+            video_info=None,
+            channel_info=None,
+            error: str = None,
+        ):
+            self.video_id = video_id
+            self.video_info = video_info
+            self.channel_info = channel_info
+            self.error = error
+
+    # Phase 2: Parallel network fetching (no DB operations)
+    # Use semaphore to limit concurrent network requests
+    batch_size = 10
+    semaphore = asyncio.Semaphore(batch_size)
+
+    async def fetch_video_data(video_id: str) -> FetchResult:
+        """Fetch video and channel info from YouTube (network I/O only, no DB)."""
+        async with semaphore:
+            try:
+                # Fetch video info from YouTube
+                try:
+                    video_info = await fetch_video_by_id(video_id, timeout=timeout)
+                except Exception as e:
+                    logger.warning(f"Failed to fetch video info for video_id={video_id}: {str(e)}")
+                    return FetchResult(video_id=video_id, error=f"Could not fetch video {video_id}")
+
+                # Fetch channel info if video has a channel
+                channel_info = None
+                if video_info.channel_id:
+                    try:
+                        channel_info = await fetch_channel_info(video_info.channel_id, timeout=timeout)
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to fetch channel info for channel_id={video_info.channel_id}: {str(e)}"
+                        )
+
+                return FetchResult(
+                    video_id=video_id,
+                    video_info=video_info,
+                    channel_info=channel_info,
+                )
+
+            except Exception as e:
+                return FetchResult(video_id=video_id, error=f"Error fetching {video_id}: {str(e)}")
+
+    # Execute all network fetches in parallel
+    logger.info(f"Starting parallel fetch for {total} videos from playlist")
+    fetch_results = await asyncio.gather(*[fetch_video_data(vid_id) for vid_id in video_ids])
+    logger.info(f"Completed parallel fetch for {total} videos from playlist")
+
+    # Phase 3: Sequential database operations (no concurrent session access)
+    imported = 0
+    skipped = 0
+    errors: list[str] = []
+
+    # Cache for channels we've already created/found in this import
+    channel_cache: dict[str, Channel] = {}
+
+    for result in fetch_results:
+        # Handle fetch errors
+        if result.error:
+            errors.append(result.error)
+            continue
+
+        try:
+            video_info = result.video_info
+
+            # Check if video already exists in database
+            existing = await db.execute(
+                select(Video).where(Video.youtube_video_id == result.video_id)
+            )
+            existing_video = existing.scalar_one_or_none()
+
+            if existing_video:
+                if existing_video.status != "saved":
+                    existing_video.status = "saved"
+                    existing_video.saved_at = datetime.now(timezone.utc)
+                    imported += 1
+                else:
+                    skipped += 1
+                continue
+
+            # Find or create channel association
+            channel_id = None
+            if video_info.channel_id:
+                # Check cache first
+                if video_info.channel_id in channel_cache:
+                    channel_id = channel_cache[video_info.channel_id].id
+                else:
+                    # Check database
+                    channel_result = await db.execute(
+                        select(Channel).where(
+                            Channel.youtube_channel_id == video_info.channel_id
+                        )
+                    )
+                    channel = channel_result.scalar_one_or_none()
+
+                    if not channel and result.channel_info:
+                        # Create new channel
+                        channel = Channel(
+                            youtube_channel_id=video_info.channel_id,
+                            name=result.channel_info.name,
+                            rss_url=get_rss_url(video_info.channel_id),
+                            youtube_url=get_channel_url(video_info.channel_id),
+                            thumbnail_url=result.channel_info.thumbnail_url,
+                            last_checked=datetime.now(timezone.utc),
+                        )
+                        db.add(channel)
+                        await db.flush()
+
+                    if channel:
+                        channel_cache[video_info.channel_id] = channel
+                        channel_id = channel.id
+
+            # Create new video as saved
+            new_video = Video(
+                youtube_video_id=video_info.video_id,
+                channel_id=channel_id,
+                channel_youtube_id=video_info.channel_id,
+                channel_name=video_info.channel_name,
+                channel_thumbnail_url=None,
+                title=video_info.title,
+                description=video_info.description or "",
+                thumbnail_url=video_info.thumbnail_url,
+                video_url=video_info.video_url,
+                published_at=video_info.published_at,
+                status="saved",
+                saved_at=datetime.now(timezone.utc),
+                is_short=video_info.is_short,
+            )
+            db.add(new_video)
+            await db.flush()
+            imported += 1
+
+        except Exception as e:
+            errors.append(f"Error importing {result.video_id}: {str(e)}")
+
+    await db.commit()
+    logger.info(f"Playlist import complete: {imported} imported, {skipped} skipped, {len(errors)} errors")
 
     return VideoImportResult(
         total=total,

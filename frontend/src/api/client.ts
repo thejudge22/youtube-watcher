@@ -121,6 +121,9 @@ export const importExportApi = {
 
   importVideoUrls: (urls: string[]) =>
     api.post<ImportResult>('/import-export/import/video-urls', { urls }, { timeout: LONG_TIMEOUT }),
+
+  importPlaylist: (url: string) =>
+    api.post<ImportResult>('/import-export/import/playlist', { url }, { timeout: LONG_TIMEOUT }),
 };
 
 // Settings API

@@ -248,3 +248,47 @@ def get_video_url(video_id: str) -> str:
         Video watch URL
     """
     return f"https://www.youtube.com/watch?v={video_id}"
+
+
+def extract_playlist_id(url: str) -> str:
+    """
+    Extract playlist ID from a YouTube playlist URL.
+
+    Supported formats:
+    - https://www.youtube.com/playlist?list=PLxxx
+    - https://youtube.com/playlist?list=PLxxx
+    - https://www.youtube.com/watch?v=xxx&list=PLxxx
+    - https://youtu.be/xxx?list=PLxxx
+
+    Args:
+        url: YouTube playlist URL
+
+    Returns:
+        Playlist ID string
+
+    Raises:
+        ValueError: If URL format is not recognized or playlist ID cannot be extracted
+    """
+    url = url.strip()
+
+    # Standard playlist URL: /playlist?list=PLAYLIST_ID
+    playlist_match = re.match(r'https?://(?:www\.)?youtube\.com/playlist\?.*list=([A-Za-z0-9_-]+)', url)
+    if playlist_match:
+        return playlist_match.group(1)
+
+    # Watch URL with playlist parameter: /watch?v=VIDEO_ID&list=PLAYLIST_ID
+    watch_match = re.match(r'https?://(?:www\.)?youtube\.com/watch\?.*list=([A-Za-z0-9_-]+)', url)
+    if watch_match:
+        return watch_match.group(1)
+
+    # Short URL with playlist parameter: youtu.be/VIDEO_ID?list=PLAYLIST_ID
+    short_match = re.match(r'https?://youtu\.be/[A-Za-z0-9_-]+\?.*list=([A-Za-z0-9_-]+)', url)
+    if short_match:
+        return short_match.group(1)
+
+    # Embed URL with playlist parameter: /embed/VIDEO_ID?list=PLAYLIST_ID
+    embed_match = re.match(r'https?://(?:www\.)?youtube\.com/embed/[A-Za-z0-9_-]+\?.*list=([A-Za-z0-9_-]+)', url)
+    if embed_match:
+        return embed_match.group(1)
+
+    raise ValueError(f"Unrecognized YouTube playlist URL format: {url}")

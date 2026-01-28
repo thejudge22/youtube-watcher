@@ -64,6 +64,18 @@ export function useImportVideoUrls() {
   });
 }
 
+export function useImportPlaylist() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (url: string) =>
+      importExportApi.importPlaylist(url).then(res => res.data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['videos'] });
+    },
+  });
+}
+
 // Helper function to trigger file download
 function downloadJson(data: ExportData, filename: string) {
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
