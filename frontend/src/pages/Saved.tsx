@@ -137,11 +137,9 @@ export function Saved() {
     if (result.truncated) {
       console.log(`Playlist opened with ${result.videoCount} videos (some were truncated due to 50 video limit)`);
     }
-
-    // Exit selection mode after playing
-    setIsSelectionMode(false);
-    setSelectedIds(new Set());
-    setLastClickedId(null);
+    
+    // REMOVED: State clearing logic
+    // The selection and mode remain active.
   };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -289,7 +287,7 @@ export function Saved() {
               Select All
             </Button>
             <Button variant="secondary" onClick={handleDeselectAll} className="px-3 py-1.5 text-sm">
-              Deselect All
+              Clear Selection
             </Button>
           </div>
           <div className="flex items-center gap-2">
