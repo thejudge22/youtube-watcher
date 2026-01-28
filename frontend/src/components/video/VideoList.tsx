@@ -13,6 +13,12 @@ interface VideoListProps {
   isSelectionMode?: boolean;
   selectedIds?: Set<string>;
   onToggleSelect?: (id: string, shiftKey: boolean) => void;
+  // Touch drag selection props
+  containerRef?: React.RefObject<HTMLDivElement>;
+  getItemTouchProps?: (id: string) => object;
+  previewRange?: Set<string>;
+  dragStartId?: string | null;
+  dragEndId?: string | null;
 }
 
 export function VideoList({
@@ -26,6 +32,11 @@ export function VideoList({
   isSelectionMode = false,
   selectedIds = new Set(),
   onToggleSelect,
+  containerRef,
+  getItemTouchProps,
+  previewRange = new Set(),
+  dragStartId,
+  dragEndId,
 }: VideoListProps) {
   if (videos.length === 0) {
     return (
@@ -58,21 +69,32 @@ export function VideoList({
   };
 
   return (
-    <div className={containerClasses[viewMode]}>
-      {videos.map((video) => (
-        <VideoCard
-          key={video.id}
-          video={video}
-          onSave={onSave}
-          onDiscard={onDiscard}
-          showSaveButton={showSaveButton}
-          showDiscardButton={showDiscardButton}
-          viewMode={viewMode}
-          isSelectionMode={isSelectionMode}
-          isSelected={selectedIds.has(video.id)}
-          onToggleSelect={onToggleSelect}
-        />
-      ))}
+    <div ref={containerRef} className={containerClasses[viewMode]}>
+      {videos.map((video) => {
+        const touchProps = getItemTouchProps?.(video.id) || {};
+        const isInPreviewRange = previewRange.has(video.id);
+        const isDragStart = dragStartId === video.id;
+        const isDragEnd = dragEndId === video.id;
+
+        return (
+          <VideoCard
+            key={video.id}
+            video={video}
+            onSave={onSave}
+            onDiscard={onDiscard}
+            showSaveButton={showSaveButton}
+            showDiscardButton={showDiscardButton}
+            viewMode={viewMode}
+            isSelectionMode={isSelectionMode}
+            isSelected={selectedIds.has(video.id)}
+            onToggleSelect={onToggleSelect}
+            touchProps={touchProps}
+            isInPreviewRange={isInPreviewRange}
+            isDragStart={isDragStart}
+            isDragEnd={isDragEnd}
+          />
+        );
+      })}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { PlayIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
 import { useSavedVideos, useDiscardVideo, useBulkDiscardVideos, useSavedVideoChannels } from '../hooks/useVideos';
+import { useTouchDragSelect } from '../hooks/useTouchDragSelect';
 import { VideoList } from '../components/video/VideoList';
 import { RecentlyDeletedModal } from '../components/video/RecentlyDeletedModal';
 import { Button } from '../components/common/Button';
@@ -157,9 +158,21 @@ export function Saved() {
     handleFilterChange();
   };
 
-  const videos = data?.videos ?? [];
+  const  videos = data?.videos ?? [];
   const totalCount = data?.total ?? 0;
   const totalPages = Math.ceil(totalCount / 100);
+
+  // Touch drag selection hook - only enabled when in selection mode
+  const touchDragSelect = useTouchDragSelect({
+    isEnabled: isSelectionMode,
+    items: videos.map(v => ({ id: v.id })),
+    selectedIds,
+    lastClickedId,
+    onSelectionChange: (newSelectedIds, newLastClickedId) => {
+      setSelectedIds(newSelectedIds);
+      setLastClickedId(newLastClickedId);
+    },
+  });
 
   if (isLoading) {
     return (
@@ -309,6 +322,11 @@ export function Saved() {
         isSelectionMode={isSelectionMode}
         selectedIds={selectedIds}
         onToggleSelect={handleToggleSelect}
+        containerRef={touchDragSelect.containerRef}
+        getItemTouchProps={touchDragSelect.getItemProps}
+        previewRange={touchDragSelect.previewRange}
+        dragStartId={touchDragSelect.dragStartId}
+        dragEndId={touchDragSelect.dragEndId}
       />
 
       {/* Pagination Controls */}

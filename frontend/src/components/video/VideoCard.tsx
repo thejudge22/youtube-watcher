@@ -14,6 +14,11 @@ interface VideoCardProps {
   isSelectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (id: string, shiftKey: boolean) => void;
+  // Touch drag selection props
+  touchProps?: object;
+  isInPreviewRange?: boolean;
+  isDragStart?: boolean;
+  isDragEnd?: boolean;
 }
 
 export function VideoCard({
@@ -26,6 +31,10 @@ export function VideoCard({
   isSelectionMode = false,
   isSelected = false,
   onToggleSelect,
+  touchProps,
+  isInPreviewRange = false,
+  isDragStart = false,
+  isDragEnd = false,
 }: VideoCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const formatDate = (dateString: string) => {
@@ -50,8 +59,19 @@ export function VideoCard({
 
   // List view - horizontal layout
   if (viewMode === 'list') {
+    // Determine visual feedback classes for drag selection
+    const getDragFeedbackClasses = () => {
+      if (isDragStart) return 'ring-2 ring-blue-500';
+      if (isDragEnd) return 'ring-2 ring-blue-400';
+      if (isInPreviewRange) return 'bg-blue-500/20 ring-1 ring-blue-400';
+      return '';
+    };
+
     return (
-      <div className="flex items-center gap-4 p-2 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors">
+      <div
+        className={`flex items-center gap-4 p-2 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors ${getDragFeedbackClasses()} ${isSelectionMode ? 'touch-none' : ''}`}
+        {...touchProps}
+      >
         {/* Checkbox - only visible in selection mode */}
         {isSelectionMode && (
           <div className="flex-shrink-0">
@@ -147,6 +167,14 @@ export function VideoCard({
 
   // Compact view - smaller cards with hover actions
   if (viewMode === 'compact') {
+    // Determine visual feedback classes for drag selection
+    const getDragFeedbackClasses = () => {
+      if (isDragStart) return 'ring-2 ring-blue-500';
+      if (isDragEnd) return 'ring-2 ring-blue-400';
+      if (isInPreviewRange) return 'bg-blue-500/20 ring-1 ring-blue-400';
+      return '';
+    };
+
     return (
       <div className="flex items-start gap-2 h-full">
         {/* Checkbox - only visible in selection mode */}
@@ -162,9 +190,10 @@ export function VideoCard({
         )}
 
         <div
-          className="flex-1 flex flex-col bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors relative h-full"
+          className={`flex-1 flex flex-col bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors relative h-full ${getDragFeedbackClasses()} ${isSelectionMode ? 'touch-none' : ''}`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
+          {...touchProps}
         >
           {/* Thumbnail - fixed aspect ratio */}
           <a
@@ -237,6 +266,14 @@ export function VideoCard({
   }
 
   // Large view (default) - original layout
+  // Determine visual feedback classes for drag selection
+  const getDragFeedbackClasses = () => {
+    if (isDragStart) return 'ring-2 ring-blue-500';
+    if (isDragEnd) return 'ring-2 ring-blue-400';
+    if (isInPreviewRange) return 'bg-blue-500/20 ring-1 ring-blue-400';
+    return '';
+  };
+
   return (
     <div className="flex items-start gap-2 h-full">
       {/* Checkbox - only visible in selection mode */}
@@ -251,7 +288,10 @@ export function VideoCard({
         </div>
       )}
 
-      <div className="flex-1 flex flex-col bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors h-full">
+      <div
+        className={`flex-1 flex flex-col bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors h-full ${getDragFeedbackClasses()} ${isSelectionMode ? 'touch-none' : ''}`}
+        {...touchProps}
+      >
         {/* Thumbnail - fixed aspect ratio */}
         <a
           href={video.video_url}
