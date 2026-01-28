@@ -64,15 +64,14 @@ docker compose up -d
 
 ### Development Mode
 
-For development with hot reload:
+For development or local builds, clone the repo and run:
 
 ```bash
-docker compose -f docker-compose.dev.yml up --build
+docker compose -f docker-compose-local.yml up --build
 ```
 
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:8000
-- API Documentation: http://localhost:8000/docs
+- Access the application at http://localhost:38000
+- API Documentation: http://localhost:38000/docs
 
 
 
