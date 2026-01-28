@@ -32,6 +32,8 @@ A self-hosted, Docker-based web application for managing YouTube content discove
 - Docker and Docker Compose
 - Git
 
+#### A note about docker images
+The ghcr.io/thejudge22/youtube-watcher:latest tag always builds from every commit.  Use that if you want the most up to date docker image.  If you want a static version, tag your docker image like this:  ghcr.io/thejudge22/youtube-watcher:1.10
 
 #### Quick Start with Pre-built Images
 
