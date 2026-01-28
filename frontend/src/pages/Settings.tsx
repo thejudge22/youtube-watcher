@@ -79,24 +79,6 @@ export function Settings() {
 
           {showDangerZone && (
             <div className="space-y-4 mt-4">
-              <div className="bg-gray-700/50 border border-gray-600 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-md font-medium text-white">Remove All Saved Videos</h3>
-                    <p className="text-sm text-gray-400">
-                      This will move all your currently saved videos to the recently deleted list.
-                    </p>
-                  </div>
-                  <Button
-                    variant="danger"
-                    onClick={() => setIsConfirmModalOpen(true)}
-                    disabled={!videos || videos.length === 0}
-                  >
-                    Remove All
-                  </Button>
-                </div>
-              </div>
-
               <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
