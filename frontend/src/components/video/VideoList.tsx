@@ -1,6 +1,7 @@
 import type { Video } from '../../types';
 import { VideoCard } from './VideoCard';
 import { ViewMode } from '../common/ViewModeToggle';
+import { PlayIcon } from '@heroicons/react/24/outline';
 
 interface VideoListProps {
   videos: Video[];
@@ -42,22 +43,12 @@ export function VideoList({
 }: VideoListProps) {
   if (videos.length === 0) {
     return (
-      <div className="bg-gray-800 rounded-lg p-12 text-center">
-        <svg
-          className="mx-auto h-12 w-12 text-gray-500"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-          />
-        </svg>
-        <h3 className="mt-2 text-lg font-medium text-white">No videos found</h3>
-        <p className="mt-1 text-sm text-gray-400">
+      <div className="bg-bg-secondary rounded-xl p-12 text-center border border-border">
+        <div className="w-16 h-16 bg-bg-tertiary rounded-full flex items-center justify-center mx-auto mb-4">
+          <PlayIcon className="w-8 h-8 text-text-tertiary" />
+        </div>
+        <h3 className="text-lg font-semibold text-text-primary">No videos found</h3>
+        <p className="mt-1 text-sm text-text-secondary">
           {emptyMessage || 'No videos to display.'}
         </p>
       </div>

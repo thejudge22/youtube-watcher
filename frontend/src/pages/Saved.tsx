@@ -1,5 +1,15 @@
 import React, { useState, useMemo } from 'react';
-import { PlayIcon, ChevronLeftIcon, ChevronRightIcon } from '@heroicons/react/24/outline';
+import { 
+  BookmarkIcon, 
+  PlayIcon, 
+  ChevronLeftIcon, 
+  ChevronRightIcon,
+  ClockIcon,
+  FunnelIcon,
+  ArrowPathIcon,
+  CheckCircleIcon,
+  XCircleIcon
+} from '@heroicons/react/24/outline';
 import { useSavedVideos, useDiscardVideo, useBulkDiscardVideos, useSavedVideoChannels } from '../hooks/useVideos';
 import { useTouchDragSelect } from '../hooks/useTouchDragSelect';
 import { VideoList } from '../components/video/VideoList';
@@ -48,10 +58,9 @@ export function Saved() {
     return p;
   }, [channelYoutubeId, sortBy, order, currentPage]);
 
-  // Reset to page 1 when filters change
   const handleFilterChange = () => {
     setCurrentPage(1);
-    setLastClickedId(null); // Reset last clicked ID when filters change
+    setLastClickedId(null);
   };
 
   const { data, isLoading, error, refetch } = useSavedVideos(params);
@@ -68,7 +77,6 @@ export function Saved() {
       const newSet = new Set(prev);
 
       if (shiftKey && lastClickedId) {
-        // Shift-click: Select range between lastClickedId and current id
         const lastIndex = videos.findIndex(v => v.id === lastClickedId);
         const currentIndex = videos.findIndex(v => v.id === id);
 
@@ -76,12 +84,10 @@ export function Saved() {
           const start = Math.min(lastIndex, currentIndex);
           const end = Math.max(lastIndex, currentIndex);
 
-          // Add all IDs in the range to the selection
           for (let i = start; i <= end; i++) {
             newSet.add(videos[i].id);
           }
         } else {
-          // If indices not found, treat as normal click
           if (newSet.has(id)) {
             newSet.delete(id);
           } else {
@@ -89,7 +95,6 @@ export function Saved() {
           }
         }
       } else {
-        // Normal click: Toggle selection
         if (newSet.has(id)) {
           newSet.delete(id);
         } else {
@@ -100,7 +105,6 @@ export function Saved() {
       return newSet;
     });
 
-    // Always update lastClickedId
     setLastClickedId(id);
   };
 
@@ -124,8 +128,8 @@ export function Saved() {
 
   const handleToggleSelectionMode = () => {
     setIsSelectionMode(!isSelectionMode);
-    setSelectedIds(new Set()); // Clear selections when toggling mode
-    setLastClickedId(null); // Reset last clicked ID when toggling mode
+    setSelectedIds(new Set());
+    setLastClickedId(null);
   };
 
   const handlePlayAsPlaylist = () => {
@@ -137,9 +141,6 @@ export function Saved() {
     if (result.truncated) {
       console.log(`Playlist opened with ${result.videoCount} videos (some were truncated due to 50 video limit)`);
     }
-    
-    // REMOVED: State clearing logic
-    // The selection and mode remain active.
   };
 
   const handleSortChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -156,11 +157,10 @@ export function Saved() {
     handleFilterChange();
   };
 
-  const  videos = data?.videos ?? [];
+  const videos = data?.videos ?? [];
   const totalCount = data?.total ?? 0;
   const totalPages = Math.ceil(totalCount / 100);
 
-  // Touch drag selection hook - only enabled when in selection mode
   const touchDragSelect = useTouchDragSelect({
     isEnabled: isSelectionMode,
     items: videos.map(v => ({ id: v.id })),
@@ -174,8 +174,9 @@ export function Saved() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <LoadingSpinner size="lg" />
+        <p className="text-text-secondary text-sm animate-pulse">Loading your saved videos...</p>
       </div>
     );
   }
@@ -183,8 +184,12 @@ export function Saved() {
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-red-900/50 border border-red-700 rounded-lg p-4 text-center">
-          <p className="text-red-400">Error loading saved videos. Please try again.</p>
+        <div className="bg-accent-red/10 border border-accent-red/30 rounded-xl p-6 text-center animate-scale-in">
+          <div className="w-12 h-12 bg-accent-red/20 rounded-full flex items-center justify-center mx-auto mb-3">
+            <BookmarkIcon className="w-6 h-6 text-accent-red" />
+          </div>
+          <p className="text-accent-red font-medium">Error loading saved videos</p>
+          <p className="text-text-secondary text-sm mt-1">Please try again</p>
           <Button
             variant="secondary"
             onClick={() => refetch()}
@@ -199,44 +204,54 @@ export function Saved() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Saved Videos</h1>
-          {totalCount > 0 && (
-            <p className="text-gray-400 text-sm mt-1">
-              {totalCount} video{totalCount !== 1 ? 's' : ''} saved
-            </p>
-          )}
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-green to-accent-blue flex items-center justify-center shadow-glow-green">
+            <BookmarkIcon className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-text-primary">Saved Videos</h1>
+            {totalCount > 0 && (
+              <p className="text-text-secondary text-sm">
+                {totalCount} video{totalCount !== 1 ? 's' : ''} saved
+              </p>
+            )}
+          </div>
         </div>
-        <div className="flex flex-wrap gap-3 sm:flex-nowrap">
+        <div className="flex flex-wrap gap-2 items-center">
           <Button
             variant={isSelectionMode ? "primary" : "secondary"}
             onClick={handleToggleSelectionMode}
+            size="sm"
           >
             {isSelectionMode ? 'Cancel Selection' : 'Select Videos'}
           </Button>
           <Button
             variant="secondary"
             onClick={() => setShowRecentlyDeleted(true)}
+            size="sm"
           >
+            <ClockIcon className="w-4 h-4 mr-1.5" />
             Recently Deleted
           </Button>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-gray-800 rounded-lg p-4 mb-6">
+      <div className="bg-bg-secondary rounded-xl p-4 mb-6 border border-border animate-slide-up">
         <div className="flex flex-wrap gap-4 items-end">
           {/* Channel Filter */}
           <div className="flex-1 min-w-[200px]">
-            <label htmlFor="channel-filter" className="block text-sm font-medium text-gray-300 mb-1">
+            <label htmlFor="channel-filter" className="block text-sm font-medium text-text-secondary mb-1.5">
+              <FunnelIcon className="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
               Filter by Channel
             </label>
             <select
               id="channel-filter"
               value={channelYoutubeId}
               onChange={handleChannelChange}
-              className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-bg-tertiary border border-border text-text-primary rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent transition-all"
             >
               <option value="">All Channels</option>
               {channelOptions?.map((option) => (
@@ -249,14 +264,15 @@ export function Saved() {
 
           {/* Sort Filter */}
           <div className="flex-1 min-w-[200px]">
-            <label htmlFor="sort-filter" className="block text-sm font-medium text-gray-300 mb-1">
+            <label htmlFor="sort-filter" className="block text-sm font-medium text-text-secondary mb-1.5">
+              <ArrowPathIcon className="w-4 h-4 inline-block mr-1.5 -mt-0.5" />
               Sort By
             </label>
             <select
               id="sort-filter"
               value={SORT_OPTIONS.find((opt) => opt.value === sortBy && opt.order === order)?.label || ''}
               onChange={handleSortChange}
-              className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full bg-bg-tertiary border border-border text-text-primary rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent transition-all"
             >
               {SORT_OPTIONS.map((option) => (
                 <option key={option.label} value={option.label}>
@@ -268,7 +284,7 @@ export function Saved() {
 
           {/* View Mode Toggle */}
           <div>
-            <label htmlFor="view-mode-toggle" className="block text-sm font-medium text-gray-300 mb-1">
+            <label htmlFor="view-mode-toggle" className="block text-sm font-medium text-text-secondary mb-1.5">
               View Mode
             </label>
             <ViewModeToggle viewMode={viewMode} onChange={setViewMode} />
@@ -276,17 +292,30 @@ export function Saved() {
         </div>
       </div>
 
-      {/* Selection Toolbar - shown when in selection mode */}
+      {/* Selection Toolbar */}
       {isSelectionMode && (
-        <div className="bg-gray-800 rounded-lg p-4 mb-4 flex flex-wrap items-center justify-between gap-4">
+        <div className="bg-bg-secondary rounded-xl p-4 mb-4 border border-accent-blue/30 flex flex-wrap items-center justify-between gap-4 animate-slide-up">
           <div className="flex items-center gap-4">
-            <span className="text-gray-300">
+            <span className="text-text-primary font-medium">
               {selectedIds.size} video{selectedIds.size !== 1 ? 's' : ''} selected
             </span>
-            <Button variant="secondary" onClick={handleSelectAll} className="px-3 py-1.5 text-sm">
+            <Button 
+              variant="secondary" 
+              onClick={handleSelectAll} 
+              size="sm" 
+              className="gap-1.5 bg-bg-tertiary hover:bg-accent-blue/20 hover:text-accent-blue hover:border-accent-blue/50 transition-all"
+            >
+              <CheckCircleIcon className="w-4 h-4" />
               Select All
             </Button>
-            <Button variant="secondary" onClick={handleDeselectAll} className="px-3 py-1.5 text-sm">
+            <Button 
+              variant="secondary" 
+              onClick={handleDeselectAll} 
+              size="sm"
+              disabled={selectedIds.size === 0}
+              className="gap-1.5 bg-bg-tertiary hover:bg-accent-red/20 hover:text-accent-red hover:border-accent-red/50 transition-all disabled:opacity-40"
+            >
+              <XCircleIcon className="w-4 h-4" />
               Clear Selection
             </Button>
           </div>
@@ -295,54 +324,74 @@ export function Saved() {
               variant="primary"
               onClick={handlePlayAsPlaylist}
               disabled={selectedIds.size === 0}
+              size="sm"
             >
-              <PlayIcon className="w-4 h-4 mr-2" />
+              <PlayIcon className="w-4 h-4 mr-1.5" />
               Play as Playlist
             </Button>
             <Button
               variant="danger"
               onClick={handleRemoveSelected}
               disabled={selectedIds.size === 0}
+              size="sm"
             >
-              Remove Selected ({selectedIds.size})
+              Remove Selected
             </Button>
           </div>
         </div>
       )}
 
-      <VideoList
-        videos={videos}
-        onDiscard={handleDiscard}
-        showSaveButton={false}
-        showDiscardButton={false}
-        emptyMessage="No saved videos. Save videos from the inbox to watch later."
-        viewMode={viewMode}
-        isSelectionMode={isSelectionMode}
-        selectedIds={selectedIds}
-        onToggleSelect={handleToggleSelect}
-        containerRef={touchDragSelect.containerRef}
-        getItemTouchProps={touchDragSelect.getItemProps}
-        getSelectZoneProps={touchDragSelect.getSelectZoneProps}
-        previewRange={touchDragSelect.previewRange}
-        dragStartId={touchDragSelect.dragStartId}
-        dragEndId={touchDragSelect.dragEndId}
-      />
+      {/* Empty State */}
+      {videos.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-16 text-center animate-scale-in">
+          <div className="w-20 h-20 rounded-2xl bg-bg-secondary flex items-center justify-center mb-4">
+            <BookmarkIcon className="w-10 h-10 text-text-tertiary" />
+          </div>
+          <h3 className="text-lg font-semibold text-text-primary mb-1">No saved videos yet</h3>
+          <p className="text-text-secondary text-sm max-w-sm">
+            Videos you save from your inbox will appear here. Save videos to watch them later.
+          </p>
+        </div>
+      )}
 
-      {/* Pagination Controls */}
+      {/* Video List */}
+      {videos.length > 0 && (
+        <div className="animate-slide-up">
+          <VideoList
+            videos={videos}
+            onDiscard={handleDiscard}
+            showSaveButton={false}
+            showDiscardButton={false}
+            emptyMessage="No saved videos. Save videos from the inbox to watch later."
+            viewMode={viewMode}
+            isSelectionMode={isSelectionMode}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+            containerRef={touchDragSelect.containerRef}
+            getItemTouchProps={touchDragSelect.getItemProps}
+            getSelectZoneProps={touchDragSelect.getSelectZoneProps}
+            previewRange={touchDragSelect.previewRange}
+            dragStartId={touchDragSelect.dragStartId}
+            dragEndId={touchDragSelect.dragEndId}
+          />
+        </div>
+      )}
+
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="mt-6 flex items-center justify-center gap-2">
+        <div className="mt-8 flex items-center justify-center gap-2 animate-slide-up">
           <Button
             variant="secondary"
             onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
             disabled={currentPage === 1}
-            className="px-3 py-2"
+            size="sm"
+            className="px-3"
           >
             <ChevronLeftIcon className="w-5 h-5" />
           </Button>
 
           <div className="flex items-center gap-1">
             {Array.from({ length: Math.min(totalPages, 10) }, (_, i) => {
-              // Show first page, last page, current page, and pages around current
               let pageNum: number;
               if (totalPages <= 10) {
                 pageNum = i + 1;
@@ -355,17 +404,17 @@ export function Saved() {
               }
 
               if (pageNum === -1) {
-                return <span key={i} className="px-2 text-gray-500">...</span>;
+                return <span key={i} className="px-2 text-text-tertiary">...</span>;
               }
 
               return (
                 <button
                   key={i}
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     currentPage === pageNum
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                      ? 'bg-accent-blue text-white shadow-glow-blue'
+                      : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary hover:text-text-primary'
                   }`}
                 >
                   {pageNum}
@@ -378,7 +427,8 @@ export function Saved() {
             variant="secondary"
             onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
             disabled={currentPage === totalPages}
-            className="px-3 py-2"
+            size="sm"
+            className="px-3"
           >
             <ChevronRightIcon className="w-5 h-5" />
           </Button>

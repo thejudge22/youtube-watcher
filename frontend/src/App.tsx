@@ -11,14 +11,14 @@ function App() {
   return (
     <ErrorBoundary componentName="Application">
       <BrowserRouter>
-        <div className="min-h-screen bg-gray-900">
+        <div className="min-h-screen bg-bg-primary">
           <ErrorBoundary componentName="Header">
             <Header />
           </ErrorBoundary>
           <ErrorBoundary componentName="Navigation">
             <Navigation />
           </ErrorBoundary>
-          <main>
+          <main className="pb-12">
             <Routes>
               <Route
                 path="/"

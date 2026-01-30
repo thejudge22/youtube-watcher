@@ -1,4 +1,11 @@
 import { useState, useMemo } from 'react';
+import { 
+  InboxIcon, 
+  ArrowPathIcon, 
+  SparklesIcon,
+  FolderArrowDownIcon,
+  TrashIcon
+} from '@heroicons/react/24/outline';
 import { useInboxVideos, useSaveVideo, useDiscardVideo, useBulkSaveVideos, useBulkDiscardVideos, useDetectShortsBatch } from '../hooks/useVideos';
 import { useRefreshAllChannels } from '../hooks/useChannels';
 import { useLocalStorage } from '../hooks/useLocalStorage';
@@ -20,7 +27,7 @@ export function Inbox() {
   const bulkSave = useBulkSaveVideos();
   const bulkDiscard = useBulkDiscardVideos();
   const refreshAll = useRefreshAllChannels();
-  const detectShortsBatch = useDetectShortsBatch();  // Issue #8: Shorts detection
+  const detectShortsBatch = useDetectShortsBatch();
 
   const [bulkActionChannelId, setBulkActionChannelId] = useState<string | null>(null);
   const [bulkActionType, setBulkActionType] = useState<'save' | 'discard' | null>(null);
@@ -45,7 +52,6 @@ export function Inbox() {
       }
     }
 
-    // Sort alphabetically by channel name (case-insensitive) for stable ordering
     return Array.from(groups.values()).sort((a, b) =>
       a.channelName.localeCompare(b.channelName, undefined, { sensitivity: 'base' })
     );
@@ -103,7 +109,6 @@ export function Inbox() {
     });
   };
 
-  // Issue #8: Handle Shorts detection
   const handleDetectShorts = () => {
     detectShortsBatch.mutate(undefined, {
       onSuccess: () => {
@@ -114,8 +119,9 @@ export function Inbox() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
         <LoadingSpinner size="lg" />
+        <p className="text-text-secondary text-sm animate-pulse">Loading your inbox...</p>
       </div>
     );
   }
@@ -123,8 +129,12 @@ export function Inbox() {
   if (error) {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-red-900/50 border border-red-700 rounded-lg p-4 text-center">
-          <p className="text-red-400">Error loading videos. Please try again.</p>
+        <div className="bg-accent-red/10 border border-accent-red/30 rounded-xl p-6 text-center animate-scale-in">
+          <div className="w-12 h-12 bg-accent-red/20 rounded-full flex items-center justify-center mx-auto mb-3">
+            <InboxIcon className="w-6 h-6 text-accent-red" />
+          </div>
+          <p className="text-accent-red font-medium">Error loading videos</p>
+          <p className="text-text-secondary text-sm mt-1">Please try again</p>
           <Button
             variant="secondary"
             onClick={() => refetch()}
@@ -139,53 +149,70 @@ export function Inbox() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-white">Inbox</h1>
-          {videos && videos.length > 0 && (
-            <p className="text-gray-400 text-sm mt-1">
-              {videos.length} video{videos.length !== 1 ? 's' : ''} to review
-              {shortsFilter !== 'all' && (
-                <span className="ml-2">
-                  ({shortsFilter === 'shorts' ? 'Shorts only' : 'Videos only'})
-                </span>
-              )}
-            </p>
-          )}
+      {/* Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-blue to-accent-purple flex items-center justify-center shadow-glow-blue">
+            <InboxIcon className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-text-primary">Inbox</h1>
+            {videos && videos.length > 0 && (
+              <p className="text-text-secondary text-sm">
+                {videos.length} video{videos.length !== 1 ? 's' : ''} to review
+                {shortsFilter !== 'all' && (
+                  <span className="ml-2 text-text-tertiary">
+                    ({shortsFilter === 'shorts' ? 'Shorts only' : 'Videos only'})
+                  </span>
+                )}
+              </p>
+            )}
+          </div>
         </div>
-        <div className="flex space-x-3 items-center">
-          {/* Issue #8: Shorts filter toggle */}
+        
+        {/* Actions */}
+        <div className="flex flex-wrap gap-2 items-center">
           <ShortsFilterToggle value={shortsFilter} onChange={setShortsFilter} />
+          <div className="w-px h-6 bg-border mx-1" />
           <InboxViewToggle viewMode={viewMode} onChange={setViewMode} />
           <Button
             variant="secondary"
             onClick={handleDetectShorts}
             isLoading={detectShortsBatch.isPending}
             title="Detect which videos are Shorts"
+            size="sm"
           >
+            <SparklesIcon className="w-4 h-4 mr-1.5" />
             Detect Shorts
           </Button>
           <Button
             variant="secondary"
             onClick={handleRefresh}
             isLoading={refreshAll.isPending}
+            size="sm"
           >
+            <ArrowPathIcon className={`w-4 h-4 mr-1.5 ${refreshAll.isPending ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
           {videos && videos.length > 0 && (
             <>
+              <div className="w-px h-6 bg-border mx-1" />
               <Button
                 variant="primary"
                 onClick={handleSaveAll}
                 isLoading={bulkSave.isPending}
+                size="sm"
               >
+                <FolderArrowDownIcon className="w-4 h-4 mr-1.5" />
                 Save All
               </Button>
               <Button
                 variant="danger"
                 onClick={handleDiscardAll}
                 isLoading={bulkDiscard.isPending}
+                size="sm"
               >
+                <TrashIcon className="w-4 h-4 mr-1.5" />
                 Discard All
               </Button>
             </>
@@ -193,39 +220,57 @@ export function Inbox() {
         </div>
       </div>
 
-      {viewMode === 'flat' ? (
-        <VideoList
-          videos={videos || []}
-          onSave={handleSave}
-          onDiscard={handleDiscard}
-          emptyMessage="No videos in inbox. Add channels to start receiving video updates."
-        />
-      ) : (
-        <div className="space-y-4">
-          {groupedVideos.length > 0 ? (
-            groupedVideos.map(group => (
-              <ChannelVideoGroup
-                key={group.channelId}
-                channelId={group.channelId}
-                channelName={group.channelName}
-                videos={group.videos}
-                onSave={handleSave}
-                onDiscard={handleDiscard}
-                onSaveAll={(ids) => handleChannelSaveAll(group.channelId, ids)}
-                onDiscardAll={(ids) => handleChannelDiscardAll(group.channelId, ids)}
-                isSavingAll={bulkActionChannelId === group.channelId && bulkActionType === 'save'}
-                isDiscardingAll={bulkActionChannelId === group.channelId && bulkActionType === 'discard'}
-              />
-            ))
-          ) : (
+      {/* Empty State */}
+      {videos?.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-16 text-center animate-scale-in">
+          <div className="w-20 h-20 rounded-2xl bg-bg-secondary flex items-center justify-center mb-4">
+            <InboxIcon className="w-10 h-10 text-text-tertiary" />
+          </div>
+          <h3 className="text-lg font-semibold text-text-primary mb-1">Your inbox is empty</h3>
+          <p className="text-text-secondary text-sm max-w-sm">
+            Add some YouTube channels to start receiving video updates. Videos will appear here when they're published.
+          </p>
+        </div>
+      )}
+
+      {/* Content */}
+      {videos && videos.length > 0 && (
+        viewMode === 'flat' ? (
+          <div className="animate-slide-up">
             <VideoList
-              videos={[]}
+              videos={videos || []}
               onSave={handleSave}
               onDiscard={handleDiscard}
               emptyMessage="No videos in inbox. Add channels to start receiving video updates."
             />
-          )}
-        </div>
+          </div>
+        ) : (
+          <div className="space-y-4 animate-slide-up">
+            {groupedVideos.length > 0 ? (
+              groupedVideos.map(group => (
+                <ChannelVideoGroup
+                  key={group.channelId}
+                  channelId={group.channelId}
+                  channelName={group.channelName}
+                  videos={group.videos}
+                  onSave={handleSave}
+                  onDiscard={handleDiscard}
+                  onSaveAll={(ids) => handleChannelSaveAll(group.channelId, ids)}
+                  onDiscardAll={(ids) => handleChannelDiscardAll(group.channelId, ids)}
+                  isSavingAll={bulkActionChannelId === group.channelId && bulkActionType === 'save'}
+                  isDiscardingAll={bulkActionChannelId === group.channelId && bulkActionType === 'discard'}
+                />
+              ))
+            ) : (
+              <VideoList
+                videos={[]}
+                onSave={handleSave}
+                onDiscard={handleDiscard}
+                emptyMessage="No videos in inbox. Add channels to start receiving video updates."
+              />
+            )}
+          </div>
+        )
       )}
     </div>
   );

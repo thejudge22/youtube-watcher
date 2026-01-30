@@ -1,23 +1,33 @@
 import React from 'react';
 
-export type ButtonVariant = 'primary' | 'secondary' | 'danger';
+export type ButtonVariant = 'primary' | 'secondary' | 'danger' | 'ghost';
+export type ButtonSize = 'sm' | 'md' | 'lg';
 
 interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
+  size?: ButtonSize;
   isLoading?: boolean;
   children: React.ReactNode;
 }
 
-const baseStyles = 'inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 disabled:opacity-50 disabled:cursor-not-allowed';
+const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none active:scale-[0.98] btn-shine';
+
+const sizeStyles = {
+  sm: 'px-3 py-1.5 text-xs',
+  md: 'px-4 py-2 text-sm',
+  lg: 'px-6 py-3 text-base',
+};
 
 const variantStyles = {
-  primary: 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500',
-  secondary: 'bg-gray-600 hover:bg-gray-700 text-white focus:ring-gray-500',
-  danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500',
+  primary: 'bg-accent-blue hover:bg-accent-blue-hover text-white focus:ring-accent-blue shadow-md hover:shadow-glow-blue hover:-translate-y-0.5',
+  secondary: 'bg-bg-tertiary hover:bg-bg-elevated text-text-primary border border-border hover:border-border-light focus:ring-accent-blue hover:-translate-y-0.5',
+  danger: 'bg-accent-red/90 hover:bg-accent-red text-white focus:ring-accent-red shadow-md hover:shadow-glow hover:-translate-y-0.5',
+  ghost: 'bg-transparent hover:bg-bg-tertiary text-text-secondary hover:text-text-primary focus:ring-accent-blue',
 };
 
 export function Button({
   variant = 'primary',
+  size = 'md',
   isLoading = false,
   children,
   className = '',
@@ -26,7 +36,7 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={`${baseStyles} ${variantStyles[variant]} ${className}`}
+      className={`${baseStyles} ${sizeStyles[size]} ${variantStyles[variant]} ${className}`}
       disabled={disabled || isLoading}
       {...props}
     >
