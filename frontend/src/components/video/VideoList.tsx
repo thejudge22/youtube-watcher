@@ -16,6 +16,7 @@ interface VideoListProps {
   // Touch drag selection props
   containerRef?: React.RefObject<HTMLDivElement>;
   getItemTouchProps?: (id: string) => object;
+  getSelectZoneProps?: (id: string) => object;
   previewRange?: Set<string>;
   dragStartId?: string | null;
   dragEndId?: string | null;
@@ -34,6 +35,7 @@ export function VideoList({
   onToggleSelect,
   containerRef,
   getItemTouchProps,
+  getSelectZoneProps,
   previewRange = new Set(),
   dragStartId,
   dragEndId,
@@ -72,6 +74,7 @@ export function VideoList({
     <div ref={containerRef} className={containerClasses[viewMode]}>
       {videos.map((video) => {
         const touchProps = getItemTouchProps?.(video.id) || {};
+        const selectZoneProps = getSelectZoneProps?.(video.id) || {};
         const isInPreviewRange = previewRange.has(video.id);
         const isDragStart = dragStartId === video.id;
         const isDragEnd = dragEndId === video.id;
@@ -89,6 +92,7 @@ export function VideoList({
             isSelected={selectedIds.has(video.id)}
             onToggleSelect={onToggleSelect}
             touchProps={touchProps}
+            selectZoneProps={selectZoneProps}
             isInPreviewRange={isInPreviewRange}
             isDragStart={isDragStart}
             isDragEnd={isDragEnd}

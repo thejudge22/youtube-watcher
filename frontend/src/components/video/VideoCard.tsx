@@ -16,6 +16,7 @@ interface VideoCardProps {
   onToggleSelect?: (id: string, shiftKey: boolean) => void;
   // Touch drag selection props
   touchProps?: object;
+  selectZoneProps?: object;
   isInPreviewRange?: boolean;
   isDragStart?: boolean;
   isDragEnd?: boolean;
@@ -32,6 +33,7 @@ export function VideoCard({
   isSelected = false,
   onToggleSelect,
   touchProps,
+  selectZoneProps,
   isInPreviewRange = false,
   isDragStart = false,
   isDragEnd = false,
@@ -69,12 +71,15 @@ export function VideoCard({
 
     return (
       <div
-        className={`flex items-center gap-4 p-2 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors ${getDragFeedbackClasses()} ${isSelectionMode ? 'touch-none' : ''}`}
+        className={`flex items-center gap-4 p-2 bg-gray-800 rounded-lg hover:bg-gray-750 transition-colors ${getDragFeedbackClasses()}`}
         {...touchProps}
       >
         {/* Checkbox - only visible in selection mode */}
         {isSelectionMode && (
-          <div className="flex-shrink-0">
+          <div 
+            className="flex-shrink-0 self-stretch flex items-center pl-2 pr-4 -ml-2 -my-2 cursor-pointer touch-none"
+            {...selectZoneProps}
+          >
             <input
               type="checkbox"
               checked={isSelected}
@@ -179,7 +184,10 @@ export function VideoCard({
       <div className="flex items-start gap-2 h-full">
         {/* Checkbox - only visible in selection mode */}
         {isSelectionMode && (
-          <div className="flex-shrink-0 self-center">
+          <div 
+            className="flex-shrink-0 self-stretch flex items-center px-2 -ml-2 cursor-pointer touch-none"
+            {...selectZoneProps}
+          >
             <input
               type="checkbox"
               checked={isSelected}
@@ -190,7 +198,7 @@ export function VideoCard({
         )}
 
         <div
-          className={`flex-1 flex flex-col bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors relative h-full ${getDragFeedbackClasses()} ${isSelectionMode ? 'touch-none' : ''}`}
+          className={`flex-1 flex flex-col bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors relative h-full ${getDragFeedbackClasses()}`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
           {...touchProps}
@@ -278,18 +286,21 @@ export function VideoCard({
     <div className="flex items-start gap-2 h-full">
       {/* Checkbox - only visible in selection mode */}
       {isSelectionMode && (
-        <div className="flex-shrink-0 self-center">
+        <div 
+          className="flex-shrink-0 self-stretch flex items-center px-2 -ml-2 cursor-pointer"
+          {...selectZoneProps}
+        >
           <input
             type="checkbox"
             checked={isSelected}
             onChange={(e) => onToggleSelect?.(video.id, (e.nativeEvent as MouseEvent).shiftKey)}
-            className="w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer"
+            className="w-5 h-5 rounded border-gray-600 bg-gray-700 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-0 cursor-pointer pointer-events-none"
           />
         </div>
       )}
 
       <div
-        className={`flex-1 flex flex-col bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors h-full ${getDragFeedbackClasses()} ${isSelectionMode ? 'touch-none' : ''}`}
+        className={`flex-1 flex flex-col bg-gray-800 rounded-lg overflow-hidden hover:bg-gray-750 transition-colors h-full ${getDragFeedbackClasses()}`}
         {...touchProps}
       >
         {/* Thumbnail - fixed aspect ratio */}

@@ -322,6 +322,7 @@ export function Saved() {
         onToggleSelect={handleToggleSelect}
         containerRef={touchDragSelect.containerRef}
         getItemTouchProps={touchDragSelect.getItemProps}
+        getSelectZoneProps={touchDragSelect.getSelectZoneProps}
         previewRange={touchDragSelect.previewRange}
         dragStartId={touchDragSelect.dragStartId}
         dragEndId={touchDragSelect.dragEndId}

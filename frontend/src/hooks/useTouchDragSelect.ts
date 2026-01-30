@@ -16,6 +16,10 @@ interface UseTouchDragSelectReturn {
   previewRange: Set<string>;
   getItemProps: (id: string) => {
     'data-video-id': string;
+  };
+  getSelectZoneProps: (id: string) => {
+    'data-video-id': string;
+    'data-select-zone': string;
     onTouchStart: (e: React.TouchEvent) => void;
     onTouchMove: (e: React.TouchEvent) => void;
     onTouchEnd: (e: React.TouchEvent) => void;
@@ -72,20 +76,28 @@ export function useTouchDragSelect({
     setPreviewRange(range);
   }, [calculateRange]);
 
-  // Handle touch start - begin drag selection
+  // Handle touch start - begin drag selection (only from select zone)
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     if (!isEnabled || e.touches.length !== 1) {
       return;
     }
 
     const target = e.target as HTMLElement;
-    const videoId = target.getAttribute('data-video-id');
+    
+    // Only start drag if touch originated from a select zone
+    const isSelectZone = target.closest('[data-select-zone]');
+    if (!isSelectZone) {
+      return;
+    }
+    
+    const videoId = target.getAttribute('data-video-id') || 
+                   isSelectZone.getAttribute('data-video-id');
     
     if (!videoId) {
       return;
     }
 
-    // Prevent default scrolling behavior
+    // Prevent default scrolling behavior only when starting selection
     e.preventDefault();
 
     setIsDragging(true);
@@ -138,20 +150,19 @@ export function useTouchDragSelect({
     const touch = e.touches[0];
     const element = document.elementFromPoint(touch.clientX, touch.clientY);
 
-    // Trigger auto-scroll
+    // Trigger auto-scroll at screen edges
     handleAutoScroll(touch.clientY);
     
     if (!element) {
       return;
     }
 
-    const videoId = element.getAttribute('data-video-id');
+    // Look for video ID on the element or its ancestors
+    const videoCard = element.closest('[data-video-id]');
+    const videoId = videoCard?.getAttribute('data-video-id');
     
     if (videoId && videoId !== dragEndId) {
       setDragEndId(videoId);
-      // We need to use dragStartId from state here, but it might be stale in this closure if not added to deps.
-      // However, dragStartId only changes on touch start/end, so it should be stable during drag.
-      // But let's use the functional update pattern or just rely on the dependency.
       updatePreviewRange(dragStartId, videoId);
     }
   }, [isEnabled, isDragging, dragEndId, dragStartId, updatePreviewRange, handleAutoScroll]);
@@ -190,10 +201,18 @@ export function useTouchDragSelect({
     };
   }, []);
 
-  // Get item props for spreading on video elements
+  // Get item props for spreading on video elements (general - no touch handlers)
   const getItemProps = useCallback((id: string) => {
     return {
       'data-video-id': id,
+    };
+  }, []);
+
+  // Get select zone props for the selection area (left side of card)
+  const getSelectZoneProps = useCallback((id: string) => {
+    return {
+      'data-video-id': id,
+      'data-select-zone': 'true',
       onTouchStart: handleTouchStart,
       onTouchMove: handleTouchMove,
       onTouchEnd: handleTouchEnd,
@@ -207,5 +226,6 @@ export function useTouchDragSelect({
     dragEndId,
     previewRange,
     getItemProps,
+    getSelectZoneProps,
   };
 }
