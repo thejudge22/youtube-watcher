@@ -14,12 +14,13 @@ import { useSavedVideos, useDiscardVideo, useBulkDiscardVideos, useSavedVideoCha
 import { useTouchDragSelect } from '../hooks/useTouchDragSelect';
 import { VideoList } from '../components/video/VideoList';
 import { RecentlyDeletedModal } from '../components/video/RecentlyDeletedModal';
+import { RemoveConfirmationModal } from '../components/video/RemoveConfirmationModal';
 import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import ViewModeToggle, { ViewMode } from '../components/common/ViewModeToggle';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { openPlaylist } from '../utils/playlist';
-import type { SavedVideosParams } from '../types';
+import type { SavedVideosParams, Video } from '../types';
 
 type SortBy = 'published_at' | 'saved_at';
 type Order = 'asc' | 'desc';
@@ -41,6 +42,7 @@ export function Saved() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [lastClickedId, setLastClickedId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [videoToRemove, setVideoToRemove] = useState<Video | null>(null);
 
   const params: SavedVideosParams = useMemo(() => {
     const p: SavedVideosParams = {};
@@ -69,7 +71,24 @@ export function Saved() {
   const bulkDiscard = useBulkDiscardVideos();
 
   const handleDiscard = (id: string) => {
-    discardVideo.mutate(id);
+    const video = videos.find(v => v.id === id);
+    if (video) {
+      setVideoToRemove(video);
+    }
+  };
+
+  const handleConfirmRemove = () => {
+    if (videoToRemove) {
+      discardVideo.mutate(videoToRemove.id, {
+        onSuccess: () => {
+          setVideoToRemove(null);
+        }
+      });
+    }
+  };
+
+  const handleCancelRemove = () => {
+    setVideoToRemove(null);
   };
 
   const handleToggleSelect = (id: string, shiftKey: boolean = false) => {
@@ -361,7 +380,7 @@ export function Saved() {
             videos={videos}
             onDiscard={handleDiscard}
             showSaveButton={false}
-            showDiscardButton={false}
+            showDiscardButton={true}
             emptyMessage="No saved videos. Save videos from the inbox to watch later."
             viewMode={viewMode}
             isSelectionMode={isSelectionMode}
@@ -438,6 +457,14 @@ export function Saved() {
       <RecentlyDeletedModal
         isOpen={showRecentlyDeleted}
         onClose={() => setShowRecentlyDeleted(false)}
+      />
+
+      <RemoveConfirmationModal
+        isOpen={videoToRemove !== null}
+        onClose={handleCancelRemove}
+        onConfirm={handleConfirmRemove}
+        videoTitle={videoToRemove?.title}
+        isLoading={discardVideo.isPending}
       />
     </div>
   );
