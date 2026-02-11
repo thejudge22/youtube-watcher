@@ -44,7 +44,6 @@ export function VideoCard({
   isDragStart = false,
   isDragEnd = false,
 }: VideoCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const formatDate = (dateString: string) => {
@@ -218,8 +217,6 @@ export function VideoCard({
 
         <div
           className={`flex-1 flex flex-col bg-bg-secondary rounded-xl overflow-hidden border border-transparent hover:border-border transition-all duration-300 relative h-full group ${getDragFeedbackClasses()} ${!isSelectionMode ? 'hover:-translate-y-1 hover:shadow-lg' : ''}`}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
           {...touchProps}
         >
           {/* Thumbnail - fixed aspect ratio */}
@@ -274,35 +271,34 @@ export function VideoCard({
             <div className="text-xs text-text-tertiary mt-1.5">
               {formatDate(video.published_at)}
             </div>
+            {/* Action buttons at bottom - not overlay */}
+            {!isSelectionMode && (showSaveButton && onSave || showDiscardButton) && (
+              <div className="flex gap-2 mt-auto pt-2">
+                {showSaveButton && onSave && (
+                  <Button
+                    variant="primary"
+                    onClick={() => onSave(video.id)}
+                    size="sm"
+                    className="flex-1 gap-1"
+                  >
+                    <CheckCircleIcon className="w-3.5 h-3.5" />
+                    Save
+                  </Button>
+                )}
+                {showDiscardButton && (
+                  <Button
+                    variant="danger"
+                    onClick={() => onDiscard(video.id)}
+                    size="sm"
+                    className={showSaveButton && onSave ? 'flex-1 gap-1' : 'w-full gap-1'}
+                  >
+                    <XCircleIcon className="w-3.5 h-3.5" />
+                    {showSaveButton && onSave ? 'Discard' : 'Remove'}
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
-
-          {/* Hover actions overlay */}
-          {!isSelectionMode && isHovered && (showSaveButton && onSave || showDiscardButton) && (
-            <div className="absolute inset-0 bg-bg-primary/90 backdrop-blur-sm flex items-center justify-center gap-2 animate-scale-in">
-              {showSaveButton && onSave && (
-                <Button
-                  variant="primary"
-                  onClick={() => onSave(video.id)}
-                  size="sm"
-                  className="gap-1"
-                >
-                  <CheckCircleIcon className="w-4 h-4" />
-                  Save
-                </Button>
-              )}
-              {showDiscardButton && (
-                <Button
-                  variant="danger"
-                  onClick={() => onDiscard(video.id)}
-                  size="sm"
-                  className="gap-1"
-                >
-                  <XCircleIcon className="w-4 h-4" />
-                  {showSaveButton && onSave ? 'Discard' : 'Remove'}
-                </Button>
-              )}
-            </div>
-          )}
         </div>
       </div>
     );
