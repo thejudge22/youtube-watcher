@@ -6,7 +6,7 @@ services:
       - "38000:8000"
     volumes:
       - ./data:/app/data
-    environment:
-      - DATABASE_URL=sqlite+aiosqlite:///./data/youtube-watcher.db
+    env_file:
+      - .env
     user: "1000:1000"
     restart: unless-stopped

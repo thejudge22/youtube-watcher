@@ -13,3 +13,5 @@ yt-dlp>=2024.0.0
 # Issue #12: Scheduled Backups
 APScheduler>=3.10.0
 aiofiles>=23.0.0
+# Issue #41: Optional Authentication (JWT only - hashing uses built-in hashlib)
+PyJWT>=2.8.0

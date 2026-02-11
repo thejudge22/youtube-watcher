@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ArrowRightOnRectangleIcon } from '@heroicons/react/24/outline';
 import { AddVideoModal } from '../video/AddVideoModal';
 import { Button } from '../common/Button';
 import { ThemeToggle } from '../common/ThemeToggle';
+import { useAuth } from '../../context/AuthContext';
 import type { Theme } from '../../hooks/useTheme';
 
 interface HeaderProps {
@@ -13,6 +14,7 @@ interface HeaderProps {
 
 export function Header({ theme, onToggleTheme }: HeaderProps) {
   const [isAddVideoModalOpen, setIsAddVideoModalOpen] = useState(false);
+  const { isAuthEnabled, logout } = useAuth();
 
   return (
     <>
@@ -49,6 +51,19 @@ export function Header({ theme, onToggleTheme }: HeaderProps) {
                 <PlusIcon className="w-4 h-4" />
                 Add URL
               </Button>
+              {/* Issue #41: Logout button when auth is enabled */}
+              {isAuthEnabled && (
+                <Button
+                  onClick={logout}
+                  variant="ghost"
+                  size="sm"
+                  className="gap-1.5 text-text-secondary hover:text-text-primary"
+                  title="Log out"
+                >
+                  <ArrowRightOnRectangleIcon className="w-4 h-4" />
+                  <span className="hidden sm:inline">Logout</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>

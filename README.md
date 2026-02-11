@@ -23,6 +23,7 @@ A self-hosted, Docker-based web application for managing YouTube content discove
 - **Import/Export** - Backup and restore your channels and saved videos
 - **RSS-based** - No YouTube API key required, uses RSS feeds
 - **Self-hosted** - Your data stays on your server
+- **Optional Authentication** - Secure your instance with username/password login when exposing to public networks
 - **Responsive Design** - Works on desktop and mobile devices
 
 ## Installation
@@ -86,6 +87,38 @@ volumes:
 ```
 
 This ensures your database and application data persists across container updates and restarts. The SQLite database file is stored at `./data/youtube-watcher.db`.
+
+
+
+#### Optional Authentication
+
+YouTube-Watcher supports optional username/password authentication to secure your instance when exposing it to public networks.
+
+**To enable authentication:**
+
+1. Clone the repository and generate a password hash:
+   ```bash
+   git clone https://github.com/mark-rodgers/youtube-watcher.git
+   cd youtube-watcher
+   ./scripts/generate-password-hash.sh
+   # Enter your password when prompted
+   ```
+
+2. Create a `.env` file in the same directory as your `docker-compose.yml`:
+   ```bash
+   cat > .env << EOF
+   AUTH_ENABLED=true
+   AUTH_USERNAME=admin
+   AUTH_PASSWORD_HASH=paste-your-generated-hash-here
+   EOF
+   ```
+
+3. Restart the container:
+   ```bash
+   docker compose up -d
+   ```
+
+When enabled, users will be presented with a login page before accessing the application. Sessions last 14 days by default (configurable via `JWT_EXPIRE_HOURS`).
 
 
 

@@ -17,6 +17,34 @@ const api = axios.create({
   timeout: DEFAULT_TIMEOUT,
 });
 
+// Issue #41: Optional Authentication - Token storage
+let authToken: string | null = null;
+
+/**
+ * Set the authentication token for API requests
+ */
+export function setAuthToken(token: string): void {
+  authToken = token;
+}
+
+/**
+ * Clear the authentication token
+ */
+export function clearAuthToken(): void {
+  authToken = null;
+}
+
+// Request interceptor to add auth token
+api.interceptors.request.use(
+  (config) => {
+    if (authToken) {
+      config.headers.Authorization = `Bearer ${authToken}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Settings types
 export interface AppSettings {
   http_timeout: number;
@@ -70,6 +98,29 @@ export interface ExportData {
     saved_at: string | null;
     published_at: string | null;
   }>;
+}
+
+// Issue #41: Optional Authentication - Auth types
+export interface AuthStatus {
+  enabled: boolean;
+}
+
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  token_type: string;
+}
+
+export interface TokenVerifyRequest {
+  token: string;
+}
+
+export interface TokenVerifyResponse {
+  valid: boolean;
 }
 
 // Channel API
@@ -140,4 +191,21 @@ export const backupApi = {
   listBackups: () => api.get<any>('/backup/list'),
   runBackup: (format: string = 'json') => api.post<any>('/backup/run', { format }),
   cleanup: () => api.delete('/backup/cleanup'),
+};
+
+// Issue #41: Optional Authentication - Auth API
+export const authApi = {
+  /** Check if authentication is enabled */
+  getStatus: () => api.get<AuthStatus>('/auth/status'),
+  
+  /** Log in with username and password */
+  login: (username: string, password: string) =>
+    api.post<LoginResponse>('/auth/login', { username, password }),
+  
+  /** Verify if a token is still valid */
+  verifyToken: (token: string) =>
+    api.post<TokenVerifyResponse>('/auth/verify', { token }),
+  
+  /** Log out (client-side token removal) */
+  logout: () => api.post('/auth/logout'),
 };

@@ -13,7 +13,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .routers import channels, videos, import_export, settings, backup
+from .routers import channels, videos, import_export, settings, backup, auth
+from .auth import require_auth
 from .database import get_db
 from .models.setting import Setting
 # Issue #12: Scheduled Backups
@@ -114,12 +115,16 @@ async def health(db: AsyncSession = Depends(get_db)):
         )
 
 # Include routers
-app.include_router(channels.router, prefix="/api")
-app.include_router(videos.router, prefix="/api")
-app.include_router(import_export.router, prefix="/api")
-app.include_router(settings.router, prefix="/api")
+# Issue #41: Auth router (no auth required - needed for login)
+app.include_router(auth.router, prefix="/api")
+
+# Protected routers (auth required if AUTH_ENABLED=true)
+app.include_router(channels.router, prefix="/api", dependencies=[Depends(require_auth)])
+app.include_router(videos.router, prefix="/api", dependencies=[Depends(require_auth)])
+app.include_router(import_export.router, prefix="/api", dependencies=[Depends(require_auth)])
+app.include_router(settings.router, prefix="/api", dependencies=[Depends(require_auth)])
 # Issue #12: Scheduled Backups
-app.include_router(backup.router, prefix="/api")
+app.include_router(backup.router, prefix="/api", dependencies=[Depends(require_auth)])
 
 # This logic is for the production Docker container, where the frontend is built and served by FastAPI.
 if os.path.exists("static"):
