@@ -25,6 +25,7 @@ A self-hosted, Docker-based web application for managing YouTube content discove
 - **Self-hosted** - Your data stays on your server
 - **Optional Authentication** - Secure your instance with username/password login when exposing to public networks
 - **Responsive Design** - Works on desktop and mobile devices
+- **PWA Support** - Install as a Progressive Web App on any device for offline access and native app experience
 
 ## Installation
 
@@ -122,6 +123,33 @@ When enabled, users will be presented with a login page before accessing the app
 
 
 
+
+## Progressive Web App (PWA)
+
+YouTube-Watcher can be installed as a Progressive Web App (PWA) on desktop and mobile devices. This provides:
+
+- **Offline Support** - App works without an internet connection (cached content)
+- **Native App Experience** - Launch from home screen without browser chrome
+- **Background Updates** - Service worker automatically updates in the background
+- **Push Notifications** - Get notified when new content is available (coming soon)
+
+### Installing the PWA
+
+**Desktop (Chrome/Edge):**
+1. Open YouTube-Watcher in your browser
+2. Look for the install icon (➕) in the address bar, or click the menu (⋯) → "Install YouTube Watcher"
+3. The app will open in its own window
+
+**iOS (Safari):**
+1. Open YouTube-Watcher in Safari
+2. Tap the Share button (⬆️)
+3. Scroll down and tap "Add to Home Screen"
+4. Tap "Add"
+
+**Android (Chrome):**
+1. Open YouTube-Watcher in Chrome
+2. Tap the menu (⋮) → "Add to Home Screen"
+3. Tap "Install"
 
 ## Usage
 

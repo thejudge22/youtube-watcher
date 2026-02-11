@@ -7,6 +7,7 @@ import { Channels } from './pages/Channels';
 import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { PWAUpdatePrompt } from './components/common/PWAUpdatePrompt';
 import { useTheme } from './hooks/useTheme';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
@@ -60,6 +61,7 @@ function AppContent() {
     <ErrorBoundary componentName="Application">
       <BrowserRouter>
         <div className="min-h-screen bg-bg-primary transition-colors duration-200">
+          <PWAUpdatePrompt />
           <ErrorBoundary componentName="Header">
             <Header theme={theme} onToggleTheme={toggleTheme} />
           </ErrorBoundary>

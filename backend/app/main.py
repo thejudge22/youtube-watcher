@@ -1,6 +1,7 @@
 from contextlib import asynccontextmanager
 import os
 import logging
+import mimetypes
 
 # Configure logging for debugging
 logging.basicConfig(level=logging.INFO)
@@ -10,6 +11,11 @@ from fastapi import FastAPI, Depends, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+
+# Ensure common MIME types are registered
+mimetypes.add_type('image/png', '.png')
+mimetypes.add_type('image/svg+xml', '.svg')
+mimetypes.add_type('application/manifest+json', '.webmanifest')
 from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -130,7 +136,35 @@ app.include_router(backup.router, prefix="/api", dependencies=[Depends(require_a
 if os.path.exists("static"):
     app.mount("/assets", StaticFiles(directory="static/assets"), name="assets")
     
-    @app.get("/{full_path:path}")
+    # PWA: Serve service worker with correct MIME type and headers
+    @app.api_route("/sw.js", methods=["GET", "HEAD"])
+    async def serve_service_worker():
+        return FileResponse(
+            "static/sw.js",
+            media_type="application/javascript",
+            headers={
+                "Cache-Control": "no-cache",  # Don't cache the service worker
+                "Service-Worker-Allowed": "/",  # Allow service worker to control all paths
+            }
+        )
+    
+    # PWA: Serve web manifest with correct MIME type
+    @app.api_route("/manifest.webmanifest", methods=["GET", "HEAD"])
+    async def serve_manifest():
+        return FileResponse(
+            "static/manifest.webmanifest",
+            media_type="application/manifest+json"
+        )
+    
+    # PWA: Serve workbox script with correct MIME type
+    @app.api_route("/workbox-{workbox_id}.js", methods=["GET", "HEAD"])
+    async def serve_workbox(workbox_id: str):
+        workbox_path = f"static/workbox-{workbox_id}.js"
+        if os.path.isfile(workbox_path):
+            return FileResponse(workbox_path, media_type="application/javascript")
+        raise HTTPException(status_code=404, detail="Workbox script not found")
+    
+    @app.api_route("/{full_path:path}", methods=["GET", "HEAD"])
     async def serve_spa(full_path: str):
         # This will serve the index.html for any path that is not an API endpoint or a static asset.
         # This is necessary for single-page applications like React.
@@ -138,5 +172,7 @@ if os.path.exists("static"):
             # Check if the requested file exists in the static directory (e.g., favicon.jpg)
             static_file_path = os.path.join("static", full_path)
             if os.path.isfile(static_file_path):
-                return FileResponse(static_file_path)
+                # Detect MIME type based on file extension
+                content_type, _ = mimetypes.guess_type(static_file_path)
+                return FileResponse(static_file_path, media_type=content_type)
             return FileResponse("static/index.html")
