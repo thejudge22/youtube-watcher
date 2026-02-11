@@ -9,8 +9,18 @@ from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_excep
 
 
 # Common HTTP headers for YouTube requests
+# Browser-like User-Agent to avoid bot detection
 HTTP_HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; YouTubeWatcher/1.0; +https://github.com/thejudge22/youtube-watcher)"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+}
+
+# Cookies to bypass EU cookie consent (Issue #44)
+# SOCS cookie signals consent has been given - same approach used by yt-dlp
+YOUTUBE_COOKIES = {
+    "SOCS": "CAESEwgDEgk0ODE3Nzk3MjQaAmVuIAEaBgiA_LyaBg",
+    "CONSENT": "PENDING+987",
 }
 
 
@@ -133,10 +143,24 @@ async def _fetch_channel_id_from_page(url: str, timeout: float = 10.0) -> str:
     Raises:
         ValueError: If channel ID cannot be found in the page
     """
-    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers=HTTP_HEADERS) as client:
+    async with httpx.AsyncClient(
+        timeout=timeout,
+        follow_redirects=True,
+        headers=HTTP_HEADERS,
+        cookies=YOUTUBE_COOKIES
+    ) as client:
         response = await client.get(url)
         response.raise_for_status()
         html = response.text
+        
+        # Detect EU consent page redirect (Issue #44)
+        # If we still land on consent page despite the cookie, the cookie format may have changed
+        if "consent.youtube.com" in str(response.url) or "consent.google.com" in str(response.url):
+            raise ValueError(
+                f"YouTube is requiring cookie consent for this request. "
+                f"This typically affects EU users. The consent bypass cookie may need updating. "
+                f"URL: {url}"
+            )
         
         # Try to extract from meta tag
         meta_match = re.search(r'<meta[^>]*itemprop="channelId"[^>]*content="([^"]+)"', html)

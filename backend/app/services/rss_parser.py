@@ -10,7 +10,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from .youtube_utils import get_rss_url, get_video_url, extract_channel_id, HTTP_HEADERS
+from .youtube_utils import get_rss_url, get_video_url, extract_channel_id, HTTP_HEADERS, YOUTUBE_COOKIES
 from .shorts_detector import is_short_from_video_info
 
 
@@ -56,7 +56,12 @@ async def fetch_channel_info(channel_id: str, timeout: float = 10.0) -> ChannelI
     """
     rss_url = get_rss_url(channel_id)
     
-    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers=HTTP_HEADERS) as client:
+    async with httpx.AsyncClient(
+        timeout=timeout,
+        follow_redirects=True,
+        headers=HTTP_HEADERS,
+        cookies=YOUTUBE_COOKIES
+    ) as client:
         response = await client.get(rss_url)
         response.raise_for_status()
         
@@ -117,7 +122,12 @@ async def fetch_videos(rss_url: str, limit: int = 15, timeout: float = 10.0) -> 
     Raises:
         ValueError: If RSS feed cannot be parsed
     """
-    async with httpx.AsyncClient(timeout=timeout, follow_redirects=True, headers=HTTP_HEADERS) as client:
+    async with httpx.AsyncClient(
+        timeout=timeout,
+        follow_redirects=True,
+        headers=HTTP_HEADERS,
+        cookies=YOUTUBE_COOKIES
+    ) as client:
         response = await client.get(rss_url)
         response.raise_for_status()
         
