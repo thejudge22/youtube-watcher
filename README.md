@@ -42,22 +42,20 @@ The ghcr.io/thejudge22/youtube-watcher:latest tag always builds from every commi
 1. Create a `docker-compose.yml` file:
 ```yaml
 services:
-  youtube-watcher:
+  app:
     image: ghcr.io/thejudge22/youtube-watcher:latest
+    # Or use specific version: ghcr.io/thejudge22/youtube-watcher:v1.0.0
     ports:
       - "38000:8000"
     volumes:
       - ./data:/app/data
-    environment:
-      - DATABASE_URL=sqlite+aiosqlite:///./data/youtube-watcher.db
+    env_file:
+      - .env
     user: "1000:1000"
     restart: unless-stopped
 ```
 
-2. Create the data directory:
-```bash
-mkdir -p data
-```
+2. Copy the .env.example to .env
 
 3. Start the application:
 ```bash
@@ -105,15 +103,8 @@ YouTube-Watcher supports optional username/password authentication to secure you
    # Enter your password when prompted
    ```
 
-2. Create a `.env` file in the same directory as your `docker-compose.yml`:
-   ```bash
-   cat > .env << EOF
-   AUTH_ENABLED=true
-   AUTH_USERNAME=admin
-   AUTH_PASSWORD_HASH=paste-your-generated-hash-here
-   EOF
-   ```
-
+2. Update the `.env` file with the username/password hash.
+   
 3. Restart the container:
    ```bash
    docker compose up -d
@@ -121,35 +112,6 @@ YouTube-Watcher supports optional username/password authentication to secure you
 
 When enabled, users will be presented with a login page before accessing the application. Sessions last 14 days by default (configurable via `JWT_EXPIRE_HOURS`).
 
-
-
-
-## Progressive Web App (PWA)
-
-YouTube-Watcher can be installed as a Progressive Web App (PWA) on desktop and mobile devices. This provides:
-
-- **Offline Support** - App works without an internet connection (cached content)
-- **Native App Experience** - Launch from home screen without browser chrome
-- **Background Updates** - Service worker automatically updates in the background
-- **Push Notifications** - Get notified when new content is available (coming soon)
-
-### Installing the PWA
-
-**Desktop (Chrome/Edge):**
-1. Open YouTube-Watcher in your browser
-2. Look for the install icon (➕) in the address bar, or click the menu (⋯) → "Install YouTube Watcher"
-3. The app will open in its own window
-
-**iOS (Safari):**
-1. Open YouTube-Watcher in Safari
-2. Tap the Share button (⬆️)
-3. Scroll down and tap "Add to Home Screen"
-4. Tap "Add"
-
-**Android (Chrome):**
-1. Open YouTube-Watcher in Chrome
-2. Tap the menu (⋮) → "Add to Home Screen"
-3. Tap "Install"
 
 ## Usage
 
