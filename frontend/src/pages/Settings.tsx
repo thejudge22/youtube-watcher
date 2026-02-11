@@ -38,34 +38,34 @@ export function Settings() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold text-white mb-6">Settings</h1>
+      <h1 className="text-2xl font-bold text-text-primary mb-6">Settings</h1>
 
       {/* Application Settings Section */}
-      <div className="bg-gray-800 rounded-lg p-6 shadow-lg mb-6">
+      <div className="bg-bg-secondary rounded-lg p-6 shadow-lg mb-6">
         <AppSettingsSection />
       </div>
 
       {/* Issue #12: Scheduled Backups Section */}
-      <div className="bg-gray-800 rounded-lg p-6 shadow-lg mb-6">
+      <div className="bg-bg-secondary rounded-lg p-6 shadow-lg mb-6">
         <BackupSettingsSection />
       </div>
 
       {/* Import/Export Section */}
-      <div className="bg-gray-800 rounded-lg p-6 shadow-lg mb-6">
+      <div className="bg-bg-secondary rounded-lg p-6 shadow-lg mb-6">
         <ImportExportSection />
       </div>
 
-      <div className="bg-gray-800 rounded-lg p-6 shadow-lg">
-        <h2 className="text-lg font-medium text-white mb-4">Data Management</h2>
-        <p className="text-gray-400 mb-6">
+      <div className="bg-bg-secondary rounded-lg p-6 shadow-lg">
+        <h2 className="text-lg font-medium text-text-primary mb-4">Data Management</h2>
+        <p className="text-text-secondary mb-6">
           Manage your saved videos and application data.
         </p>
         
-        <div className="border-t border-gray-700 pt-6">
+        <div className="border-t border-border pt-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-md font-medium text-white">Data Removal</h3>
-              <p className="text-sm text-gray-400">
+              <h3 className="text-md font-medium text-text-primary">Data Removal</h3>
+              <p className="text-sm text-text-secondary">
                 Actions that remove or permanently delete data.
               </p>
             </div>
@@ -79,11 +79,11 @@ export function Settings() {
 
           {showDangerZone && (
             <div className="space-y-4 mt-4">
-              <div className="bg-red-900/20 border border-red-700/50 rounded-lg p-4">
+              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-md font-medium text-red-400">Purge All Recently Deleted Videos</h3>
-                    <p className="text-sm text-red-300/70">
+                    <h3 className="text-md font-medium text-accent-red">Purge All Recently Deleted Videos</h3>
+                    <p className="text-sm text-accent-red/70">
                       Permanently delete all videos in the recently deleted list. This action cannot be undone.
                     </p>
                   </div>
@@ -107,7 +107,7 @@ export function Settings() {
         title="Are You Sure?"
       >
         <div className="mt-2">
-          <p className="text-sm text-gray-300">
+          <p className="text-sm text-text-secondary">
             Are you sure you want to remove all saved videos? They will be moved to the Recently Deleted list where you can restore them for up to 30 days.
           </p>
         </div>
@@ -135,13 +135,13 @@ export function Settings() {
         title="⚠️ Permanent Deletion Warning"
       >
         <div className="mt-2">
-          <p className="text-sm text-gray-300 mb-3">
-            Are you sure you want to <span className="font-bold text-red-400">permanently delete</span> all recently deleted videos?
+          <p className="text-sm text-text-secondary mb-3">
+            Are you sure you want to <span className="font-bold text-accent-red">permanently delete</span> all recently deleted videos?
           </p>
-          <p className="text-sm text-gray-400">
-            This will delete <span className="font-semibold text-white">{discardedVideos?.length || 0}</span> video(s) from the recently deleted list.
+          <p className="text-sm text-text-secondary">
+            This will delete <span className="font-semibold text-text-primary">{discardedVideos?.length || 0}</span> video(s) from the recently deleted list.
           </p>
-          <p className="text-sm text-red-400 font-semibold mt-3">
+          <p className="text-sm text-accent-red font-semibold mt-3">
             This action cannot be undone!
           </p>
         </div>

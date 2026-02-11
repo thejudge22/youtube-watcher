@@ -8,7 +8,7 @@ interface ChannelListProps {
 export function ChannelList({ channels }: ChannelListProps) {
   if (channels.length === 0) {
     return (
-      <div className="bg-gray-800 rounded-lg p-8 text-center text-gray-400">
+      <div className="bg-bg-secondary rounded-lg p-8 text-center text-text-secondary">
         <p>No channels added yet.</p>
         <p className="mt-2 text-sm">Add a YouTube channel to start tracking.</p>
       </div>

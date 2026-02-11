@@ -3,8 +3,15 @@ import { Link } from 'react-router-dom';
 import { PlusIcon } from '@heroicons/react/24/outline';
 import { AddVideoModal } from '../video/AddVideoModal';
 import { Button } from '../common/Button';
+import { ThemeToggle } from '../common/ThemeToggle';
+import type { Theme } from '../../hooks/useTheme';
 
-export function Header() {
+interface HeaderProps {
+  theme: Theme;
+  onToggleTheme: () => void;
+}
+
+export function Header({ theme, onToggleTheme }: HeaderProps) {
   const [isAddVideoModalOpen, setIsAddVideoModalOpen] = useState(false);
 
   return (
@@ -33,6 +40,7 @@ export function Header() {
 
             {/* Actions */}
             <div className="flex items-center space-x-3">
+              <ThemeToggle theme={theme} onToggle={onToggleTheme} />
               <Button
                 onClick={() => setIsAddVideoModalOpen(true)}
                 size="sm"

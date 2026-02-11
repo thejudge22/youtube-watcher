@@ -7,13 +7,13 @@ interface ShortsFilterToggleProps {
 
 export function ShortsFilterToggle({ value, onChange }: ShortsFilterToggleProps) {
   return (
-    <div className="flex items-center space-x-1 bg-gray-700 rounded-lg p-1">
+    <div className="flex items-center space-x-1 bg-bg-tertiary rounded-lg p-1">
       <button
         onClick={() => onChange('all')}
         className={`px-3 py-1 text-sm rounded-md transition-colors ${
           value === 'all'
-            ? 'bg-blue-600 text-white'
-            : 'text-gray-300 hover:text-white hover:bg-gray-600'
+            ? 'bg-accent-blue text-white'
+            : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
         }`}
       >
         All
@@ -22,8 +22,8 @@ export function ShortsFilterToggle({ value, onChange }: ShortsFilterToggleProps)
         onClick={() => onChange('regular')}
         className={`px-3 py-1 text-sm rounded-md transition-colors ${
           value === 'regular'
-            ? 'bg-blue-600 text-white'
-            : 'text-gray-300 hover:text-white hover:bg-gray-600'
+            ? 'bg-accent-blue text-white'
+            : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
         }`}
       >
         Videos
@@ -32,8 +32,8 @@ export function ShortsFilterToggle({ value, onChange }: ShortsFilterToggleProps)
         onClick={() => onChange('shorts')}
         className={`px-3 py-1 text-sm rounded-md transition-colors flex items-center ${
           value === 'shorts'
-            ? 'bg-red-600 text-white'
-            : 'text-gray-300 hover:text-white hover:bg-gray-600'
+            ? 'bg-accent-red text-white'
+            : 'text-text-secondary hover:text-text-primary hover:bg-bg-elevated'
         }`}
       >
         <svg

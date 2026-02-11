@@ -39,7 +39,7 @@ export function AddVideoModal({ isOpen, onClose }: AddVideoModalProps) {
         <div>
           <label
             htmlFor="videoUrl"
-            className="block text-sm font-medium text-gray-300 mb-1"
+            className="block text-sm font-medium text-text-secondary mb-1"
           >
             Video URL
           </label>
@@ -49,7 +49,7 @@ export function AddVideoModal({ isOpen, onClose }: AddVideoModalProps) {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://youtube.com/watch?v=..."
-            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-md text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent"
             disabled={isLoading}
           />
           <p className="mt-1 text-xs text-gray-500">

@@ -15,15 +15,15 @@ const modes: { value: ViewMode; icon: typeof Squares2X2Icon; label: string }[] =
 
 export default function ViewModeToggle({ viewMode, onChange }: ViewModeToggleProps) {
   return (
-    <div className="flex rounded-lg overflow-hidden border border-gray-600">
+    <div className="flex rounded-lg overflow-hidden border border-border">
       {modes.map(({ value, icon: Icon, label }) => (
         <button
           key={value}
           onClick={() => onChange(value)}
           className={`flex items-center gap-1 px-3 py-1.5 text-sm transition-colors ${
             viewMode === value
-              ? 'bg-gray-600 text-white'
-              : 'bg-gray-800 text-gray-400 hover:bg-gray-700'
+              ? 'bg-bg-elevated text-white'
+              : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary'
           }`}
           title={`${label} view`}
         >

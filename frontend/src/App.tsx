@@ -6,14 +6,17 @@ import { Saved } from './pages/Saved';
 import { Channels } from './pages/Channels';
 import { Settings } from './pages/Settings';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { useTheme } from './hooks/useTheme';
 
 function App() {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <ErrorBoundary componentName="Application">
       <BrowserRouter>
-        <div className="min-h-screen bg-bg-primary">
+        <div className="min-h-screen bg-bg-primary transition-colors duration-200">
           <ErrorBoundary componentName="Header">
-            <Header />
+            <Header theme={theme} onToggleTheme={toggleTheme} />
           </ErrorBoundary>
           <ErrorBoundary componentName="Navigation">
             <Navigation />

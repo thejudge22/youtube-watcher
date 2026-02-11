@@ -27,7 +27,7 @@ export function ChannelListView({ channels }: ChannelListViewProps) {
 
   if (channels.length === 0) {
     return (
-      <div className="bg-gray-800 rounded-lg p-8 text-center text-gray-400">
+      <div className="bg-bg-secondary rounded-lg p-8 text-center text-text-secondary">
         <p>No channels added yet.</p>
         <p className="mt-2 text-sm">Add a YouTube channel to start tracking.</p>
       </div>
@@ -35,9 +35,9 @@ export function ChannelListView({ channels }: ChannelListViewProps) {
   }
 
   return (
-    <div className="bg-gray-800 rounded-lg overflow-hidden">
+    <div className="bg-bg-secondary rounded-lg overflow-hidden">
       {/* Table Header */}
-      <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-gray-700/50 border-b border-gray-700 text-sm font-medium text-gray-300">
+      <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-bg-tertiary/50 border-b border-border text-sm font-medium text-text-secondary">
         <div className="col-span-1">Thumbnail</div>
         <div className="col-span-3">Channel Name</div>
         <div className="col-span-2">Videos</div>
@@ -46,11 +46,11 @@ export function ChannelListView({ channels }: ChannelListViewProps) {
       </div>
 
       {/* Table Body */}
-      <div className="divide-y divide-gray-700">
+      <div className="divide-y divide-border">
         {channels.map((channel) => (
           <div
             key={channel.id}
-            className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-gray-700/30 transition-colors"
+            className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-bg-tertiary/30 transition-colors"
           >
             {/* Thumbnail */}
             <div className="col-span-1">
@@ -63,12 +63,12 @@ export function ChannelListView({ channels }: ChannelListViewProps) {
 
             {/* Channel Name */}
             <div className="col-span-3 min-w-0">
-              <h3 className="text-white font-medium truncate">{channel.name}</h3>
+              <h3 className="text-text-primary font-medium truncate">{channel.name}</h3>
               <a
                 href={channel.youtube_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 text-sm flex items-center gap-1 mt-0.5"
+                className="text-accent-blue hover:text-accent-blue-hover text-sm flex items-center gap-1 mt-0.5"
               >
                 <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
@@ -80,14 +80,14 @@ export function ChannelListView({ channels }: ChannelListViewProps) {
 
             {/* Video Count */}
             <div className="col-span-2">
-              <span className="text-gray-300">
+              <span className="text-text-secondary">
                 {channel.video_count} video{channel.video_count !== 1 ? 's' : ''}
               </span>
             </div>
 
             {/* Last Checked */}
             <div className="col-span-2">
-              <span className="text-gray-400 text-sm">
+              <span className="text-text-tertiary text-sm">
                 {formatDate(channel.last_checked)}
               </span>
             </div>
@@ -126,7 +126,7 @@ export function ChannelListView({ channels }: ChannelListViewProps) {
       </div>
 
       {/* Footer with count */}
-      <div className="px-6 py-3 bg-gray-700/30 border-t border-gray-700 text-sm text-gray-400">
+      <div className="px-6 py-3 bg-bg-tertiary/30 border-t border-border text-sm text-text-secondary">
         {channels.length} channel{channels.length !== 1 ? 's' : ''}
       </div>
     </div>

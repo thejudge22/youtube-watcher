@@ -32,24 +32,24 @@ export function ChannelVideoGroup({
   const videoIds = videos.map(v => v.id);
 
   return (
-    <div className="border border-gray-700 rounded-lg overflow-hidden">
+    <div className="border border-border rounded-lg overflow-hidden">
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-4 bg-gray-800 hover:bg-gray-750 transition-colors"
+        className="w-full flex items-center justify-between p-4 bg-bg-secondary hover:bg-bg-tertiary transition-colors"
       >
         <div className="flex items-center gap-3">
           {isExpanded ? (
-            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           ) : (
-            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-5 h-5 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           )}
-          <span className="font-medium text-white">{channelName}</span>
-          <span className="text-sm text-gray-400">({videos.length} video{videos.length !== 1 ? 's' : ''})</span>
+          <span className="font-medium text-text-primary">{channelName}</span>
+          <span className="text-sm text-text-secondary">({videos.length} video{videos.length !== 1 ? 's' : ''})</span>
         </div>
 
         {/* Per-channel bulk actions */}
@@ -77,7 +77,7 @@ export function ChannelVideoGroup({
 
       {/* Video list */}
       {isExpanded && (
-        <div className="p-4 bg-gray-900">
+        <div className="p-4 bg-bg-primary">
           <VideoList
             videos={videos}
             onSave={onSave}

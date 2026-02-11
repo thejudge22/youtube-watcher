@@ -4,6 +4,15 @@
 
 @layer base {
   :root {
+    /* Animation timings */
+    --transition-fast: 150ms ease;
+    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: 400ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  /* Dark theme (default) */
+  :root, [data-theme="dark"] {
     /* Primary color palette */
     --color-bg-primary: #0f0f0f;
     --color-bg-secondary: #1a1a1a;
@@ -34,12 +43,40 @@
     --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -4px rgba(0, 0, 0, 0.5);
     --shadow-glow: 0 0 20px rgba(255, 59, 48, 0.15);
     --shadow-glow-blue: 0 0 20px rgba(10, 132, 255, 0.15);
+  }
+
+  /* Light theme */
+  [data-theme="light"] {
+    /* Primary color palette */
+    --color-bg-primary: #ffffff;
+    --color-bg-secondary: #f5f5f5;
+    --color-bg-tertiary: #e5e5e5;
+    --color-bg-elevated: #d4d4d4;
     
-    /* Animation timings */
-    --transition-fast: 150ms ease;
-    --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: 400ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    /* Accent colors (same as dark, but slightly adjusted for contrast) */
+    --color-accent-red: #dc2626;
+    --color-accent-red-hover: #b91c1c;
+    --color-accent-blue: #2563eb;
+    --color-accent-blue-hover: #1d4ed8;
+    --color-accent-green: #16a34a;
+    --color-accent-orange: #ea580c;
+    --color-accent-purple: #9333ea;
+    
+    /* Text colors */
+    --color-text-primary: #171717;
+    --color-text-secondary: #525252;
+    --color-text-tertiary: #737373;
+    
+    /* Border colors */
+    --color-border: #d4d4d4;
+    --color-border-light: #a3a3a3;
+    
+    /* Shadow colors - softer for light theme */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+    --shadow-glow: 0 0 20px rgba(220, 38, 38, 0.1);
+    --shadow-glow-blue: 0 0 20px rgba(37, 99, 235, 0.1);
   }
 }
 
@@ -49,6 +86,10 @@
     background: rgba(26, 26, 26, 0.85);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  [data-theme="light"] .glass {
+    background: rgba(255, 255, 255, 0.85);
   }
   
   /* Card hover lift effect */

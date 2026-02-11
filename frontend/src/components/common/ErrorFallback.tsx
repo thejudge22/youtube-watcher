@@ -27,18 +27,18 @@ export function ErrorFallback({ error, resetError, componentName }: ErrorFallbac
             </svg>
           </div>
           <div className="flex-1">
-            <h2 className="text-xl font-semibold text-red-400 mb-2">
+            <h2 className="text-xl font-semibold text-accent-red mb-2">
               {componentName ? `Error in ${componentName}` : 'Something went wrong'}
             </h2>
-            <p className="text-gray-300 mb-4">
+            <p className="text-text-secondary mb-4">
               An unexpected error occurred. You can try reloading this section or the entire page.
             </p>
             {import.meta.env.DEV && (
               <details className="mb-4">
-                <summary className="text-sm text-gray-400 cursor-pointer hover:text-gray-300">
+                <summary className="text-sm text-text-tertiary cursor-pointer hover:text-text-secondary">
                   Error details (development only)
                 </summary>
-                <pre className="mt-2 text-xs text-gray-400 bg-gray-900 p-3 rounded overflow-x-auto">
+                <pre className="mt-2 text-xs text-text-tertiary bg-bg-primary p-3 rounded overflow-x-auto">
                   {error.message}
                   {error.stack && `\n\n${error.stack}`}
                 </pre>

@@ -21,7 +21,7 @@ const sizeStyles = {
 const variantStyles = {
   primary: 'bg-accent-blue hover:bg-accent-blue-hover text-white focus:ring-accent-blue shadow-md hover:shadow-glow-blue hover:-translate-y-0.5',
   secondary: 'bg-bg-tertiary hover:bg-bg-elevated text-text-primary border border-border hover:border-border-light focus:ring-accent-blue hover:-translate-y-0.5',
-  danger: 'bg-accent-red/90 hover:bg-accent-red text-white focus:ring-accent-red shadow-md hover:shadow-glow hover:-translate-y-0.5',
+  danger: 'bg-accent-red hover:bg-accent-red-hover text-white focus:ring-accent-red shadow-md hover:shadow-glow hover:-translate-y-0.5',
   ghost: 'bg-transparent hover:bg-bg-tertiary text-text-secondary hover:text-text-primary focus:ring-accent-blue',
 };
 

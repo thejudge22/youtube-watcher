@@ -5,6 +5,7 @@ export const STORAGE_PREFIX = 'youtube-watcher:';
 export const STORAGE_KEYS = {
   INBOX_VIEW_MODE: 'inbox-view-mode',
   SAVED_VIEW_MODE: 'saved-view-mode',
+  THEME: 'theme',
 } as const;
 
 // Helper function to get the full namespaced key

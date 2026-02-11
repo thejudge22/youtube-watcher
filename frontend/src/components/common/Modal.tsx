@@ -35,15 +35,15 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
           className="fixed inset-0 bg-black/50 transition-opacity"
           onClick={onClose}
         />
-        <div className="relative bg-gray-800 rounded-lg shadow-xl max-w-lg w-full p-6">
+        <div className="relative bg-bg-secondary rounded-lg shadow-xl max-w-lg w-full p-6">
           {title && (
-            <h3 className="text-lg font-semibold text-white mb-4">
+            <h3 className="text-lg font-semibold text-text-primary mb-4">
               {title}
             </h3>
           )}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-gray-400 hover:text-white transition-colors"
+            className="absolute top-4 right-4 text-text-tertiary hover:text-text-primary transition-colors"
             aria-label="Close modal"
           >
             <svg

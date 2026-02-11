@@ -184,12 +184,12 @@ export default function ImportExportSection() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-white">Import / Export</h2>
+      <h2 className="text-xl font-semibold text-text-primary">Import / Export</h2>
 
       {/* Export Section */}
-      <div className="bg-gray-800 rounded-lg p-4 space-y-4">
-        <h3 className="font-medium text-white">Export Data</h3>
-        <p className="text-sm text-gray-400">
+      <div className="bg-bg-secondary rounded-lg p-4 space-y-4">
+        <h3 className="font-medium text-text-primary">Export Data</h3>
+        <p className="text-sm text-text-secondary">
           Download your data as JSON files for backup or migration.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -221,16 +221,16 @@ export default function ImportExportSection() {
       </div>
 
       {/* Import Section */}
-      <div className="bg-gray-800 rounded-lg p-4 space-y-4">
-        <h3 className="font-medium text-white">Import Data</h3>
-        <p className="text-sm text-gray-400">
+      <div className="bg-bg-secondary rounded-lg p-4 space-y-4">
+        <h3 className="font-medium text-text-primary">Import Data</h3>
+        <p className="text-sm text-text-secondary">
           Import channels and videos from JSON files, YouTube URLs, or playlists.
         </p>
 
         <div className="space-y-3">
           {/* JSON Import */}
           <div>
-            <label className="block text-sm text-gray-400 mb-2">
+            <label className="block text-sm text-text-secondary mb-2">
               Import from JSON (channels, videos, or combined export)
             </label>
             <input
@@ -252,7 +252,7 @@ export default function ImportExportSection() {
 
           {/* URL Import */}
           <div>
-            <label className="block text-sm text-gray-400 mb-2">
+            <label className="block text-sm text-text-secondary mb-2">
               Import from URL list (text file with one URL per line)
             </label>
             <input
@@ -274,7 +274,7 @@ export default function ImportExportSection() {
 
           {/* Playlist Import */}
           <div>
-            <label className="block text-sm text-gray-400 mb-2">
+            <label className="block text-sm text-text-secondary mb-2">
               Import from YouTube Playlist
             </label>
             <div className="flex gap-2">
@@ -283,7 +283,7 @@ export default function ImportExportSection() {
                 value={playlistUrl}
                 onChange={(e) => setPlaylistUrl(e.target.value)}
                 placeholder="https://www.youtube.com/playlist?list=..."
-                className="flex-1 bg-gray-700 text-white px-3 py-2 rounded border border-gray-600 focus:outline-none focus:border-blue-500 disabled:opacity-50"
+                className="flex-1 bg-bg-tertiary text-text-primary px-3 py-2 rounded border border-border focus:outline-none focus:border-accent-blue disabled:opacity-50"
                 disabled={isImporting}
               />
               <Button
@@ -300,12 +300,12 @@ export default function ImportExportSection() {
 
         {/* Import Progress */}
         {importProgress && (
-          <div className="mt-4 p-3 bg-blue-900/30 border border-blue-700/50 rounded">
-            <p className="font-medium text-blue-400">Importing...</p>
-            <p className="text-sm text-gray-300 mt-1">
+          <div className="mt-4 p-3 bg-accent-blue/10 border border-accent-blue/30 rounded">
+            <p className="font-medium text-accent-blue">Importing...</p>
+            <p className="text-sm text-text-secondary mt-1">
               Processing {importProgress.current} of {importProgress.total} items
             </p>
-            <div className="mt-2 w-full bg-gray-700 rounded-full h-2">
+            <div className="mt-2 w-full bg-bg-tertiary rounded-full h-2">
               <div
                 className="bg-blue-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
@@ -316,15 +316,15 @@ export default function ImportExportSection() {
 
         {/* Import Result */}
         {importResult && (
-          <div className="mt-4 p-3 bg-gray-700 rounded">
-            <p className="font-medium text-green-400">Import Complete</p>
-            <p className="text-sm text-gray-300 mt-1">
+          <div className="mt-4 p-3 bg-bg-tertiary rounded">
+            <p className="font-medium text-accent-green">Import Complete</p>
+            <p className="text-sm text-text-secondary mt-1">
               Imported: {importResult.imported} | Skipped: {importResult.skipped} | Total: {importResult.total}
             </p>
             {importResult.errors.length > 0 && (
               <div className="mt-2">
-                <p className="text-sm text-red-400">Errors ({importResult.errors.length}):</p>
-                <ul className="text-xs text-gray-400 mt-1 max-h-32 overflow-y-auto">
+                <p className="text-sm text-accent-red">Errors ({importResult.errors.length}):</p>
+                <ul className="text-xs text-text-tertiary mt-1 max-h-32 overflow-y-auto">
                   {importResult.errors.map((error, i) => (
                     <li key={i}>• {error}</li>
                   ))}
@@ -336,8 +336,8 @@ export default function ImportExportSection() {
 
         {/* Import Error */}
         {importError && (
-          <div className="mt-4 p-3 bg-red-900/50 rounded">
-            <p className="text-red-400">{importError}</p>
+          <div className="mt-4 p-3 bg-accent-red/10 rounded">
+            <p className="text-accent-red">{importError}</p>
           </div>
         )}
       </div>

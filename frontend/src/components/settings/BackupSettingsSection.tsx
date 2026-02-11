@@ -56,14 +56,14 @@ export function BackupSettingsSection() {
   };
 
   if (isLoading) {
-    return <div className="text-gray-400">Loading backup settings...</div>;
+    return <div className="text-text-secondary">Loading backup settings...</div>;
   }
 
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-medium text-white mb-2">Scheduled Backups</h2>
-        <p className="text-gray-400 text-sm mb-4">
+        <h2 className="text-lg font-medium text-text-primary mb-2">Scheduled Backups</h2>
+        <p className="text-text-secondary text-sm mb-4">
           Configure automatic backups to protect your data.
         </p>
       </div>
@@ -71,13 +71,13 @@ export function BackupSettingsSection() {
       {/* Enable/Disable Toggle */}
       <div className="flex items-center justify-between">
         <div>
-          <label className="text-white font-medium">Enable Automatic Backups</label>
-          <p className="text-gray-400 text-sm">Run backups on a schedule</p>
+          <label className="text-text-primary font-medium">Enable Automatic Backups</label>
+          <p className="text-text-secondary text-sm">Run backups on a schedule</p>
         </div>
         <button
           onClick={() => handleChange('backup_enabled', !formData.backup_enabled)}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            formData.backup_enabled ? 'bg-blue-600' : 'bg-gray-600'
+            formData.backup_enabled ? 'bg-accent-blue' : 'bg-bg-elevated'
           }`}
         >
           <span
@@ -91,13 +91,13 @@ export function BackupSettingsSection() {
       {/* Schedule Options */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-text-secondary mb-1">
             Schedule
           </label>
           <select
             value={formData.backup_schedule}
             onChange={(e) => handleChange('backup_schedule', e.target.value)}
-            className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2"
+            className="w-full bg-bg-tertiary border border-border text-text-primary rounded-lg px-3 py-2"
             disabled={!formData.backup_enabled}
           >
             <option value="daily">Daily</option>
@@ -107,14 +107,14 @@ export function BackupSettingsSection() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-text-secondary mb-1">
             Time
           </label>
           <input
             type="time"
             value={formData.backup_time}
             onChange={(e) => handleChange('backup_time', e.target.value)}
-            className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2"
+            className="w-full bg-bg-tertiary border border-border text-text-primary rounded-lg px-3 py-2"
             disabled={!formData.backup_enabled}
           />
         </div>
@@ -123,13 +123,13 @@ export function BackupSettingsSection() {
       {/* Format Options */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-text-secondary mb-1">
             Backup Format
           </label>
           <select
             value={formData.backup_format}
             onChange={(e) => handleChange('backup_format', e.target.value)}
-            className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2"
+            className="w-full bg-bg-tertiary border border-border text-text-primary rounded-lg px-3 py-2"
           >
             <option value="json">JSON Export</option>
             <option value="database">Database Copy</option>
@@ -138,13 +138,13 @@ export function BackupSettingsSection() {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
+          <label className="block text-sm font-medium text-text-secondary mb-1">
             Keep backups for
           </label>
           <select
             value={formData.backup_retention_days}
             onChange={(e) => handleChange('backup_retention_days', parseInt(e.target.value))}
-            className="w-full bg-gray-700 border border-gray-600 text-white rounded-lg px-3 py-2"
+            className="w-full bg-bg-tertiary border border-border text-text-primary rounded-lg px-3 py-2"
           >
             <option value="7">7 days</option>
             <option value="14">14 days</option>
@@ -167,34 +167,34 @@ export function BackupSettingsSection() {
       </div>
 
       {/* Status Section */}
-      <div className="border-t border-gray-700 pt-4 mt-6">
-        <h3 className="text-md font-medium text-white mb-3">Backup Status</h3>
+      <div className="border-t border-border pt-4 mt-6">
+        <h3 className="text-md font-medium text-text-primary mb-3">Backup Status</h3>
 
-        <div className="bg-gray-700/50 rounded-lg p-4 space-y-2">
+        <div className="bg-bg-tertiary/50 rounded-lg p-4 space-y-2">
           <div className="flex justify-between">
-            <span className="text-gray-400">Last Backup:</span>
-            <span className="text-white">{formatDate(status?.last_backup_at ?? null)}</span>
+            <span className="text-text-secondary">Last Backup:</span>
+            <span className="text-text-primary">{formatDate(status?.last_backup_at ?? null)}</span>
           </div>
           <div className="flex justify-between">
-            <span className="text-gray-400">Status:</span>
+            <span className="text-text-secondary">Status:</span>
             <span className={
               status?.last_backup_status === 'success'
-                ? 'text-green-400'
+                ? 'text-accent-green'
                 : status?.last_backup_status === 'failed'
-                ? 'text-red-400'
-                : 'text-gray-400'
+                ? 'text-accent-red'
+                : 'text-text-secondary'
             }>
               {status?.last_backup_status || 'No backups yet'}
             </span>
           </div>
           {status?.last_backup_error && (
-            <div className="text-red-400 text-sm mt-2">
+            <div className="text-accent-red text-sm mt-2">
               Error: {status.last_backup_error}
             </div>
           )}
           <div className="flex justify-between">
-            <span className="text-gray-400">Total Backups:</span>
-            <span className="text-white">
+            <span className="text-text-secondary">Total Backups:</span>
+            <span className="text-text-primary">
               {backupList?.total_count ?? 0} ({formatBytes(backupList?.total_size_bytes ?? 0)})
             </span>
           </div>
