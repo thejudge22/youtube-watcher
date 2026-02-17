@@ -7,7 +7,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Production image
-FROM python:3.11-slim
+FROM python:3.15-rc-alpine3.22
 WORKDIR /app
 
 # Install Python dependencies
