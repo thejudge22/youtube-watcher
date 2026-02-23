@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 @router.get("/videos/inbox", response_model=List[VideoResponse])
 async def list_inbox_videos(
-    limit: int = Query(100, ge=1, le=500, description="Maximum number of videos to return"),
+    limit: int = Query(10000, ge=1, description="Maximum number of videos to return"),
     offset: int = Query(0, ge=0, description="Number of videos to skip"),
     channel_id: Optional[str] = Query(None, description="Filter by channel ID"),
     is_short: Optional[bool] = Query(None, description="Filter by Shorts status (True=Shorts only, False=regular only, None=all)"),
@@ -41,12 +41,13 @@ async def list_inbox_videos(
     List all videos with status='inbox' with pagination.
 
     Query params:
-        limit: Maximum number of videos to return (default: 100, max: 500)
+        limit: Maximum number of videos to return (default: 10000, effectively unlimited)
         offset: Number of videos to skip (default: 0)
         channel_id: Filter by channel (optional)
         is_short: Filter by Shorts status (optional, None=all, True=shorts only, False=regular only) - Issue #8
     """
     # Use VideoService to fetch inbox videos
+    # Issue #50: Removed 100-video cap, now defaults to 10000
     videos = await VideoService.get_videos(
         db=db,
         status='inbox',
@@ -55,7 +56,7 @@ async def list_inbox_videos(
         channel_id=channel_id,
         is_short=is_short,  # Issue #8: Pass Shorts filter
         sort_by='published_at',
-        order='desc'
+        order='asc'  # Issue #50: Oldest first within each channel
     )
 
     return [

@@ -137,6 +137,7 @@ export const videosApi = {
   getInbox: (channelId?: string, isShort?: boolean | null) =>
     api.get<Video[]>('/videos/inbox', {
       params: {
+        limit: 10000,  // Issue #50: Fetch all inbox videos (no 100-video cap)
         ...(channelId ? { channel_id: channelId } : {}),
         ...(isShort !== undefined && isShort !== null ? { is_short: isShort } : {})
       }

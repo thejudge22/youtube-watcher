@@ -101,12 +101,9 @@ export function Inbox() {
     }
   };
 
-  const handleRefresh = () => {
-    refreshAll.mutate(undefined, {
-      onSuccess: () => {
-        refetch();
-      },
-    });
+  const handleRefresh = async () => {
+    await refreshAll.mutateAsync(undefined);
+    await refetch();
   };
 
   const handleDetectShorts = () => {
@@ -188,7 +185,7 @@ export function Inbox() {
           <Button
             variant="secondary"
             onClick={handleRefresh}
-            isLoading={refreshAll.isPending}
+            isLoading={refreshAll.isPending || isLoading}
             size="sm"
           >
             <ArrowPathIcon className={`w-4 h-4 mr-1.5 ${refreshAll.isPending ? 'animate-spin' : ''}`} />
