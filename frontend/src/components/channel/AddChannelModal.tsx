@@ -8,6 +8,31 @@ interface AddChannelModalProps {
   onClose: () => void;
 }
 
+/**
+ * Normalize channel input to a full YouTube URL.
+ * Supports:
+ * - Full URLs: https://youtube.com/@channel, https://youtube.com/c/channel, etc.
+ * - Bare handles: @channel
+ * - Channel names (auto-converted to handle format)
+ */
+function normalizeChannelInput(input: string): string {
+  const trimmed = input.trim();
+
+  // If it's already a full URL, return as-is
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+
+  // If it's a bare handle (@channel), prepend YouTube URL
+  if (trimmed.startsWith('@')) {
+    return `https://www.youtube.com/${trimmed}`;
+  }
+
+  // If it looks like a channel name without @, treat it as a handle
+  // This handles cases like user typing "Games_for_James" instead of "@Games_for_James"
+  return `https://www.youtube.com/@${trimmed}`;
+}
+
 export function AddChannelModal({ isOpen, onClose }: AddChannelModalProps) {
   const [url, setUrl] = useState('');
   const addChannel = useAddChannel();
@@ -16,8 +41,11 @@ export function AddChannelModal({ isOpen, onClose }: AddChannelModalProps) {
     e.preventDefault();
     if (!url.trim()) return;
 
+    // Normalize the input to a full YouTube URL
+    const normalizedUrl = normalizeChannelInput(url.trim());
+
     try {
-      await addChannel.mutateAsync(url.trim());
+      await addChannel.mutateAsync(normalizedUrl);
       setUrl('');
       onClose();
     } catch {
@@ -53,7 +81,7 @@ export function AddChannelModal({ isOpen, onClose }: AddChannelModalProps) {
             disabled={isLoading}
           />
           <p className="mt-1 text-xs text-gray-500">
-            Paste a YouTube channel URL, handle, or custom URL
+            Paste a full YouTube URL (https://youtube.com/@channel) or just the handle (@channel)
           </p>
         </div>
 

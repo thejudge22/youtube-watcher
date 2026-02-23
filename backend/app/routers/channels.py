@@ -139,6 +139,13 @@ async def create_channel(channel_data: ChannelCreate, db: AsyncSession = Depends
     
     # Step 6: Create video records with status='inbox'
     for video_info in videos_info:
+        # Skip if video already exists (may have been added via another channel)
+        existing = await db.execute(
+            select(Video).where(Video.youtube_video_id == video_info.video_id)
+        )
+        if existing.scalar_one_or_none():
+            continue
+
         video = Video(
             youtube_video_id=video_info.video_id,
             channel_id=channel.id,
