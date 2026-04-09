@@ -29,8 +29,10 @@ class TestListSavedVideos:
         """Test listing saved videos when database is empty."""
         response = await client.get("/api/videos/saved")
         assert response.status_code == 200
-        assert response.json() == []
-    
+        data = response.json()
+        assert data["videos"] == []
+        assert data["total"] == 0
+
     @pytest.mark.asyncio
     async def test_list_saved_videos_with_data(self, client, db_session, sample_channel):
         """Test listing saved videos with existing data."""
@@ -53,10 +55,11 @@ class TestListSavedVideos:
         response = await client.get("/api/videos/saved")
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 1
-        assert data[0]["status"] == "saved"
-        assert data[0]["title"] == "Saved Video"
-    
+        assert len(data["videos"]) == 1
+        assert data["videos"][0]["status"] == "saved"
+        assert data["videos"][0]["title"] == "Saved Video"
+        assert data["total"] == 1
+
     @pytest.mark.asyncio
     async def test_list_saved_videos_with_channel_filter(self, client, db_session, sample_channel):
         """Test listing saved videos with channel filter."""
@@ -104,8 +107,8 @@ class TestListSavedVideos:
         response = await client.get(f"/api/videos/saved?channel_youtube_id={sample_channel.youtube_channel_id}")
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 1
-        assert data[0]["title"] == "Saved Video 1"
+        assert len(data["videos"]) == 1
+        assert data["videos"][0]["title"] == "Saved Video 1"
     
     @pytest.mark.asyncio
     async def test_list_saved_videos_invalid_sort_by(self, client):
