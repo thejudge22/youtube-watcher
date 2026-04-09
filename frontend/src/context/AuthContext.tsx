@@ -119,7 +119,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
           error: null,
         });
       }
-    } catch (err) {
+    } catch (_err) {
       // Failed to check auth status, assume auth is disabled to allow access
       setState({
         isAuthEnabled: false,
