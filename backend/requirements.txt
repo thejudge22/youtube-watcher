@@ -1,5 +1,5 @@
-fastapi>=0.115.0
-uvicorn[standard]>=0.34.0
+fastapi>=0.135.0
+uvicorn[standard]>=0.44.0
 sqlalchemy>=2.0.25
 alembic>=1.14.0
 pydantic>=2.10.0
@@ -8,7 +8,7 @@ httpx>=0.28.0
 feedparser>=6.0.10
 python-multipart>=0.0.18
 aiosqlite>=0.20.0
-tenacity>=8.2.0
+tenacity>=9.0.0
 yt-dlp>=2025.0.0
 # Issue #12: Scheduled Backups
 APScheduler>=3.10.0
