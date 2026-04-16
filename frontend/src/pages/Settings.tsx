@@ -5,6 +5,7 @@ import { Modal } from '../components/common/Modal';
 import ImportExportSection from '../components/settings/ImportExportSection';
 import AppSettingsSection from '../components/settings/AppSettingsSection';
 import { BackupSettingsSection } from '../components/settings/BackupSettingsSection';
+import { AutoRefreshSettingsSection } from '../components/settings/AutoRefreshSettingsSection';
 
 export function Settings() {
   const { data: savedVideosData } = useSavedVideos({ limit: 100, offset: 0 });
@@ -43,6 +44,11 @@ export function Settings() {
       {/* Application Settings Section */}
       <div className="bg-bg-secondary rounded-lg p-6 shadow-lg mb-6">
         <AppSettingsSection />
+      </div>
+
+      {/* Issue #54: Auto-Refresh Section */}
+      <div className="bg-bg-secondary rounded-lg p-6 shadow-lg mb-6">
+        <AutoRefreshSettingsSection />
       </div>
 
       {/* Issue #12: Scheduled Backups Section */}

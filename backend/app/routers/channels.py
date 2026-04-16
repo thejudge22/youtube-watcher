@@ -2,11 +2,9 @@
 Channel management API router.
 """
 
-import asyncio
 from fastapi import APIRouter, Depends, HTTPException, status, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete
-from sqlalchemy.orm import selectinload
 from datetime import datetime, timezone
 from typing import List, Dict
 
@@ -15,8 +13,9 @@ from ..models.channel import Channel
 from ..models.video import Video
 from ..schemas.channel import ChannelCreate, ChannelResponse, RefreshSummary
 from ..services.youtube_utils import extract_channel_id, get_rss_url, get_channel_url
-from ..services.rss_parser import fetch_channel_info, fetch_videos, VideoInfo
+from ..services.rss_parser import fetch_channel_info, fetch_videos
 from ..services.settings_service import get_http_timeout
+from ..services.channels_service import process_new_videos, fetch_channel_videos, refresh_all_channels as refresh_all_channels_service
 from ..exceptions import NotFoundError, AlreadyExistsError, ValidationError, ExternalServiceError
 
 router = APIRouter()
@@ -87,7 +86,7 @@ async def list_channels(db: AsyncSession = Depends(get_db)):
 async def create_channel(channel_data: ChannelCreate, db: AsyncSession = Depends(get_db)):
     """
     Add a new channel and fetch its last 15 videos.
-    
+
     Logic:
     1. Extract channel ID from URL
     2. Check if channel already exists (return error if so)
@@ -123,7 +122,7 @@ async def create_channel(channel_data: ChannelCreate, db: AsyncSession = Depends
         videos_info = await fetch_videos(rss_url, limit=15, timeout=timeout)
     except Exception as e:
         raise ExternalServiceError("YouTube", "fetch videos", str(e))
-    
+
     # Step 5: Create channel record
     channel = Channel(
         youtube_channel_id=youtube_channel_id,
@@ -136,7 +135,7 @@ async def create_channel(channel_data: ChannelCreate, db: AsyncSession = Depends
     )
     db.add(channel)
     await db.flush()  # Flush to get the channel ID
-    
+
     # Step 6: Create video records with status='inbox'
     for video_info in videos_info:
         # Skip if video already exists (may have been added via another channel)
@@ -160,10 +159,10 @@ async def create_channel(channel_data: ChannelCreate, db: AsyncSession = Depends
             status='inbox'
         )
         db.add(video)
-    
+
     await db.commit()
     await db.refresh(channel)
-    
+
     # Step 7: Return channel with video count
     return await channel_to_response(db, channel)
 
@@ -175,7 +174,7 @@ async def delete_channel(
 ):
     """
     Delete a channel and all its videos.
-    
+
     The cascade delete on the foreign key will automatically delete all videos
     associated with this channel.
     """
@@ -185,7 +184,7 @@ async def delete_channel(
 
     if not channel:
         raise NotFoundError("Channel", channel_id)
-    
+
     # Delete the channel (cascade will delete videos)
     await db.execute(delete(Channel).where(Channel.id == channel_id))
     await db.commit()
@@ -220,76 +219,12 @@ async def refresh_channel(
         raise ExternalServiceError("YouTube", "fetch videos", str(e))
 
     # Add new videos and update channel
-    new_videos_added = await _process_new_videos(db, channel, videos_info)
+    new_videos_added = await process_new_videos(db, channel, videos_info)
 
     await db.commit()
     await db.refresh(channel)
 
     return await channel_to_response(db, channel)
-
-
-async def _process_new_videos(
-    db: AsyncSession, channel: Channel, videos_info: List[VideoInfo]
-) -> int:
-    """
-    Process new videos for a channel. Updates channel's last_checked and last_video_id.
-
-    Returns the number of new videos added.
-    """
-    new_videos_added = 0
-    new_last_video_id = channel.last_video_id
-
-    for video_info in videos_info:
-        # Stop if we've reached the last known video
-        if video_info.video_id == channel.last_video_id:
-            break
-
-        # Check if video already exists
-        existing = await db.execute(
-            select(Video).where(Video.youtube_video_id == video_info.video_id)
-        )
-        if existing.scalar_one_or_none():
-            continue
-
-        # Create new video
-        video = Video(
-            youtube_video_id=video_info.video_id,
-            channel_id=channel.id,
-            channel_youtube_id=channel.youtube_channel_id,
-            channel_name=channel.name,
-            channel_thumbnail_url=channel.thumbnail_url,
-            title=video_info.title,
-            description=video_info.description,
-            thumbnail_url=video_info.thumbnail_url,
-            video_url=video_info.video_url,
-            published_at=video_info.published_at,
-            status='inbox'
-        )
-        db.add(video)
-        new_videos_added += 1
-
-        # Update last_video_id if this is the newest video
-        if new_last_video_id is None or new_videos_added == 1:
-            new_last_video_id = video_info.video_id
-
-    # Update last_checked and last_video_id
-    channel.last_checked = datetime.now(timezone.utc)
-    if new_last_video_id:
-        channel.last_video_id = new_last_video_id
-
-    return new_videos_added
-
-
-async def _fetch_channel_videos(channel: Channel, timeout: float) -> tuple[Channel, List[VideoInfo] | None, str | None]:
-    """
-    Fetch videos for a channel. Returns (channel, videos_info, error).
-    Error is None on success.
-    """
-    try:
-        videos_info = await fetch_videos(channel.rss_url, limit=50, timeout=timeout)
-        return (channel, videos_info, None)
-    except Exception as e:
-        return (channel, None, str(e))
 
 
 @router.post("/channels/refresh-all", response_model=RefreshSummary)
@@ -302,49 +237,4 @@ async def refresh_all_channels(db: AsyncSession = Depends(get_db)):
     Returns:
         Summary with number of channels refreshed, new videos found, and any errors
     """
-    # Get all channels
-    result = await db.execute(select(Channel))
-    channels = result.scalars().all()
-
-    if not channels:
-        return RefreshSummary(channels_refreshed=0, new_videos_found=0, errors=[])
-
-    # Get timeout once for all requests
-    timeout = await get_http_timeout(db)
-
-    # Fetch all RSS feeds in parallel with concurrency limit
-    semaphore = asyncio.Semaphore(5)  # Limit to 5 concurrent requests
-
-    async def fetch_with_semaphore(channel: Channel):
-        async with semaphore:
-            return await _fetch_channel_videos(channel, timeout)
-
-    fetch_results = await asyncio.gather(
-        *[fetch_with_semaphore(channel) for channel in channels]
-    )
-
-    # Process results
-    channels_refreshed = 0
-    new_videos_found = 0
-    errors = []
-
-    for channel, videos_info, error in fetch_results:
-        if error:
-            errors.append(f"Channel '{channel.name}' (ID: {channel.id}): {error}")
-            continue
-
-        try:
-            new_videos_added = await _process_new_videos(db, channel, videos_info)
-            channels_refreshed += 1
-            new_videos_found += new_videos_added
-        except Exception as e:
-            errors.append(f"Channel '{channel.name}' (ID: {channel.id}): {str(e)}")
-
-    # Commit all changes
-    await db.commit()
-
-    return RefreshSummary(
-        channels_refreshed=channels_refreshed,
-        new_videos_found=new_videos_found,
-        errors=errors
-    )
+    return await refresh_all_channels_service(db)

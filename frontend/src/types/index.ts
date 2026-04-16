@@ -88,3 +88,17 @@ export interface ManualBackupResponse {
   filenames: string[];
   error: string | null;
 }
+
+// Issue #54: Auto-refresh types
+export interface AutoRefreshSettings {
+  auto_refresh_enabled: boolean;
+  auto_refresh_interval: '1h' | '6h' | '12h' | '24h';
+}
+
+export interface RefreshStatus {
+  auto_refresh_enabled: boolean;
+  auto_refresh_interval: '1h' | '6h' | '12h' | '24h';
+  last_refresh_at: string | null;
+  last_refresh_status: 'success' | 'failed' | null;
+  last_refresh_error: string | null;
+}

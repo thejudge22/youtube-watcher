@@ -48,6 +48,21 @@ class BackupListResponse(BaseModel):
     total_size_bytes: int
 
 
+class AutoRefreshSettings(BaseModel):
+    """Schema for auto-refresh settings."""
+    auto_refresh_enabled: bool = False
+    auto_refresh_interval: str = Field(default='6h', pattern='^(1h|6h|12h|24h)$')
+
+
+class RefreshStatus(BaseModel):
+    """Schema for auto-refresh status information."""
+    auto_refresh_enabled: bool
+    auto_refresh_interval: str
+    last_refresh_at: Optional[datetime] = None
+    last_refresh_status: Optional[str] = None
+    last_refresh_error: Optional[str] = None
+
+
 class AppSettings(BaseModel):
     """Complete application settings."""
     http_timeout: float
@@ -59,6 +74,11 @@ class AppSettings(BaseModel):
     last_backup_at: Optional[datetime]
     last_backup_status: Optional[str]
     last_backup_error: Optional[str]
+    auto_refresh_enabled: bool
+    auto_refresh_interval: str
+    last_refresh_at: Optional[datetime]
+    last_refresh_status: Optional[str]
+    last_refresh_error: Optional[str]
 
 
 class AppSettingsUpdate(BaseModel):
@@ -69,6 +89,8 @@ class AppSettingsUpdate(BaseModel):
     backup_time: Optional[str] = Field(default=None, pattern=r'^\d{2}:\d{2}$')
     backup_format: Optional[str] = Field(default=None, pattern='^(json|database|both)$')
     backup_retention_days: Optional[int] = Field(default=None, ge=1, le=365)
+    auto_refresh_enabled: Optional[bool] = None
+    auto_refresh_interval: Optional[str] = Field(default=None, pattern='^(1h|6h|12h|24h)$')
 
     @field_validator('backup_time')
     @classmethod

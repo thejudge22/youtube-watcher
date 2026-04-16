@@ -19,7 +19,7 @@ mimetypes.add_type('application/manifest+json', '.webmanifest')
 from sqlalchemy import text, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .routers import channels, videos, import_export, settings, backup, auth
+from .routers import channels, videos, import_export, settings, backup, auth, auto_refresh
 from .auth import require_auth
 from .database import get_db
 from .models.setting import Setting
@@ -30,6 +30,8 @@ from .services.backup_scheduler import (
     configure_backup_schedule,
     get_async_session
 )
+# Issue #54: Auto-refresh
+from .services.feed_refresh_scheduler import configure_auto_refresh_schedule
 from .services.migration_runner import run_migrations
 
 
@@ -55,6 +57,12 @@ async def lifespan(app: FastAPI):
                 await configure_backup_schedule(
                     settings_obj.backup_schedule,
                     settings_obj.backup_time
+                )
+
+            # Issue #54: Configure auto-refresh if enabled
+            if settings_obj and settings_obj.auto_refresh_enabled:
+                await configure_auto_refresh_schedule(
+                    settings_obj.auto_refresh_interval
                 )
     except Exception as e:
         import logging
@@ -131,6 +139,8 @@ app.include_router(import_export.router, prefix="/api", dependencies=[Depends(re
 app.include_router(settings.router, prefix="/api", dependencies=[Depends(require_auth)])
 # Issue #12: Scheduled Backups
 app.include_router(backup.router, prefix="/api", dependencies=[Depends(require_auth)])
+# Issue #54: Auto-refresh
+app.include_router(auto_refresh.router, prefix="/api", dependencies=[Depends(require_auth)])
 
 # This logic is for the production Docker container, where the frontend is built and served by FastAPI.
 if os.path.exists("static"):

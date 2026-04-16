@@ -1,5 +1,5 @@
 import axios from 'axios';
-import type { Channel, Video, SavedVideosParams, ChannelFilterOption, PaginatedVideosResponse } from '../types';
+import type { Channel, Video, SavedVideosParams, ChannelFilterOption, PaginatedVideosResponse, AutoRefreshSettings, RefreshStatus } from '../types';
 
 // Default timeout for most requests
 const DEFAULT_TIMEOUT = 30000; // 30 seconds
@@ -192,6 +192,13 @@ export const backupApi = {
   listBackups: () => api.get<any>('/backup/list'),
   runBackup: (format: string = 'json') => api.post<any>('/backup/run', { format }),
   cleanup: () => api.delete('/backup/cleanup'),
+};
+
+// Issue #54: Auto-refresh API
+export const autoRefreshApi = {
+  getSettings: () => api.get<AutoRefreshSettings>('/auto-refresh/settings'),
+  updateSettings: (settings: AutoRefreshSettings) => api.put<AutoRefreshSettings>('/auto-refresh/settings', settings),
+  getStatus: () => api.get<RefreshStatus>('/auto-refresh/status'),
 };
 
 // Issue #41: Optional Authentication - Auth API

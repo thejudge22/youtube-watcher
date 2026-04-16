@@ -1,10 +1,11 @@
 import { NavLink } from 'react-router-dom';
-import { 
-  InboxIcon, 
-  BookmarkIcon, 
-  TvIcon, 
-  Cog6ToothIcon 
+import {
+  InboxIcon,
+  BookmarkIcon,
+  TvIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline';
+import { useInboxVideos } from '../../hooks/useVideos';
 
 interface NavItem {
   to: string;
@@ -20,6 +21,8 @@ const navItems: NavItem[] = [
 ];
 
 export function Navigation() {
+  const { data: inboxVideos } = useInboxVideos(undefined, 'all');
+
   return (
     <nav className="bg-bg-secondary border-b border-border">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -38,12 +41,17 @@ export function Navigation() {
             >
               {({ isActive }) => (
                 <>
-                  <item.icon 
+                  <item.icon
                     className={`w-4 h-4 transition-transform duration-200 ${
                       isActive ? 'text-accent-red' : 'group-hover:scale-110'
-                    }`} 
+                    }`}
                   />
                   <span>{item.label}</span>
+                  {item.to === '/' && inboxVideos && inboxVideos.length > 0 && (
+                    <span className="ml-1 inline-flex items-center justify-center min-w-[1.25rem] h-5 px-1.5 text-xs font-semibold rounded-full bg-accent-red text-white">
+                      {inboxVideos.length > 99 ? '99+' : inboxVideos.length}
+                    </span>
+                  )}
                   {/* Active indicator */}
                   {isActive && (
                     <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-accent-red to-accent-orange rounded-full animate-scale-in" />

@@ -23,5 +23,14 @@ class Setting(Base):
     last_backup_status = Column(String, nullable=True)  # 'success', 'failed'
     last_backup_error = Column(String, nullable=True)
 
+    # Issue #54: Auto-refresh settings
+    auto_refresh_enabled = Column(Boolean, default=False, nullable=False)
+    auto_refresh_interval = Column(String, default='6h', nullable=False)  # '1h', '6h', '12h', '24h'
+
+    # Issue #54: Auto-refresh status
+    last_refresh_at = Column(DateTime, nullable=True)
+    last_refresh_status = Column(String, nullable=True)  # 'success', 'failed'
+    last_refresh_error = Column(String, nullable=True)
+
     created_at = Column(DateTime, default=func.now())
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
