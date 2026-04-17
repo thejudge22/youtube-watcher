@@ -2,6 +2,7 @@
 Channel refresh service.
 
 Issue #54: Extracted refresh logic for reuse by both the API router and the scheduler.
+Issue #55: Added automatic Shorts detection during video imports.
 """
 
 import asyncio
@@ -16,7 +17,8 @@ from ..models.channel import Channel
 from ..models.video import Video
 from ..schemas.channel import RefreshSummary
 from .rss_parser import fetch_videos, VideoInfo
-from .settings_service import get_http_timeout
+from .settings_service import get_http_timeout, get_auto_detect_shorts
+from .shorts_detector import detect_shorts_batch_http
 
 logger = logging.getLogger(__name__)
 
@@ -27,10 +29,13 @@ async def process_new_videos(
     """
     Process new videos for a channel. Updates channel's last_checked and last_video_id.
 
+    If auto_detect_shorts is enabled, runs HTTP-based shorts detection on new videos.
+
     Returns the number of new videos added.
     """
     new_videos_added = 0
     new_last_video_id = channel.last_video_id
+    new_video_ids: list[str] = []
 
     for video_info in videos_info:
         # Stop if we've reached the last known video
@@ -60,6 +65,7 @@ async def process_new_videos(
         )
         db.add(video)
         new_videos_added += 1
+        new_video_ids.append(video_info.video_id)
 
         # Update last_video_id if this is the newest video
         if new_last_video_id is None or new_videos_added == 1:
@@ -69,6 +75,26 @@ async def process_new_videos(
     channel.last_checked = datetime.now(timezone.utc)
     if new_last_video_id:
         channel.last_video_id = new_last_video_id
+
+    # Auto-detect shorts for new videos (Issue #55)
+    if new_video_ids:
+        await db.flush()  # Ensure new videos are in DB before UPDATE
+        try:
+            auto_detect = await get_auto_detect_shorts(db)
+            if auto_detect:
+                timeout = await get_http_timeout(db)
+                results = await detect_shorts_batch_http(new_video_ids, timeout=timeout)
+                now = datetime.now(timezone.utc)
+
+                for vid, is_short in results.items():
+                    if is_short is not None:
+                        await db.execute(
+                            Video.__table__.update()
+                            .where(Video.youtube_video_id == vid)
+                            .values(is_short=is_short, is_short_detected_at=now)
+                        )
+        except Exception as e:
+            logger.warning(f"Auto shorts detection failed for channel {channel.id}: {e}")
 
     return new_videos_added
 

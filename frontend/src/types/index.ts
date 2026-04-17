@@ -27,6 +27,7 @@ export interface Video {
   saved_at: string | null;
   discarded_at: string | null;
   is_short: boolean;  // Issue #8: YouTube Shorts detection
+  is_short_detected_at: string | null;  // Issue #55: Last detection timestamp
 }
 
 export interface ChannelFilterOption {
@@ -38,6 +39,7 @@ export interface ChannelFilterOption {
 
 export interface SavedVideosParams {
   channel_youtube_id?: string;
+  is_short?: boolean;  // Issue #55: Shorts filter for saved videos
   sort_by?: 'published_at' | 'saved_at';
   order?: 'asc' | 'desc';
   limit?: number;

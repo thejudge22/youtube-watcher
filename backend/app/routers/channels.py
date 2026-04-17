@@ -2,6 +2,7 @@
 Channel management API router.
 """
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Path
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, delete
@@ -14,11 +15,14 @@ from ..models.video import Video
 from ..schemas.channel import ChannelCreate, ChannelResponse, RefreshSummary
 from ..services.youtube_utils import extract_channel_id, get_rss_url, get_channel_url
 from ..services.rss_parser import fetch_channel_info, fetch_videos
-from ..services.settings_service import get_http_timeout
+from ..services.settings_service import get_http_timeout, get_auto_detect_shorts
 from ..services.channels_service import process_new_videos, fetch_channel_videos, refresh_all_channels as refresh_all_channels_service
+from ..services.shorts_detector import detect_shorts_batch_http
 from ..exceptions import NotFoundError, AlreadyExistsError, ValidationError, ExternalServiceError
 
 router = APIRouter()
+
+logger = logging.getLogger(__name__)
 
 
 async def get_video_counts_for_channels(db: AsyncSession, channel_ids: List[str]) -> Dict[str, int]:
@@ -137,6 +141,7 @@ async def create_channel(channel_data: ChannelCreate, db: AsyncSession = Depends
     await db.flush()  # Flush to get the channel ID
 
     # Step 6: Create video records with status='inbox'
+    new_video_ids: list[str] = []
     for video_info in videos_info:
         # Skip if video already exists (may have been added via another channel)
         existing = await db.execute(
@@ -159,6 +164,25 @@ async def create_channel(channel_data: ChannelCreate, db: AsyncSession = Depends
             status='inbox'
         )
         db.add(video)
+        new_video_ids.append(video_info.video_id)
+
+    # Auto-detect shorts for new videos (Issue #55)
+    if new_video_ids:
+        await db.flush()  # Ensure new videos are in DB before UPDATE
+        try:
+            auto_detect = await get_auto_detect_shorts(db)
+            if auto_detect:
+                results = await detect_shorts_batch_http(new_video_ids, timeout=timeout)
+                now = datetime.now(timezone.utc)
+                for vid, is_short in results.items():
+                    if is_short is not None:
+                        await db.execute(
+                            Video.__table__.update()
+                            .where(Video.youtube_video_id == vid)
+                            .values(is_short=is_short, is_short_detected_at=now)
+                        )
+        except Exception as e:
+            logger.warning(f"Auto shorts detection failed for new channel: {e}")
 
     await db.commit()
     await db.refresh(channel)

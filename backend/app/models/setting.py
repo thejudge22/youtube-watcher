@@ -27,6 +27,9 @@ class Setting(Base):
     auto_refresh_enabled = Column(Boolean, default=False, nullable=False)
     auto_refresh_interval = Column(String, default='6h', nullable=False)  # '1h', '6h', '12h', '24h'
 
+    # Issue #55: Auto-detect shorts during imports
+    auto_detect_shorts = Column(Boolean, default=True, nullable=False)
+
     # Issue #54: Auto-refresh status
     last_refresh_at = Column(DateTime, nullable=True)
     last_refresh_status = Column(String, nullable=True)  # 'success', 'failed'

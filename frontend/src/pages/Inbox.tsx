@@ -107,7 +107,7 @@ export function Inbox() {
   };
 
   const handleDetectShorts = () => {
-    detectShortsBatch.mutate(undefined, {
+    detectShortsBatch.mutate({ scope: 'inbox_undetected' }, {
       onSuccess: () => {
         refetch();
       },

@@ -141,9 +141,10 @@ export function useDetectShortsBatch() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (videoIds?: string[]) => videosApi.detectShortsBatch(videoIds),
+    mutationFn: ({ videoIds, scope }: { videoIds?: string[]; scope?: string } = {}) =>
+      videosApi.detectShortsBatch(videoIds, scope),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['videos', 'inbox'] });
+      queryClient.invalidateQueries({ queryKey: ['videos'] });
     },
   });
 }

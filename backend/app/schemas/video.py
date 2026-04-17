@@ -24,6 +24,7 @@ class VideoResponse(BaseModel):
     saved_at: Optional[datetime]
     discarded_at: Optional[datetime]
     is_short: bool = False  # Issue #8: YouTube Shorts detection
+    is_short_detected_at: Optional[datetime] = None  # Issue #55: Last detection timestamp
 
 
 class ChannelFilterOption(BaseModel):

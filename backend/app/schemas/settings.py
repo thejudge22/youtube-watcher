@@ -76,6 +76,7 @@ class AppSettings(BaseModel):
     last_backup_error: Optional[str]
     auto_refresh_enabled: bool
     auto_refresh_interval: str
+    auto_detect_shorts: bool = True
     last_refresh_at: Optional[datetime]
     last_refresh_status: Optional[str]
     last_refresh_error: Optional[str]
@@ -91,6 +92,7 @@ class AppSettingsUpdate(BaseModel):
     backup_retention_days: Optional[int] = Field(default=None, ge=1, le=365)
     auto_refresh_enabled: Optional[bool] = None
     auto_refresh_interval: Optional[str] = Field(default=None, pattern='^(1h|6h|12h|24h)$')
+    auto_detect_shorts: Optional[bool] = None
 
     @field_validator('backup_time')
     @classmethod

@@ -154,7 +154,10 @@ export const videosApi = {
   purgeAllDiscarded: () => api.delete<{ deleted_count: number; message: string }>('/videos/discarded/purge-all'),
   // Issue #8: Shorts detection endpoints
   detectShort: (videoId: string) => api.post<Video>(`/videos/${videoId}/detect-short`),
-  detectShortsBatch: (videoIds?: string[]) => api.post<{ total_checked: number; updated_count: number }>('/videos/detect-shorts-batch', { video_ids: videoIds }),
+  detectShortsBatch: (videoIds?: string[], scope?: string) => api.post<{ total_checked: number; updated_count: number }>('/videos/detect-shorts-batch', {
+    video_ids: videoIds,
+    ...(scope ? { scope } : {})
+  }, { timeout: LONG_TIMEOUT }),
 };
 
 // Import/Export API

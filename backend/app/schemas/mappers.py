@@ -40,5 +40,6 @@ def map_video_to_response(video: Video) -> VideoResponse:
         status=video.status,
         saved_at=video.saved_at,
         discarded_at=video.discarded_at,
-        is_short=video.is_short  # Issue #8: Include Shorts status
+        is_short=video.is_short,  # Issue #8: Include Shorts status
+        is_short_detected_at=video.is_short_detected_at  # Issue #55
     )

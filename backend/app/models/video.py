@@ -28,5 +28,7 @@ class Video(Base):
     created_at = Column(DateTime, default=func.now())
     # YouTube Shorts detection field - Issue #8
     is_short = Column(Boolean, default=False, nullable=False, index=True)
+    # Issue #55: Timestamp of last shorts detection check (NULL = never checked)
+    is_short_detected_at = Column(DateTime, nullable=True)
 
     channel = relationship("Channel", back_populates="videos")

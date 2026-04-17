@@ -1,16 +1,17 @@
 import React, { useState, useMemo } from 'react';
-import { 
-  BookmarkIcon, 
-  PlayIcon, 
-  ChevronLeftIcon, 
+import {
+  BookmarkIcon,
+  PlayIcon,
+  ChevronLeftIcon,
   ChevronRightIcon,
   ClockIcon,
   FunnelIcon,
   ArrowPathIcon,
   CheckCircleIcon,
-  XCircleIcon
+  XCircleIcon,
+  SparklesIcon
 } from '@heroicons/react/24/outline';
-import { useSavedVideos, useDiscardVideo, useBulkDiscardVideos, useSavedVideoChannels } from '../hooks/useVideos';
+import { useSavedVideos, useDiscardVideo, useBulkDiscardVideos, useSavedVideoChannels, useDetectShortsBatch } from '../hooks/useVideos';
 import { useTouchDragSelect } from '../hooks/useTouchDragSelect';
 import { VideoList } from '../components/video/VideoList';
 import { RecentlyDeletedModal } from '../components/video/RecentlyDeletedModal';
@@ -18,9 +19,10 @@ import { RemoveConfirmationModal } from '../components/video/RemoveConfirmationM
 import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import ViewModeToggle, { ViewMode } from '../components/common/ViewModeToggle';
+import { ShortsFilterToggle } from '../components/inbox/ShortsFilterToggle';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { openPlaylist } from '../utils/playlist';
-import type { SavedVideosParams, Video } from '../types';
+import type { SavedVideosParams, Video, ShortsFilter } from '../types';
 
 type SortBy = 'published_at' | 'saved_at';
 type Order = 'asc' | 'desc';
@@ -34,6 +36,7 @@ const SORT_OPTIONS: { label: string; value: SortBy; order: Order }[] = [
 
 export function Saved() {
   const [channelYoutubeId, setChannelYoutubeId] = useState<string>('');
+  const [shortsFilter, setShortsFilter] = useLocalStorage<ShortsFilter>('saved-shorts-filter', 'all');
   const [sortBy, setSortBy] = useState<SortBy>('published_at');
   const [order, setOrder] = useState<Order>('desc');
   const [showRecentlyDeleted, setShowRecentlyDeleted] = useState(false);
@@ -49,6 +52,11 @@ export function Saved() {
     if (channelYoutubeId) {
       p.channel_youtube_id = channelYoutubeId;
     }
+    if (shortsFilter === 'shorts') {
+      p.is_short = true;
+    } else if (shortsFilter === 'regular') {
+      p.is_short = false;
+    }
     if (sortBy) {
       p.sort_by = sortBy;
     }
@@ -58,7 +66,7 @@ export function Saved() {
     p.limit = 100;
     p.offset = (currentPage - 1) * 100;
     return p;
-  }, [channelYoutubeId, sortBy, order, currentPage]);
+  }, [channelYoutubeId, shortsFilter, sortBy, order, currentPage]);
 
   const handleFilterChange = () => {
     setCurrentPage(1);
@@ -69,6 +77,7 @@ export function Saved() {
   const { data: channelOptions } = useSavedVideoChannels();
   const discardVideo = useDiscardVideo();
   const bulkDiscard = useBulkDiscardVideos();
+  const detectShortsBatch = useDetectShortsBatch();
 
   const handleDiscard = (id: string) => {
     const video = videos.find(v => v.id === id);
@@ -176,6 +185,14 @@ export function Saved() {
     handleFilterChange();
   };
 
+  const handleDetectShorts = () => {
+    detectShortsBatch.mutate({ scope: 'saved_undetected' }, {
+      onSuccess: () => {
+        refetch();
+      },
+    });
+  };
+
   const videos = data?.videos ?? [];
   const totalCount = data?.total ?? 0;
   const totalPages = Math.ceil(totalCount / 100);
@@ -239,6 +256,18 @@ export function Saved() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2 items-center">
+          <ShortsFilterToggle value={shortsFilter} onChange={(v) => { setShortsFilter(v); handleFilterChange(); }} />
+          <div className="w-px h-6 bg-border mx-1" />
+          <Button
+            variant="secondary"
+            onClick={handleDetectShorts}
+            isLoading={detectShortsBatch.isPending}
+            title="Detect which videos are Shorts"
+            size="sm"
+          >
+            <SparklesIcon className="w-4 h-4 mr-1.5" />
+            Detect Shorts
+          </Button>
           <Button
             variant={isSelectionMode ? "primary" : "secondary"}
             onClick={handleToggleSelectionMode}

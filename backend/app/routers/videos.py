@@ -75,7 +75,8 @@ async def list_inbox_videos(
             status=video.status,
             saved_at=video.saved_at,
             discarded_at=video.discarded_at,
-            is_short=video.is_short  # Issue #8: Include Shorts status
+            is_short=video.is_short,  # Issue #8
+            is_short_detected_at=video.is_short_detected_at  # Issue #55
         )
         for video in videos
     ]
@@ -85,6 +86,7 @@ async def list_inbox_videos(
 async def list_saved_videos(
     channel_youtube_id: Optional[str] = Query(None, description="Filter by channel YouTube ID"),
     channel_id: Optional[str] = Query(None, description="Filter by channel ID (deprecated)"),
+    is_short: Optional[bool] = Query(None, description="Filter by Shorts status - Issue #55"),
     sort_by: str = Query("published_at", description="Sort by 'published_at' or 'saved_at'"),
     order: str = Query("desc", description="Order 'asc' or 'desc'"),
     limit: int = Query(100, ge=1, le=500, description="Maximum number of videos to return"),
@@ -97,6 +99,7 @@ async def list_saved_videos(
     Query params:
         channel_youtube_id: Filter by channel YouTube ID (uses embedded channel info)
         channel_id: Filter by channel ID (deprecated, use channel_youtube_id)
+        is_short: Filter by Shorts status (True=Shorts only, False=regular only, None=all)
         sort_by: 'published_at' or 'saved_at'
         order: 'asc' or 'desc'
         limit: Maximum number of videos to return (default: 100, max: 500)
@@ -118,6 +121,8 @@ async def list_saved_videos(
     count_query = select(func.count(Video.id)).where(Video.status == 'saved')
     if filter_channel_youtube_id:
         count_query = count_query.where(Video.channel_youtube_id == filter_channel_youtube_id)
+    if is_short is not None:
+        count_query = count_query.where(Video.is_short == is_short)
     count_result = await db.execute(count_query)
     total = count_result.scalar_one()
 
@@ -129,6 +134,7 @@ async def list_saved_videos(
         limit=limit,
         offset=offset,
         channel_youtube_id=filter_channel_youtube_id,
+        is_short=is_short,
         sort_by=sort_by,
         order=order
     )
@@ -149,7 +155,8 @@ async def list_saved_videos(
             status=video.status,
             saved_at=video.saved_at,
             discarded_at=video.discarded_at,
-            is_short=video.is_short  # Issue #8: Include Shorts status
+            is_short=video.is_short,  # Issue #8
+            is_short_detected_at=video.is_short_detected_at  # Issue #55
         )
         for video in videos
     ]
@@ -242,7 +249,8 @@ async def list_discarded_videos(
             status=video.status,
             saved_at=video.saved_at,
             discarded_at=video.discarded_at,
-            is_short=video.is_short  # Issue #8: Include Shorts status
+            is_short=video.is_short,  # Issue #8
+            is_short_detected_at=video.is_short_detected_at  # Issue #55
         )
         for video in videos
     ]
@@ -518,6 +526,7 @@ async def purge_all_discarded_videos(db: AsyncSession = Depends(get_db)):
 class BatchDetectRequest(BaseModel):
     """Request schema for batch Shorts detection."""
     video_ids: Optional[List[str]] = None
+    scope: str = "inbox"  # "inbox", "undetected", "all" — Issue #55
 
 
 @router.post("/videos/{video_id}/detect-short", response_model=VideoResponse)
@@ -562,17 +571,21 @@ async def detect_shorts_batch(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Detect Shorts status for multiple videos or all inbox videos.
+    Detect Shorts status for multiple videos using fast HTTP checks.
 
-    If video_ids is provided, detects for those specific videos.
-    Otherwise, detects for all inbox videos.
-    Uses URL-based detection via yt-dlp.
+    Supports three scopes (Issue #55):
+    - "inbox": all inbox videos (default, backward compatible)
+    - "undetected": videos where is_short_detected_at IS NULL (never checked)
+    - "all": all videos regardless of detection status
 
-    Issue #8: YouTube Shorts Separation
+    If video_ids is provided, detects for those specific videos regardless of scope.
 
     Returns:
         dict: Summary with total_checked and updated_count
     """
+    from ..services.shorts_detector import detect_shorts_batch_http
+    from datetime import datetime, timezone
+
     timeout = await get_http_timeout(db)
 
     if request and request.video_ids:
@@ -581,22 +594,41 @@ async def detect_shorts_batch(
             select(Video).where(Video.id.in_(request.video_ids))
         )
     else:
-        # Detect for all inbox videos
-        result = await db.execute(
-            select(Video).where(Video.status == 'inbox')
-        )
+        # Build query based on scope
+        scope = request.scope if request else "inbox"
+        query = select(Video)
+
+        if scope == "inbox":
+            query = query.where(Video.status == 'inbox')
+        elif scope == "undetected":
+            query = query.where(Video.is_short_detected_at.is_(None))
+        elif scope == "saved_undetected":
+            query = query.where(Video.status == 'saved').where(Video.is_short_detected_at.is_(None))
+        elif scope == "inbox_undetected":
+            query = query.where(Video.status == 'inbox').where(Video.is_short_detected_at.is_(None))
+        # "all" = no filter
+
+        result = await db.execute(query)
 
     videos = result.scalars().all()
+    video_ids = [v.youtube_video_id for v in videos]
+
+    if not video_ids:
+        return {"total_checked": 0, "updated_count": 0}
+
+    # Use HTTP-based detection (Issue #55)
+    results = await detect_shorts_batch_http(video_ids, timeout=timeout)
+
     updated_count = 0
+    now = datetime.now(timezone.utc)
 
     for video in videos:
-        try:
-            video_info = await fetch_video_by_id(video.youtube_video_id, timeout=timeout)
-            if video.is_short != video_info.is_short:
-                video.is_short = video_info.is_short
+        is_short = results.get(video.youtube_video_id)
+        if is_short is not None:
+            if video.is_short != is_short or video.is_short_detected_at is None:
+                video.is_short = is_short
+                video.is_short_detected_at = now
                 updated_count += 1
-        except Exception as e:
-            logger.warning(f"Could not detect Short status for {video.youtube_video_id}: {e}")
 
     await db.commit()
 
