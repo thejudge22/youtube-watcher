@@ -3,6 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.exc import OperationalError
 from pydantic import BaseModel, Field
+from typing import Optional
 
 from ..database import get_db, Base
 from ..models.setting import Setting
@@ -13,11 +14,13 @@ router = APIRouter(prefix="/settings", tags=["settings"])
 class SettingsResponse(BaseModel):
     """Response model for settings."""
     http_timeout: float = Field(default=10.0, description="HTTP timeout in seconds")
+    auto_detect_shorts: bool = Field(default=True, description="Auto-detect Shorts on import")
 
 
 class SettingsUpdate(BaseModel):
     """Request model for updating settings."""
     http_timeout: float = Field(default=10.0, ge=1.0, le=300.0, description="HTTP timeout in seconds (1-300)")
+    auto_detect_shorts: Optional[bool] = Field(default=None, description="Auto-detect Shorts on import")
 
 
 async def _ensure_settings_table(db: AsyncSession):
@@ -61,10 +64,13 @@ async def get_settings(db: AsyncSession = Depends(get_db)):
     """
     try:
         setting = await _get_settings(db)
-        return SettingsResponse(http_timeout=setting.http_timeout)
+        return SettingsResponse(
+            http_timeout=setting.http_timeout,
+            auto_detect_shorts=getattr(setting, 'auto_detect_shorts', True),
+        )
     except OperationalError:
         # Table doesn't exist yet, return default values
-        return SettingsResponse(http_timeout=10.0)
+        return SettingsResponse(http_timeout=10.0, auto_detect_shorts=True)
 
 
 @router.put("/settings", response_model=SettingsResponse)
@@ -76,7 +82,13 @@ async def update_settings(
     Update application settings.
     """
     setting = await _get_settings(db)
-    setting.http_timeout = settings_update.http_timeout
+    if settings_update.http_timeout is not None:
+        setting.http_timeout = settings_update.http_timeout
+    if settings_update.auto_detect_shorts is not None:
+        setting.auto_detect_shorts = settings_update.auto_detect_shorts
     await db.commit()
     await db.refresh(setting)
-    return SettingsResponse(http_timeout=setting.http_timeout)
+    return SettingsResponse(
+        http_timeout=setting.http_timeout,
+        auto_detect_shorts=getattr(setting, 'auto_detect_shorts', True),
+    )

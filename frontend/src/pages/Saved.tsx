@@ -186,11 +186,10 @@ export function Saved() {
   };
 
   const handleDetectShorts = () => {
-    detectShortsBatch.mutate({ scope: 'saved_undetected' }, {
-      onSuccess: () => {
-        refetch();
-      },
-    });
+    detectShortsBatch.mutate(
+      { scope: 'saved_undetected', channelYoutubeId: channelYoutubeId || undefined },
+      { onSuccess: () => { refetch(); } }
+    );
   };
 
   const videos = data?.videos ?? [];

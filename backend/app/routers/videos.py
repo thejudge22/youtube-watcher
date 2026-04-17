@@ -527,6 +527,7 @@ class BatchDetectRequest(BaseModel):
     """Request schema for batch Shorts detection."""
     video_ids: Optional[List[str]] = None
     scope: str = "inbox"  # "inbox", "undetected", "all" — Issue #55
+    channel_youtube_id: Optional[str] = None  # Filter to a specific channel
 
 
 @router.post("/videos/{video_id}/detect-short", response_model=VideoResponse)
@@ -607,6 +608,10 @@ async def detect_shorts_batch(
         elif scope == "inbox_undetected":
             query = query.where(Video.status == 'inbox').where(Video.is_short_detected_at.is_(None))
         # "all" = no filter
+
+        # Apply channel filter if provided
+        if request and request.channel_youtube_id:
+            query = query.where(Video.channel_youtube_id == request.channel_youtube_id)
 
         result = await db.execute(query)
 

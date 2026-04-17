@@ -6,12 +6,14 @@ export default function AppSettingsSection() {
   const { data: settings, isLoading, error } = useSettings();
   const updateSettings = useUpdateSettings();
   const [httpTimeout, setHttpTimeout] = useState('10.0');
+  const [autoDetectShorts, setAutoDetectShorts] = useState(true);
   const [isDirty, setIsDirty] = useState(false);
 
   // Update local state when settings load
   useEffect(() => {
     if (settings) {
       setHttpTimeout(settings.http_timeout.toString());
+      setAutoDetectShorts(settings.auto_detect_shorts);
     }
   }, [settings]);
 
@@ -21,17 +23,23 @@ export default function AppSettingsSection() {
       alert('HTTP timeout must be between 1 and 300 seconds');
       return;
     }
-    await updateSettings.mutateAsync({ http_timeout: timeout });
+    await updateSettings.mutateAsync({ http_timeout: timeout, auto_detect_shorts: autoDetectShorts });
     setIsDirty(false);
   };
 
   const handleReset = () => {
     setHttpTimeout(settings?.http_timeout?.toString() || '10.0');
+    setAutoDetectShorts(settings?.auto_detect_shorts ?? true);
     setIsDirty(false);
   };
 
-  const handleInputChange = (value: string) => {
+  const handleTimeoutChange = (value: string) => {
     setHttpTimeout(value);
+    setIsDirty(true);
+  };
+
+  const handleAutoDetectChange = (value: boolean) => {
+    setAutoDetectShorts(value);
     setIsDirty(true);
   };
 
@@ -45,6 +53,39 @@ export default function AppSettingsSection() {
         <div className="text-accent-red">Failed to load settings</div>
       ) : (
         <div className="bg-bg-secondary rounded-lg p-6 space-y-6">
+          {/* Auto-Detect Shorts Toggle */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <label htmlFor="auto-detect-shorts" className="block text-sm font-medium text-text-primary mb-1">
+                  Auto-Detect Shorts
+                </label>
+                <p className="text-sm text-text-secondary">
+                  Automatically detect YouTube Shorts when adding or refreshing channels.
+                  Uses HTTP-based detection for fast results.
+                </p>
+              </div>
+              <button
+                id="auto-detect-shorts"
+                type="button"
+                role="switch"
+                aria-checked={autoDetectShorts}
+                onClick={() => handleAutoDetectChange(!autoDetectShorts)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-accent-blue focus:ring-offset-2 ${
+                  autoDetectShorts ? 'bg-accent-blue' : 'bg-bg-tertiary'
+                }`}
+                disabled={updateSettings.isPending}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                    autoDetectShorts ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
           {/* HTTP Timeout Setting */}
           <div className="space-y-3">
             <div>
@@ -64,7 +105,7 @@ export default function AppSettingsSection() {
                 max="300"
                 step="1"
                 value={httpTimeout}
-                onChange={(e) => handleInputChange(e.target.value)}
+                onChange={(e) => handleTimeoutChange(e.target.value)}
                 className="w-32 px-3 py-2 bg-bg-tertiary border border-border rounded-md text-text-primary focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent"
                 disabled={updateSettings.isPending}
               />
@@ -93,7 +134,7 @@ export default function AppSettingsSection() {
           <div className="bg-accent-blue/10 border border-accent-blue/30 rounded-lg p-4">
             <p className="text-sm text-accent-blue">
               <strong>Tip:</strong> If you frequently see timeout errors when adding channels or refreshing,
-              try increasing this value. The default is 10 seconds. Values between 15-30 seconds are recommended
+              try increasing the HTTP timeout. The default is 10 seconds. Values between 15-30 seconds are recommended
               for slower connections.
             </p>
           </div>

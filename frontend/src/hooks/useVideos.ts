@@ -141,8 +141,8 @@ export function useDetectShortsBatch() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ videoIds, scope }: { videoIds?: string[]; scope?: string } = {}) =>
-      videosApi.detectShortsBatch(videoIds, scope),
+    mutationFn: ({ videoIds, scope, channelYoutubeId }: { videoIds?: string[]; scope?: string; channelYoutubeId?: string } = {}) =>
+      videosApi.detectShortsBatch(videoIds, scope, channelYoutubeId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['videos'] });
     },

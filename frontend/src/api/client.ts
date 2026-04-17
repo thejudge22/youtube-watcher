@@ -48,6 +48,7 @@ api.interceptors.request.use(
 // Settings types
 export interface AppSettings {
   http_timeout: number;
+  auto_detect_shorts: boolean;
 }
 
 // Add response interceptor to handle structured error responses
@@ -154,9 +155,10 @@ export const videosApi = {
   purgeAllDiscarded: () => api.delete<{ deleted_count: number; message: string }>('/videos/discarded/purge-all'),
   // Issue #8: Shorts detection endpoints
   detectShort: (videoId: string) => api.post<Video>(`/videos/${videoId}/detect-short`),
-  detectShortsBatch: (videoIds?: string[], scope?: string) => api.post<{ total_checked: number; updated_count: number }>('/videos/detect-shorts-batch', {
+  detectShortsBatch: (videoIds?: string[], scope?: string, channelYoutubeId?: string) => api.post<{ total_checked: number; updated_count: number }>('/videos/detect-shorts-batch', {
     video_ids: videoIds,
-    ...(scope ? { scope } : {})
+    ...(scope ? { scope } : {}),
+    ...(channelYoutubeId ? { channel_youtube_id: channelYoutubeId } : {})
   }, { timeout: LONG_TIMEOUT }),
 };
 
