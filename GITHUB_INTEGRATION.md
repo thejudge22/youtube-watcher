@@ -22,11 +22,13 @@ gh pr create --fill
 
 **IMPORTANT**: Always follow this complete release process to prevent version mismatches (see Issue #23).
 
+Releases use date-based versioning: `YYYY-MM-DD: Short Description`.
+
 #### Step-by-Step Release Guide
 
-1. **Create a version branch** with the version number:
+1. **Create a version branch** with the date and description:
    ```bash
-   git checkout -b v1.4.0
+   git checkout -b v2026-04-20-short-description
    ```
 
 2. **Run the version update script** to update version numbers in project files:
@@ -38,34 +40,34 @@ gh pr create --fill
 3. **Commit the version changes**:
    ```bash
    git add .
-   git commit -m "chore: bump version to 1.4.0"
+   git commit -m "chore: bump version to 2026-04-20"
    ```
 
 4. **Push the branch and tags**:
    ```bash
-   git push origin v1.4.0
+   git push origin v2026-04-20-short-description
    git push origin --tags
    ```
 
 5. **Create the GitHub release**:
    ```bash
-   gh release create v1.4.0 --generate-notes
+   gh release create "v2026-04-20: Short Description" --generate-notes
    ```
 
-**Why this matters**: The version update script ensures that `frontend/package.json` follows semantic versioning and matches the release version. Skipping step 2 will result in version mismatches like Issue #23, where the frontend package version doesn't align with the release tag.
+**Why this matters**: The version update script ensures that `frontend/package.json` follows the date-based versioning and matches the release version. Skipping step 2 will result in version mismatches like Issue #23, where the frontend package version doesn't align with the release tag.
 
 #### Quick Release Command
 
 For experienced users, the process can be condensed:
 
 ```bash
-git checkout -b v1.4.0 && \
+git checkout -b v2026-04-20-short-description && \
 ./scripts/update_version.sh && \
 git add . && \
-git commit -m "chore: bump version to 1.4.0" && \
-git push origin v1.4.0 && \
+git commit -m "chore: bump version to 2026-04-20" && \
+git push origin v2026-04-20-short-description && \
 git push origin --tags && \
-gh release create v1.4.0 --generate-notes
+gh release create "v2026-04-20: Short Description" --generate-notes
 ```
 
 ### 3. Issue Resolution
@@ -101,7 +103,7 @@ We have integrated common commands into the `package.json` for easy access.
 
 The project includes a script to automatically update the version in `package.json` based on the current git branch name.
 
-- **Supported Branch Formats**: `v1.0.0`, `v1.01`, `v.1.1.1`
+- **Supported Branch Formats**: `vYYYY-MM-DD` or `vYYYY-MM-DD-short-description`
 - **Usage**:
   ```bash
   ./scripts/update_version.sh
@@ -112,7 +114,7 @@ The project includes a script to automatically update the version in `package.js
 
 A git `post-commit` hook has been installed to automatically tag every commit with the version extracted from the branch name.
 
-- **How it works**: After every commit, the hook checks the branch name. If it matches a version format (e.g., `v1.0.0`), it automatically creates a local tag (e.g., `v1.0.0`) for that commit if it doesn't already exist.
+- **How it works**: After every commit, the hook checks the branch name. If it matches a version format (e.g., `v2026-04-20`), it automatically creates a local tag (e.g., `v2026-04-20`) for that commit if it doesn't already exist.
 - **Pushing Tags**: When you push your changes, remember to push the tags as well:
   ```bash
   git push origin --tags

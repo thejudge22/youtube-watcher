@@ -42,7 +42,7 @@ services:
 
 Data is persisted in `./data/youtube-watcher.db` via the volume mount.
 
-> The `:latest` tag builds from every commit. For a static version, use a release tag like `:v1.13.0`.
+> The `:latest` tag builds from every commit. For a static version, use a release tag like `:v2026-04-20`.
 
 ### Development
 

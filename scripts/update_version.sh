@@ -3,12 +3,17 @@
 # Get current branch name
 BRANCH=$(git branch --show-current)
 
-# Extract version number (handles v1.0.0, v1.01, v.1.1.1)
-# Removes leading 'v' or 'v.' and ensures it starts with a digit
-VERSION=$(echo $BRANCH | sed -E 's/^v\.?//' | grep -E '^[0-9]')
+# Extract date-based version (handles vYYYY-MM-DD or vYYYY-MM-DD-description)
+# Removes leading 'v' and keeps only the date portion (first 10 chars)
+VERSION=$(echo "$BRANCH" | sed -E 's/^v//' | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}')
 
 if [ -z "$VERSION" ]; then
-  echo "Branch name '$BRANCH' does not contain a valid version (e.g., v1.0.0)"
+  # Fallback: try legacy semver format (v1.0.0)
+  VERSION=$(echo "$BRANCH" | sed -E 's/^v\.?//' | grep -E '^[0-9]')
+fi
+
+if [ -z "$VERSION" ]; then
+  echo "Branch name '$BRANCH' does not contain a valid version (e.g., v2026-04-20 or v1.0.0)"
   exit 1
 fi
 
