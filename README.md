@@ -1,50 +1,31 @@
 # YouTube-Watcher
 
-A self-hosted, Docker-based web application for managing YouTube content discovery. Monitor YouTube channels via RSS feeds, triage new videos in an inbox-style interface, and maintain a personal watch later list.
+A self-hosted web app for managing YouTube content discovery. Monitor channels via RSS feeds, triage new videos in an inbox, and maintain a personal watch-later list.
 
 <img width="1280" height="714" alt="image" src="https://github.com/user-attachments/assets/f709ce63-3f6b-43c6-852f-5f291a81ec89" />
 
-
 ## Features
 
-- **Channel Management** - Add and manage YouTube channels to track via RSS feeds
-- **Video Inbox** - Review new videos from your channels with save/discard options
-- **Bulk Actions** - Save or discard all videos in your inbox with one click
-- **Saved Videos Library** - View and manage your saved videos with filtering and sorting
-- **Video Selection Mode** - Select multiple saved videos for bulk operations
-- **Play as Playlist** - Generate a YouTube playlist from selected videos (up to 50)
-- **Multiple View Modes** - Choose between Large, Compact, or List view layouts for videos
-- **Channel List View** - Toggle between grid and list views for channels
-- **Bulk Remove** - Remove multiple selected videos at once
-- **Recently Deleted** - Restore accidentally deleted videos within a retention period
-- **Direct URL Save** - Add any YouTube video URL directly to your saved list
-- **YouTube Shorts Support** - Full support for YouTube Shorts URLs
-- **Configurable Timeouts** - Adjust HTTP request timeout via Settings page
-- **Import/Export** - Backup and restore your channels and saved videos
-- **RSS-based** - No YouTube API key required, uses RSS feeds
-- **Self-hosted** - Your data stays on your server
-- **Optional Authentication** - Secure your instance with username/password login when exposing to public networks
-- **Responsive Design** - Works on desktop and mobile devices
-- **PWA Support** - Install as a Progressive Web App on any device for offline access and native app experience
+- **Channel Management** - Track YouTube channels via RSS feeds (no API key needed)
+- **Video Inbox** - Review new videos with save/discard options
+- **Saved Library** - Filter, sort, and bulk-manage saved videos
+- **Play as Playlist** - Generate a YouTube playlist from selected videos
+- **Import/Export** - Backup and restore channels and saved videos
+- **Optional Authentication** - Secure your instance with login or API keys
+- **PWA Support** - Install as a Progressive Web App
 
 ## Installation
 
-### Prerequisites
+Requires Docker, Docker Compose, and Git.
 
-- Docker and Docker Compose
-- Git
+### Quick Start
 
-#### A note about docker images
-The ghcr.io/thejudge22/youtube-watcher:latest tag always builds from every commit.  Use that if you want the most up to date docker image.  If you want a static version, tag your docker image like this:  ghcr.io/thejudge22/youtube-watcher:1.10
+1. Create `docker-compose.yml`:
 
-#### Quick Start with Pre-built Images
-
-1. Create a `docker-compose.yml` file:
 ```yaml
 services:
   app:
     image: ghcr.io/thejudge22/youtube-watcher:latest
-    # Or use specific version: ghcr.io/thejudge22/youtube-watcher:v1.0.0
     ports:
       - "38000:8000"
     volumes:
@@ -55,133 +36,89 @@ services:
     restart: unless-stopped
 ```
 
-2. Copy the .env.example to .env
+2. Copy `.env.example` to `.env`
+3. Start: `docker compose up -d`
+4. Open http://localhost:38000
 
-3. Start the application:
-```bash
-docker compose up -d
-```
+Data is persisted in `./data/youtube-watcher.db` via the volume mount.
 
-4. Access the application at http://localhost:38000
+> The `:latest` tag builds from every commit. For a static version, use a release tag like `:v1.13.0`.
 
-### Development Mode
-
-For development or local builds, clone the repo and run:
+### Development
 
 ```bash
+git clone https://github.com/thejudge22/youtube-watcher.git
+cd youtube-watcher
 docker compose -f docker-compose-local.yml up --build
 ```
 
-- Access the application at http://localhost:38000
-- API Documentation: http://localhost:38000/docs
+## Authentication
 
+Authentication is disabled by default. Enable it when exposing to public networks.
 
+### Username/Password Login
 
-#### Data Persistence
+Generate a password hash and update your `.env`:
 
-The application uses a volume mount to persist data:
-```yaml
-volumes:
-  - ./data:/app/data
+```bash
+./scripts/generate-password-hash.sh
 ```
 
-This ensures your database and application data persists across container updates and restarts. The SQLite database file is stored at `./data/youtube-watcher.db`.
+Set in `.env`:
+```ini
+AUTH_ENABLED=true
+AUTH_USERNAME=admin
+AUTH_PASSWORD_HASH=<hash from script>
+```
 
+Sessions last 14 days by default (configurable via `JWT_EXPIRE_HOURS`).
 
+### API Key Access
 
-#### Optional Authentication
+For programmatic access to protected endpoints, generate an API key:
 
-YouTube-Watcher supports optional username/password authentication to secure your instance when exposing it to public networks.
+```bash
+./scripts/generate-api-key.sh
+```
 
-**To enable authentication:**
+Set in `.env`:
+```ini
+API_KEY=<key from script>
+```
 
-1. Clone the repository and generate a password hash:
-   ```bash
-   git clone https://github.com/mark-rodgers/youtube-watcher.git
-   cd youtube-watcher
-   ./scripts/generate-password-hash.sh
-   # Enter your password when prompted
-   ```
+Include the header on API requests:
 
-2. Update the `.env` file with the username/password hash.
-   
-3. Restart the container:
-   ```bash
-   docker compose up -d
-   ```
-
-When enabled, users will be presented with a login page before accessing the application. Sessions last 14 days by default (configurable via `JWT_EXPIRE_HOURS`).
-
+```bash
+curl http://localhost:38000/api/channels \
+  -H "X-API-Key: <your-api-key>"
+```
 
 ## Usage
 
-### Settings
+**Adding Channels** - Navigate to Channels, click Add Channel, and paste a YouTube URL. Supports `@handle`, channel ID, custom URLs, and direct video URLs.
 
-The **Settings** page allows you to configure application preferences:
+**Inbox** - Review new videos, save or discard individually, or use Save All / Discard All.
 
-- **HTTP Request Timeout** - Adjust how long to wait for YouTube/RSS API responses (1-300 seconds, default: 10). Increase this if you experience timeout errors on slow connections.
-- **Import/Export** - Backup your channels and saved videos to JSON files, or restore from previous backups
-- **Data Management** - Remove all saved videos or purge recently deleted videos
+**Saved Videos** - Filter by channel, sort by date, switch between Large/Compact/List views, select multiple for bulk operations, or play as a YouTube playlist.
 
-### Adding Channels
+**Direct URL Save** - Click the **+** button to add any YouTube URL directly to your saved list.
 
-1. Navigate to the **Channels** page
-2. Click **Add Channel**
-3. Paste a YouTube channel URL (supports `@handle`, channel ID, and custom URL formats)
-4. Click **Add** to start tracking
-
-**Channel View Modes:**
-- Toggle between **Grid** and **List** views using the buttons in the header
-- Grid view shows channels as cards with thumbnails
-- List view shows channels in a table with more details
-- Your view preference is saved automatically
-
-**Channel Actions:**
-- Click the **Refresh** button to check for new videos from a specific channel
-- Click the **Delete** button to remove a channel and all its videos
-
-### Managing Videos
-
-**Inbox Tab:**
-- Review new videos from your subscribed channels
-- Click **Save** to add to your saved list
-- Click **Discard** to remove from inbox
-- Use **Save All** or **Discard All** for bulk actions
-- Click **Refresh** to check for new videos
-
-**Saved Videos Tab:**
-- View all your saved videos
-- Filter by channel
-- Sort by published date or saved date
-- Switch between Large, Compact, and List view modes
-- Select multiple videos for bulk operations
-- Play selected videos as a YouTube playlist (opens in new tab)
-- Remove selected videos in bulk
-- Click **Remove** to discard a single saved video
-- View and restore recently deleted videos
-
-**Direct URL:**
-- Click the **+** button to add any YouTube URL directly to your saved videos
+**Settings** - Configure HTTP timeout, import/export data, and manage recently deleted videos.
 
 ## Supported URL Formats
 
-| Type | Format | Example |
-|------|--------|---------|
-| Channel Handle | `@username` | `https://www.youtube.com/@JoshuaWeissman` |
-| Channel ID | `/channel/UC...` | `https://www.youtube.com/channel/UC_x5XG1OV2P6uZZ5FSM9Ttw` |
-| Custom URL | `/c/username` | `https://www.youtube.com/c/SomeChannel` |
-| Video | `/watch?v=...` | `https://www.youtube.com/watch?v=dQw4w9WgXcQ` |
-| Shorts | `/shorts/...` | `https://www.youtube.com/shorts/mccyHdidiG8` |
-| Short URL | `youtu.be/...` | `https://youtu.be/dQw4w9WgXcQ` |
-
-
-
+| Type | Example |
+|------|---------|
+| Channel Handle | `https://youtube.com/@JoshuaWeissman` |
+| Channel ID | `https://youtube.com/channel/UC_x5XG1OV2P6uZZ5FSM9Ttw` |
+| Custom URL | `https://youtube.com/c/SomeChannel` |
+| Video | `https://youtube.com/watch?v=dQw4w9WgXcQ` |
+| Shorts | `https://youtube.com/shorts/mccyHdidiG8` |
+| Short URL | `https://youtu.be/dQw4w9WgXcQ` |
 
 ## API Documentation
 
-API documentation is available at `/docs` when the application is running.
-
-
+Interactive docs available at `/docs` when the app is running.
 
 ## Tech Stack
 
@@ -192,12 +129,6 @@ API documentation is available at `/docs` when the application is running.
 | Database | SQLite |
 | Deployment | Docker |
 
-
 ## License
 
-MIT License - feel free to use and modify for your own purposes.
-
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+MIT
