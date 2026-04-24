@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     # JWT token expiration in hours (default: 336 = 14 days)
     jwt_expire_hours: int = 336
 
+    # Optional API key for programmatic access to protected endpoints
+    # Generate using: ./scripts/generate-api-key.sh
+    # When set, include the header X-API-Key: <your-api-key> on API requests
+    api_key: str = ""
+
     def model_post_init(self, __context):
         """Auto-generate JWT secret if not provided."""
         if not self.jwt_secret_key:

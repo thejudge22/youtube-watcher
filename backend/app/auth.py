@@ -11,7 +11,7 @@ import hashlib
 import secrets
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 
 from .config import settings
@@ -116,39 +116,41 @@ def verify_token(token: str) -> bool:
 
 
 async def require_auth(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
 ) -> None:
     """
     FastAPI dependency to require authentication on protected routes.
-    
+
     If AUTH_ENABLED is false, this allows all requests.
-    If AUTH_ENABLED is true, requires a valid JWT token in the Authorization header.
-    
+    If AUTH_ENABLED is true, requires a valid JWT token in the Authorization header
+    or a valid API key in the X-API-Key header.
+
     Args:
         credentials: The Authorization header credentials
-        
+        x_api_key: The X-API-Key header value
+
     Raises:
         HTTPException: 401 if authentication is required but missing/invalid
     """
     # If auth is disabled, allow all requests
     if not settings.auth_enabled:
         return
-    
-    # Check for credentials
-    if not credentials:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Authentication required",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    # Verify the token
-    if not verify_token(credentials.credentials):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+
+    # Check for API key first (programmatic access)
+    if settings.api_key and x_api_key:
+        if secrets.compare_digest(x_api_key, settings.api_key):
+            return
+
+    # Check for JWT token (browser session access)
+    if credentials and verify_token(credentials.credentials):
+        return
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Authentication required",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
 
 
 def authenticate_user(username: str, password: str) -> bool:
