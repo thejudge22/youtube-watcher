@@ -93,14 +93,17 @@ app.add_exception_handler(StarletteHTTPException, http_exception_handler)
 app.add_exception_handler(RequestValidationError, validation_exception_handler)
 app.add_exception_handler(Exception, generic_exception_handler)
 
-# CORS Configuration - only for development
+# CORS Configuration - enabled in development or when CORS_ORIGINS is set
 # In production (single container), CORS is not needed since API and frontend
 # are served from the same origin
-if os.getenv("ENV", "production") == "development":
+cors_origins_env = os.getenv("CORS_ORIGINS", "")
+if os.getenv("ENV", "production") == "development" or cors_origins_env:
     origins = [
         "http://localhost:5173",
         "http://localhost:8000",
     ]
+    if cors_origins_env:
+        origins.extend([o.strip() for o in cors_origins_env.split(",") if o.strip()])
 
     app.add_middleware(
         CORSMiddleware,
@@ -121,7 +124,7 @@ async def health(db: AsyncSession = Depends(get_db)):
     """
     try:
         await db.execute(text("SELECT 1"))
-        return {"status": "ok", "database": "connected"}
+        return {"status": "ok", "database": "connected", "version": "1.10", "api_version": "1"}
     except Exception as e:
         raise HTTPException(
             status_code=503,
