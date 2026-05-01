@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>YouTube-Watcher QuickPlay</title>
+  <style>
+    :root {
+      --bg-primary: #0f0f0f;
+      --bg-secondary: #1a1a1a;
+      --bg-tertiary: #2a2a2a;
+      --bg-hover: #3a3a3a;
+      --text-primary: #e5e5e5;
+      --text-secondary: #a0a0a0;
+      --text-tertiary: #666666;
+      --accent-red: #ff0000;
+      --accent-blue: #3ea6ff;
+      --accent-green: #2ba640;
+      --border: #333333;
+      --error-bg: rgba(255, 0, 0, 0.1);
+      --error-border: rgba(255, 0, 0, 0.3);
+      --success-bg: rgba(43, 166, 64, 0.1);
+      --success-border: rgba(43, 166, 64, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 16px;
+    }
+
+    /* Header */
+    header {
+      background-color: var(--bg-secondary);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 0;
+      margin-bottom: 24px;
+    }
+
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 16px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .header-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .header-title svg {
+      width: 28px;
+      height: 28px;
+      color: var(--accent-red);
+    }
+
+    .api-controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      flex: 1;
+      justify-content: flex-end;
+    }
+
+    .api-controls input {
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .api-controls input:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(62, 166, 255, 0.2);
+    }
+
+    .api-controls input::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    #apiBaseUrl {
+      width: 180px;
+    }
+
+    #apiKey {
+      width: 240px;
+    }
+
+    button {
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background-color 0.2s, border-color 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    button:hover:not(:disabled) {
+      background-color: var(--bg-hover);
+      border-color: var(--text-secondary);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    button.primary {
+      background-color: var(--accent-red);
+      border-color: var(--accent-red);
+      color: #fff;
+    }
+
+    button.primary:hover:not(:disabled) {
+      background-color: #cc0000;
+      border-color: #cc0000;
+    }
+
+    button.success {
+      background-color: var(--accent-green);
+      border-color: var(--accent-green);
+      color: #fff;
+    }
+
+    button.success:hover:not(:disabled) {
+      background-color: #238a34;
+      border-color: #238a34;
+    }
+
+    button.accent {
+      background-color: var(--accent-blue);
+      border-color: var(--accent-blue);
+      color: #0f0f0f;
+    }
+
+    button.accent:hover:not(:disabled) {
+      background-color: #2a8fd6;
+      border-color: #2a8fd6;
+    }
+
+    /* Main content */
+    .content-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    @media (max-width: 900px) {
+      .content-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .panel {
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .panel-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-count {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      background-color: var(--bg-tertiary);
+      padding: 2px 10px;
+      border-radius: 9999px;
+    }
+
+    /* Video list */
+    .video-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .video-item {
+      display: flex;
+      gap: 12px;
+      padding: 8px;
+      border-radius: 8px;
+      transition: background-color 0.15s;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .video-item:hover {
+      background-color: var(--bg-tertiary);
+    }
+
+    .video-thumbnail {
+      width: 120px;
+      height: 68px;
+      border-radius: 6px;
+      object-fit: cover;
+      flex-shrink: 0;
+      background-color: var(--bg-tertiary);
+    }
+
+    .video-info {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-width: 0;
+    }
+
+    .video-title {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      line-height: 1.3;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+
+    .video-meta {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .video-channel {
+      color: var(--text-secondary);
+    }
+
+    .video-date {
+      color: var(--text-tertiary);
+    }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 40px 16px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state-icon {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    /* Loading */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+      gap: 12px;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--bg-tertiary);
+      border-top-color: var(--accent-red);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Messages */
+    .message {
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 16px;
+      font-size: 0.875rem;
+    }
+
+    .message.error {
+      background-color: var(--error-bg);
+      border: 1px solid var(--error-border);
+      color: #ff6b6b;
+    }
+
+    .message.success {
+      background-color: var(--success-bg);
+      border: 1px solid var(--success-border);
+      color: #6bde84;
+    }
+
+    .message.info {
+      background-color: rgba(62, 166, 255, 0.1);
+      border: 1px solid rgba(62, 166, 255, 0.3);
+      color: var(--accent-blue);
+    }
+
+    /* Footer actions */
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      padding: 16px;
+      background-color: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .actions button {
+      padding: 10px 20px;
+      font-size: 1rem;
+    }
+
+    /* Setup screen */
+    .setup {
+      max-width: 500px;
+      margin: 60px auto;
+      text-align: center;
+    }
+
+    .setup h2 {
+      margin-bottom: 8px;
+    }
+
+    .setup p {
+      color: var(--text-secondary);
+      margin-bottom: 24px;
+    }
+
+    .setup-inputs {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .setup-inputs input {
+      background-color: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-primary);
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 1rem;
+      outline: none;
+      width: 100%;
+    }
+
+    .setup-inputs input:focus {
+      border-color: var(--accent-blue);
+      box-shadow: 0 0 0 2px rgba(62, 166, 255, 0.2);
+    }
+
+    .setup-inputs input::placeholder {
+      color: var(--text-tertiary);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Setup screen -->
+    <div id="setupScreen" class="setup">
+      <h2>Welcome to QuickPlay</h2>
+      <p>Enter your YouTube-Watcher API details to get started.</p>
+      <div class="setup-inputs">
+        <input type="text" id="setupBaseUrl" placeholder="API Base URL (e.g. http://localhost:38000)" value="http://localhost:38000">
+        <input type="password" id="setupApiKey" placeholder="API Key">
+      </div>
+      <button class="primary" id="setupSaveBtn" onclick="saveSetup()">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        Save &amp; Connect
+      </button>
+      <div id="setupMessage" style="margin-top: 16px;"></div>
+    </div>
+
+    <!-- Main app -->
+    <div id="mainApp" class="hidden">
+      <header>
+        <div class="header-content">
+          <div class="header-title">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor"><path d="M19.615 3.184c-3.604-.246-11.631-.245-15.23 0-3.897.266-4.356 2.62-4.385 8.816.029 6.185.484 8.549 4.385 8.816 3.6.245 11.626.246 15.23 0 3.897-.266 4.356-2.62 4.385-8.816-.029-6.185-.484-8.549-4.385-8.816zm-10.615 12.816v-8l8 3.993-8 4.007z"/></svg>
+            QuickPlay
+          </div>
+          <div class="api-controls">
+            <input type="text" id="apiBaseUrl" placeholder="API Base URL">
+            <input type="password" id="apiKey" placeholder="API Key">
+            <button onclick="saveCredentials()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+              Save
+            </button>
+            <button class="accent" onclick="refresh()">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+      </header>
+
+      <div class="container">
+        <div id="messages"></div>
+
+        <div class="actions">
+          <button class="primary" onclick="playVideos()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Play Videos
+          </button>
+          <button class="primary" onclick="playShorts()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Play Shorts
+          </button>
+          <button class="success" onclick="playAll()">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Play All
+          </button>
+        </div>
+
+        <div class="content-grid">
+          <!-- Videos Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>
+                Oldest Videos
+              </div>
+              <span class="panel-count" id="videoCount">0</span>
+            </div>
+            <div id="videosContainer">
+              <div class="loading">
+                <div class="spinner"></div>
+                <span style="color: var(--text-secondary);">Loading videos...</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Shorts Panel -->
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                Oldest Shorts
+              </div>
+              <span class="panel-count" id="shortsCount">0</span>
+            </div>
+            <div id="shortsContainer">
+              <div class="loading">
+                <div class="spinner"></div>
+                <span style="color: var(--text-secondary);">Loading shorts...</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Storage keys
+    const STORAGE_KEY = 'quickplay_api_key';
+    const STORAGE_URL = 'quickplay_api_url';
+    const MAX_PLAYLIST_VIDEOS = 50;
+    const YOUTUBE_WATCH_VIDEOS_URL = 'https://www.youtube.com/watch_videos';
+
+    // State
+    let videos = [];
+    let shorts = [];
+
+    // Helpers
+    function getApiKey() {
+      return localStorage.getItem(STORAGE_KEY);
+    }
+
+    function saveApiKey(key) {
+      localStorage.setItem(STORAGE_KEY, key);
+    }
+
+    function getApiBaseUrl() {
+      return localStorage.getItem(STORAGE_URL) || 'http://localhost:38000';
+    }
+
+    function saveApiBaseUrl(url) {
+      localStorage.setItem(STORAGE_URL, url);
+    }
+
+    function showMessage(text, type = 'error') {
+      const container = document.getElementById('messages');
+      const div = document.createElement('div');
+      div.className = `message ${type}`;
+      div.textContent = text;
+      container.appendChild(div);
+      setTimeout(() => div.remove(), 8000);
+    }
+
+    function clearMessages() {
+      document.getElementById('messages').innerHTML = '';
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return '';
+      const date = new Date(dateString);
+      return date.toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    }
+
+    // Setup screen
+    function saveSetup() {
+      const baseUrl = document.getElementById('setupBaseUrl').value.trim();
+      const key = document.getElementById('setupApiKey').value.trim();
+      const msgDiv = document.getElementById('setupMessage');
+
+      if (!baseUrl) {
+        msgDiv.innerHTML = '<div class="message error">Please enter the API base URL.</div>';
+        return;
+      }
+      if (!key) {
+        msgDiv.innerHTML = '<div class="message error">Please enter the API key.</div>';
+        return;
+      }
+
+      saveApiBaseUrl(baseUrl);
+      saveApiKey(key);
+      showMainApp();
+      refresh();
+    }
+
+    // Header controls
+    function saveCredentials() {
+      const baseUrl = document.getElementById('apiBaseUrl').value.trim();
+      const key = document.getElementById('apiKey').value.trim();
+
+      if (baseUrl) saveApiBaseUrl(baseUrl);
+      if (key) saveApiKey(key);
+
+      showMessage('Settings saved.', 'success');
+      refresh();
+    }
+
+    function showMainApp() {
+      document.getElementById('setupScreen').classList.add('hidden');
+      document.getElementById('mainApp').classList.remove('hidden');
+      document.getElementById('apiBaseUrl').value = getApiBaseUrl();
+      document.getElementById('apiKey').value = getApiKey() || '';
+    }
+
+    // Fetching
+    async function fetchVideos(isShort) {
+      const baseUrl = getApiBaseUrl().replace(/\/$/, '');
+      const key = getApiKey();
+
+      const url = new URL(`${baseUrl}/api/videos/saved`);
+      url.searchParams.set('is_short', isShort ? 'true' : 'false');
+      url.searchParams.set('sort_by', 'published_at');
+      url.searchParams.set('order', 'asc');
+      url.searchParams.set('limit', '50');
+      url.searchParams.set('offset', '0');
+
+      const response = await fetch(url.toString(), {
+        headers: {
+          'X-API-Key': key,
+          'Accept': 'application/json'
+        }
+      });
+
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Invalid API key. Check your key and try again.');
+      }
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.videos || [];
+    }
+
+    async function refresh() {
+      clearMessages();
+      videos = [];
+      shorts = [];
+
+      document.getElementById('videosContainer').innerHTML = `
+        <div class="loading"><div class="spinner"></div><span style="color: var(--text-secondary);">Loading videos...</span></div>
+      `;
+      document.getElementById('shortsContainer').innerHTML = `
+        <div class="loading"><div class="spinner"></div><span style="color: var(--text-secondary);">Loading shorts...</span></div>
+      `;
+      document.getElementById('videoCount').textContent = '0';
+      document.getElementById('shortsCount').textContent = '0';
+
+      if (!getApiKey()) {
+        showMessage('No API key configured. Enter your key above.', 'info');
+        document.getElementById('videosContainer').innerHTML = renderEmpty('Enter your API key and click Refresh.');
+        document.getElementById('shortsContainer').innerHTML = renderEmpty('Enter your API key and click Refresh.');
+        return;
+      }
+
+      try {
+        const [videoResults, shortResults] = await Promise.all([
+          fetchVideos(false),
+          fetchVideos(true)
+        ]);
+
+        videos = videoResults;
+        shorts = shortResults;
+
+        document.getElementById('videosContainer').innerHTML = renderVideoList(videos);
+        document.getElementById('shortsContainer').innerHTML = renderVideoList(shorts);
+        document.getElementById('videoCount').textContent = videos.length;
+        document.getElementById('shortsCount').textContent = shorts.length;
+      } catch (err) {
+        if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+          showMessage('Cannot connect to server. Make sure the backend is running and CORS is configured. If opening this file directly, add CORS_ORIGINS=null to your .env.', 'error');
+        } else {
+          showMessage(err.message, 'error');
+        }
+        document.getElementById('videosContainer').innerHTML = renderEmpty('Failed to load videos.');
+        document.getElementById('shortsContainer').innerHTML = renderEmpty('Failed to load shorts.');
+      }
+    }
+
+    // Rendering
+    function renderVideoList(videoList) {
+      if (!videoList || videoList.length === 0) {
+        return renderEmpty('No saved videos found.');
+      }
+
+      return `<div class="video-list">${videoList.map(v => `
+        <a class="video-item" href="${v.video_url}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(v.title)}">
+          <img class="video-thumbnail" src="${v.thumbnail_url || ''}" alt="" loading="lazy" onerror="this.style.display='none'">
+          <div class="video-info">
+            <div class="video-title">${escapeHtml(v.title)}</div>
+            <div class="video-meta">
+              <span class="video-channel">${escapeHtml(v.channel_name || 'Unknown Channel')}</span>
+              <span class="video-date">${formatDate(v.published_at)}</span>
+            </div>
+          </div>
+        </a>
+      `).join('')}</div>`;
+    }
+
+    function renderEmpty(message) {
+      return `<div class="empty-state">
+        <div class="empty-state-icon">&#127909;</div>
+        <div>${escapeHtml(message)}</div>
+      </div>`;
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Playlist actions
+    function generatePlaylistUrl(videoIds) {
+      const truncated = videoIds.length > MAX_PLAYLIST_VIDEOS;
+      const ids = videoIds.slice(0, MAX_PLAYLIST_VIDEOS).join(',');
+      return `${YOUTUBE_WATCH_VIDEOS_URL}?video_ids=${ids}`;
+    }
+
+    function openPlaylistUrl(url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    function playVideos() {
+      if (!videos.length) {
+        showMessage('No videos to play.', 'info');
+        return;
+      }
+      const ids = videos.map(v => v.youtube_video_id);
+      openPlaylistUrl(generatePlaylistUrl(ids));
+    }
+
+    function playShorts() {
+      if (!shorts.length) {
+        showMessage('No shorts to play.', 'info');
+        return;
+      }
+      const ids = shorts.map(v => v.youtube_video_id);
+      openPlaylistUrl(generatePlaylistUrl(ids));
+    }
+
+    function playAll() {
+      const all = [...videos, ...shorts];
+      if (!all.length) {
+        showMessage('No videos or shorts to play.', 'info');
+        return;
+      }
+      const ids = all.map(v => v.youtube_video_id);
+      const truncated = ids.length > MAX_PLAYLIST_VIDEOS;
+      openPlaylistUrl(generatePlaylistUrl(ids));
+      if (truncated) {
+        showMessage(`Playlist opened with ${MAX_PLAYLIST_VIDEOS} videos (total was ${ids.length}).`, 'info');
+      }
+    }
+
+    // Init
+    document.addEventListener('DOMContentLoaded', () => {
+      if (getApiKey() && getApiBaseUrl()) {
+        showMainApp();
+        refresh();
+      }
+    });
+  </script>
+</body>
+</html>
