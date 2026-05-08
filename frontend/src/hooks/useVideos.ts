@@ -148,3 +148,36 @@ export function useDetectShortsBatch() {
     },
   });
 }
+
+// Issue #70: QuickPlay — fetch oldest 50 videos and oldest 50 shorts
+export function useQuickPlayVideos() {
+  const regular = useQuery({
+    queryKey: ['videos', 'quickplay', 'regular'],
+    queryFn: async () => {
+      const { data } = await videosApi.getSaved({
+        is_short: false,
+        sort_by: 'published_at',
+        order: 'asc',
+        limit: 50,
+        offset: 0,
+      });
+      return data.videos;
+    },
+  });
+
+  const shorts = useQuery({
+    queryKey: ['videos', 'quickplay', 'shorts'],
+    queryFn: async () => {
+      const { data } = await videosApi.getSaved({
+        is_short: true,
+        sort_by: 'published_at',
+        order: 'asc',
+        limit: 50,
+        offset: 0,
+      });
+      return data.videos;
+    },
+  });
+
+  return { regular, shorts };
+}

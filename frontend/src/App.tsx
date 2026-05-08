@@ -3,6 +3,7 @@ import { Header } from './components/layout/Header';
 import { Navigation } from './components/layout/Navigation';
 import { Inbox } from './pages/Inbox';
 import { Saved } from './pages/Saved';
+import { QuickPlay } from './pages/QuickPlay';
 import { Channels } from './pages/Channels';
 import { Settings } from './pages/Settings';
 import { Login } from './pages/Login';
@@ -83,6 +84,14 @@ function AppContent() {
                 element={
                   <ErrorBoundary componentName="Saved Videos">
                     <Saved />
+                  </ErrorBoundary>
+                }
+              />
+              <Route
+                path="/quickplay"
+                element={
+                  <ErrorBoundary componentName="QuickPlay">
+                    <QuickPlay />
                   </ErrorBoundary>
                 }
               />

@@ -2,6 +2,7 @@ import { NavLink } from 'react-router-dom';
 import {
   InboxIcon,
   BookmarkIcon,
+  PlayIcon,
   TvIcon,
   Cog6ToothIcon
 } from '@heroicons/react/24/outline';
@@ -16,6 +17,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { to: '/', label: 'Inbox', icon: InboxIcon },
   { to: '/saved', label: 'Saved', icon: BookmarkIcon },
+  { to: '/quickplay', label: 'QuickPlay', icon: PlayIcon },
   { to: '/channels', label: 'Channels', icon: TvIcon },
   { to: '/settings', label: 'Settings', icon: Cog6ToothIcon },
 ];
