@@ -1,28 +1,47 @@
 #!/bin/bash
+# Synchronize the date-based release version across the frontend and API.
+# Usage: ./scripts/update_version.sh [vYYYY-MM-DD]
+# If omitted, the first vYYYY-MM-DD token is read from the branch name.
 
-# Get current branch name
-BRANCH=$(git branch --show-current)
+set -euo pipefail
 
-# Extract date-based version (handles vYYYY-MM-DD or vYYYY-MM-DD-description)
-# Removes leading 'v' and keeps only the date portion (first 10 chars)
-VERSION=$(echo "$BRANCH" | sed -E 's/^v//' | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}')
+INPUT=${1:-$(git branch --show-current)}
 
-if [ -z "$VERSION" ]; then
-  # Fallback: try legacy semver format (v1.0.0)
-  VERSION=$(echo "$BRANCH" | sed -E 's/^v\.?//' | grep -E '^[0-9]')
-fi
-
-if [ -z "$VERSION" ]; then
-  echo "Branch name '$BRANCH' does not contain a valid version (e.g., v2026-04-20 or v1.0.0)"
+if [[ $INPUT =~ v?([0-9]{4}-[0-9]{2}-[0-9]{2}) ]]; then
+  DATE_VERSION="${BASH_REMATCH[1]}"
+else
+  echo "Error: '$INPUT' does not contain a vYYYY-MM-DD version" >&2
   exit 1
 fi
 
-echo "Updating project version to: $VERSION"
+YEAR=${DATE_VERSION%%-*}
+MONTH_DAY=${DATE_VERSION#*-}
+MONTH=${MONTH_DAY%%-*}
+DAY=${MONTH_DAY##*-}
+SEMVER_VERSION="$((10#$YEAR)).$((10#$MONTH)).$((10#$DAY))"
 
-# Update frontend package.json
-if [ -f "frontend/package.json" ]; then
-  sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" frontend/package.json
-  echo "Updated frontend/package.json"
-fi
+(
+  cd frontend
+  npm version "$SEMVER_VERSION" --no-git-tag-version --allow-same-version >/dev/null
+)
 
-# You can add more files here (e.g. backend/pyproject.toml) if needed
+python3 - "$DATE_VERSION" <<'PY'
+from pathlib import Path
+import re
+import sys
+
+version = sys.argv[1]
+path = Path("backend/app/main.py")
+content = path.read_text()
+updated, count = re.subn(
+    r'("version": ")[0-9]{4}-[0-9]{2}-[0-9]{2}("\s*,\s*"api_version")',
+    rf'\g<1>{version}\g<2>',
+    content,
+)
+if count != 1:
+    raise SystemExit(f"Expected one API version field in {path}, found {count}")
+path.write_text(updated)
+PY
+
+echo "Updated frontend package metadata to $SEMVER_VERSION"
+echo "Updated API version to $DATE_VERSION"
