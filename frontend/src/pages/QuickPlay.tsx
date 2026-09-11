@@ -1,14 +1,26 @@
+import { useState } from 'react';
 import {
   PlayIcon,
   FilmIcon,
   BoltIcon,
   ArrowPathIcon,
+  TrashIcon,
+  ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
-import { useQuickPlayVideos } from '../hooks/useVideos';
+import { useBulkDiscardVideos, useQuickPlayVideos } from '../hooks/useVideos';
 import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { Modal } from '../components/common/Modal';
 import { openPlaylist } from '../utils/playlist';
 import type { Video } from '../types';
+
+type QuickPlaySection = 'regular' | 'shorts';
+
+interface RemovalTarget {
+  section: QuickPlaySection;
+  itemName: 'Video' | 'Short';
+  videoIds: string[];
+}
 
 function formatDate(dateString: string) {
   const date = new Date(dateString);
@@ -25,23 +37,45 @@ function QuickPlayPanel({
   videos,
   isLoading,
   emptyMessage,
+  itemName,
+  onRemove,
+  isRemoving,
+  isRemovalDisabled,
 }: {
   title: string;
   icon: React.ElementType;
   videos: Video[];
   isLoading: boolean;
   emptyMessage: string;
+  itemName: 'Video' | 'Short';
+  onRemove: () => void;
+  isRemoving: boolean;
+  isRemovalDisabled: boolean;
 }) {
+  const itemLabel = `${itemName}${videos.length === 1 ? '' : 's'}`;
+
   return (
     <div className="bg-bg-secondary rounded-xl border border-border flex flex-col">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
           <Icon className="w-5 h-5 text-accent-blue" />
           <h2 className="font-semibold text-text-primary">{title}</h2>
         </div>
-        <span className="text-xs font-medium text-text-secondary bg-bg-tertiary px-2.5 py-1 rounded-full">
-          {videos.length}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs font-medium text-text-secondary bg-bg-tertiary px-2.5 py-1 rounded-full">
+            {videos.length}
+          </span>
+          <Button
+            variant="danger"
+            size="sm"
+            onClick={onRemove}
+            disabled={isLoading || videos.length === 0 || isRemovalDisabled}
+            isLoading={isRemoving}
+          >
+            {!isRemoving && <TrashIcon className="w-4 h-4 mr-1.5" />}
+            Remove {videos.length} {itemLabel}
+          </Button>
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(100vh-320px)] p-2">
@@ -97,6 +131,10 @@ function QuickPlayPanel({
 
 export function QuickPlay() {
   const { regular, shorts } = useQuickPlayVideos();
+  const bulkDiscard = useBulkDiscardVideos();
+  const [removalTarget, setRemovalTarget] = useState<RemovalTarget | null>(null);
+  const [isRemovalModalOpen, setIsRemovalModalOpen] = useState(false);
+  const [removalError, setRemovalError] = useState<string | null>(null);
 
   const videos = regular.data ?? [];
   const shortVideos = shorts.data ?? [];
@@ -123,6 +161,52 @@ export function QuickPlay() {
     regular.refetch();
     shorts.refetch();
   };
+
+  const openRemovalModal = (
+    section: QuickPlaySection,
+    itemName: RemovalTarget['itemName'],
+    sectionVideos: Video[],
+  ) => {
+    if (!sectionVideos.length || bulkDiscard.isPending) return;
+
+    setRemovalTarget({
+      section,
+      itemName,
+      videoIds: sectionVideos.map((video) => video.id),
+    });
+    setRemovalError(null);
+    setIsRemovalModalOpen(true);
+  };
+
+  const closeRemovalModal = () => {
+    if (bulkDiscard.isPending) return;
+    setIsRemovalModalOpen(false);
+    setRemovalTarget(null);
+    setRemovalError(null);
+  };
+
+  const handleConfirmRemoval = async () => {
+    if (!removalTarget || bulkDiscard.isPending) return;
+
+    const target = removalTarget;
+    setRemovalError(null);
+    setIsRemovalModalOpen(false);
+
+    try {
+      await bulkDiscard.mutateAsync(target.videoIds);
+      await (target.section === 'regular' ? regular.refetch() : shorts.refetch());
+      setRemovalTarget(null);
+    } catch {
+      setRemovalError(
+        `Unable to move the selected ${target.itemName.toLowerCase()}${target.videoIds.length === 1 ? '' : 's'} to Recently Deleted. Please try again.`,
+      );
+      setIsRemovalModalOpen(true);
+    }
+  };
+
+  const removalItemLabel = removalTarget
+    ? `${removalTarget.itemName}${removalTarget.videoIds.length === 1 ? '' : 's'}`
+    : 'Videos';
 
   if (error) {
     return (
@@ -209,6 +293,10 @@ export function QuickPlay() {
           videos={videos}
           isLoading={regular.isLoading}
           emptyMessage="No saved videos found. Save videos from your inbox to see them here."
+          itemName="Video"
+          onRemove={() => openRemovalModal('regular', 'Video', videos)}
+          isRemoving={bulkDiscard.isPending && removalTarget?.section === 'regular'}
+          isRemovalDisabled={bulkDiscard.isPending}
         />
         <QuickPlayPanel
           title="Oldest Shorts"
@@ -216,8 +304,56 @@ export function QuickPlay() {
           videos={shortVideos}
           isLoading={shorts.isLoading}
           emptyMessage="No saved shorts found. Save shorts from your inbox to see them here."
+          itemName="Short"
+          onRemove={() => openRemovalModal('shorts', 'Short', shortVideos)}
+          isRemoving={bulkDiscard.isPending && removalTarget?.section === 'shorts'}
+          isRemovalDisabled={bulkDiscard.isPending}
         />
       </div>
+
+      <Modal
+        isOpen={isRemovalModalOpen && removalTarget !== null}
+        onClose={closeRemovalModal}
+        title="Move to Recently Deleted?"
+      >
+        {removalTarget && (
+          <div className="flex flex-col items-center text-center py-4">
+            <div className="w-16 h-16 rounded-full bg-accent-red/10 flex items-center justify-center mb-4">
+              <ExclamationTriangleIcon className="w-8 h-8 text-accent-red" />
+            </div>
+            <p className="text-text-primary font-medium mb-2">
+              Remove {removalTarget.videoIds.length} {removalItemLabel} from Saved Videos?
+            </p>
+            <p className="text-text-secondary text-sm px-4">
+              {removalTarget.videoIds.length === 1 ? 'It' : 'They'} will be moved to Recently Deleted, where {removalTarget.videoIds.length === 1 ? 'it' : 'they'} can be restored. If more {removalTarget.itemName.toLowerCase()}s are available, the next oldest batch will load here; otherwise, this section will be empty.
+            </p>
+            {removalError && (
+              <p className="text-accent-red text-sm mt-4" role="alert">
+                {removalError}
+              </p>
+            )}
+            <div className="flex gap-3 mt-6 w-full">
+              <Button
+                variant="secondary"
+                onClick={closeRemovalModal}
+                className="flex-1"
+                disabled={bulkDiscard.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                onClick={handleConfirmRemoval}
+                className="flex-1"
+                isLoading={bulkDiscard.isPending}
+              >
+                <TrashIcon className="w-4 h-4 mr-1.5" />
+                Yes, Remove {removalTarget.videoIds.length}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }

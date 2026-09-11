@@ -10,6 +10,7 @@ A self-hosted web app for managing YouTube content discovery. Monitor channels v
 - **Video Inbox** - Review new videos with save/discard options
 - **Saved Library** - Filter, sort, and bulk-manage saved videos
 - **Play as Playlist** - Generate a YouTube playlist from selected videos
+- **QuickPlay** - Play up to 50 of the oldest saved videos or Shorts, then move the visible batch to Recently Deleted to load the next batch or empty the section
 - **Import/Export** - Backup and restore channels and saved videos
 - **Optional Authentication** - Secure your instance with login or API keys
 - **PWA Support** - Install as a Progressive Web App
@@ -100,6 +101,8 @@ curl http://localhost:38000/api/channels \
 **Inbox** - Review new videos, save or discard individually, or use Save All / Discard All.
 
 **Saved Videos** - Filter by channel, sort by date, switch between Large/Compact/List views, select multiple for bulk operations, or play as a YouTube playlist.
+
+**QuickPlay** - Load separate lists of up to 50 oldest saved videos and 50 oldest saved Shorts. Each visible batch can be moved to Recently Deleted, where it remains restorable, to load the next oldest batch.
 
 **Direct URL Save** - Click the **+** button to add any YouTube URL directly to your saved list.
 
