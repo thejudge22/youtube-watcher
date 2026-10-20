@@ -46,7 +46,7 @@
 2. **A saved video whose channel is unsubscribed.** It must keep its channel name everywhere: list endpoints, export, JSON backup and re-import. Covered in Tasks 5, 8 and 10.
 3. **The same video appearing twice in one import request** (duplicate URLs or JSON entries). It counts as skipped, not as an error or an IntegrityError. Covered in Tasks 9 and 10.
 4. **A playlist URL that points somewhere other than YouTube** (e.g. `http://169.254.169.254/`). It is rejected before yt-dlp runs. Covered in Task 9.
-5. **A YouTube title, channel name or imported URL containing quotes, HTML or a `javascript:` scheme.** It must render as plain text and never as a live link or attribute. Covered by Task 20 (server rebuilds URLs) and Task 21 (frontend `safeExternalUrl` and the `quickplay.html` escaping check). A related caveat, documented in Task 17: behind a reverse proxy all clients share one IP, so 10 bad logins lock everyone out for 15 minutes.
+5. **A YouTube title, channel name or imported URL containing quotes, HTML or a `javascript:` scheme.** It must render as plain text and never as a live link or attribute. Covered by Task 21 (server rebuilds URLs) and Task 22 (frontend `safeExternalUrl` and the `quickplay.html` escaping check). A related caveat, documented in Task 17: behind a reverse proxy all clients share one IP, so 10 bad logins lock everyone out for 15 minutes.
 
 ---
 
@@ -311,7 +311,7 @@ Expected:
 - the health status is `healthy` (wait about 35s first);
 - the `ls` shows no `.venv` in `/app`, and `/app/data` holds only `.` and `..`.
 
-**If the yt-dlp line fails or mentions a JavaScript runtime:** stop and report it, and don't add deno [B4]. If Docker isn't available, say so in the report; Task 24 repeats this check.
+**If the yt-dlp line fails or mentions a JavaScript runtime:** stop and report it, and don't add deno [B4]. If Docker isn't available, say so in the report; Task 25 repeats this check.
 
 - [ ] **Step 8: Docs**
 - `DEVELOPER_GUIDE.md` §4: add an "Updating dependencies" subsection — edit `requirements.txt`, rerun the Step 2 command, reinstall per Step 3, run tests, commit both files.
@@ -1080,7 +1080,76 @@ git add backend/app/config.py backend/app/auth.py .env.example backend/tests/tes
 git commit -m "feat(auth): persist generated JWT secret and require access-token claims"
 ```
 
-### Task 19: Hide the API docs when auth is on; add security headers and optional host allow-list [S5, S6, S13]
+### Task 19: Keep users logged in — sliding sessions and no token loss on errors [C11]
+
+**Files:**
+- Modify: `backend/app/auth.py` (add `get_token_payload`; `verify_token` uses it)
+- Modify: `backend/app/routers/auth.py` (`TokenVerifyResponse`, `verify_token_endpoint`)
+- Modify: `frontend/src/api/client.ts` (verify response type, 401 hook)
+- Modify: `frontend/src/context/AuthContext.tsx` (`initializeAuth`, a new 401 handler, re-verify when the tab becomes visible)
+- Modify: `.env.example` and the `README.md` auth section (what `JWT_EXPIRE_HOURS` now means)
+- Test: `backend/tests/test_jwt.py` (extend Task 18's file and reuse its autouse fixture)
+
+**Interfaces:**
+- Consumes: Task 18's `get_jwt_secret()`, `create_access_token()` and `verify_token()`.
+- Produces, backend:
+  - `TOKEN_RENEW_AFTER_SECONDS = 24 * 3600` in `auth.py`.
+  - `get_token_payload(token: str) -> dict | None` returns the decoded payload when the signature, `exp`, `iat` and `type == "access"` all check out, else `None`. `verify_token(token)` becomes `get_token_payload(token) is not None`.
+  - `TokenVerifyResponse` gains `token: str | None = None`.
+  - `verify_token_endpoint`:
+    - invalid token → `{"valid": false, "token": null}`;
+    - valid and `now - iat >= TOKEN_RENEW_AFTER_SECONDS` → `{"valid": true, "token": create_access_token()}`;
+    - otherwise → `{"valid": true, "token": null}`.
+- Produces, frontend:
+  - `client.ts`: `TokenVerifyResponse` becomes `{ valid: boolean; token?: string | null }`.
+  - `client.ts`: `export function setUnauthorizedHandler(handler: (() => void) | null): void`. In the existing response-error interceptor, when `error.response?.status === 401` and the request URL (`error.config?.url`) does not start with `/auth/`, call the registered handler before rejecting.
+  - `AuthContext.tsx`, internal `handleSessionExpired()`: remove the stored token, call `clearAuthToken()`, and set state to auth-enabled / not-authenticated / not-loading.
+    - Register it with `setUnauthorizedHandler` in a `useEffect`, and unregister (`null`) on cleanup.
+  - `initializeAuth`'s verify step:
+    - `valid: true` → use `verifyResponse.data.token ?? storedToken`, write it to `localStorage`, and `setAuthToken` it.
+    - `valid: false` → behave as today (remove the token, show login).
+    - In the `catch`, only `axios.isAxiosError(err) && err.response && err.response.status < 500` clears the token.
+    - Any other failure (network error, timeout, 5xx) **keeps** the token: `setAuthToken(storedToken)` and enter the app authenticated. A genuinely bad token is then caught by the 401 handler.
+  - A `useEffect`, active while `isAuthEnabled && isAuthenticated`, listens for `visibilitychange`. When the document becomes visible it calls `authApi.verifyToken(currentToken)`:
+    - a returned `token` is stored and set;
+    - `valid: false` calls `handleSessionExpired()`;
+    - errors are ignored.
+- `.env.example` and README: `JWT_EXPIRE_HOURS` is how long you can go **without opening the app** before logging in again (default 336 = 14 days). Sessions renew automatically while you use the app.
+
+- [ ] **Step 1: Write the failing backend tests** in `tests/test_jwt.py`. Helper: `make_token(age_hours: float) -> str` encodes `{"type": "access", "iat": now - age, "exp": now - age + timedelta(hours=336)}` with `get_jwt_secret()` and HS256.
+- `test_verify_fresh_token_not_renewed(client)`: `POST /api/auth/verify` with `{"token": make_token(1)}` → `{"valid": True, "token": None}`.
+- `test_verify_day_old_token_renewed(client)`:
+  - for `make_token(25)`, `valid` is True and `token` is a non-empty string;
+  - `verify_token(new)` is True;
+  - the new token's `exp` is later than the old one's (decode both with `options={"verify_signature": False}`).
+- `test_verify_garbage_token(client)`: `{"token": "garbage"}` → `{"valid": False, "token": None}`.
+- `test_token_survives_restart`: `tok = create_access_token()`; then `app.auth._jwt_secret = None` (a simulated restart; the secret file remains); `verify_token(tok)` is True. This is the regression test for Mark's daily logouts.
+
+- [ ] **Step 2: Run them to confirm they fail**
+
+Run: `.venv/bin/python -m pytest tests/test_jwt.py -q`
+Expected:
+- the three endpoint tests fail, because the response has no `token` key yet;
+- `test_token_survives_restart` already passes after Task 18. It stays as a regression guard.
+
+- [ ] **Step 3: Implement the backend** as in Interfaces. Run `tests/test_jwt.py` and the offline suite; expected: all pass.
+
+- [ ] **Step 4: Implement the frontend** as in Interfaces, then run:
+
+```bash
+cd frontend && npx tsc --noEmit && npm run lint
+```
+
+Expected: tsc exits 0 and lint reports 0 errors.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add backend/app/auth.py backend/app/routers/auth.py backend/tests/test_jwt.py frontend/src/api/client.ts frontend/src/context/AuthContext.tsx .env.example README.md
+git commit -m "fix(auth): sliding sessions; keep the stored token on network errors; handle 401s"
+```
+
+### Task 20: Hide the API docs when auth is on; add security headers and optional host allow-list [S5, S6, S13]
 
 **Files:**
 - Modify: `backend/app/main.py` (the `FastAPI(...)` construction; a middleware; optional `TrustedHostMiddleware`)
@@ -1126,7 +1195,7 @@ git add backend/app/main.py backend/app/config.py .env.example README.md backend
 git commit -m "feat(security): hide API docs when auth is enabled; security headers; optional host allow-list"
 ```
 
-### Task 20: Validate imported IDs and rebuild every stored URL [S8]
+### Task 21: Validate imported IDs and rebuild every stored URL [S8]
 
 **Files:**
 - Modify: `backend/app/services/youtube_utils.py` (add validators)
@@ -1192,7 +1261,7 @@ git add backend/app/services/youtube_utils.py backend/app/routers/import_export.
 git commit -m "fix(security): validate imported IDs and rebuild stored YouTube URLs"
 ```
 
-### Task 21: Safe links in the UI, safe rendering in quickplay.html, clear the API cache on logout [S7, S8, S12]
+### Task 22: Safe links in the UI, safe rendering in quickplay.html, clear the API cache on logout [S7, S8, S12]
 
 **Files:**
 - Create: `frontend/src/utils/safeUrl.ts`
@@ -1236,7 +1305,7 @@ git commit -m "fix(security): render only http(s) links, escape quotes in quickp
 
 ## Phase E — Cleanup and finish
 
-### Task 22: Small correctness and maintenance fixes [C8, P8, B5, B6]
+### Task 23: Small correctness and maintenance fixes [C8, P8, B5, B6]
 
 **Files:**
 - Modify: `backend/app/routers/settings.py`:
@@ -1265,7 +1334,7 @@ git add backend/app/routers/settings.py backend/app/routers/videos.py backend/ap
 git commit -m "fix: partial settings updates, log unexpected errors, remove per-request create_all"
 ```
 
-### Task 23: Serialize API datetimes as UTC [C9]
+### Task 24: Serialize API datetimes as UTC [C9]
 
 **Files:**
 - Create: `backend/app/schemas/types.py`
@@ -1300,7 +1369,7 @@ git add backend/app/schemas/types.py backend/app/schemas/video.py backend/app/sc
 git commit -m "fix: serialize API datetimes as UTC"
 ```
 
-### Task 24: Documentation and final verification
+### Task 25: Documentation and final verification
 
 **Files:**
 - Modify: `AGENTS.md`, `DEVELOPER_GUIDE.md`, `README.md`
@@ -1319,7 +1388,7 @@ git commit -m "fix: serialize API datetimes as UTC"
 
 - [ ] **Step 3: `README.md`**
 - Replace the `:v2026-04-20` example: tagged releases now publish `:vYYYY-MM-DD` images, starting with the next release.
-- Check the auth section matches Tasks 16–21.
+- Check the auth section matches Tasks 16–22.
 
 - [ ] **Step 4: Full verification**
 
@@ -1335,6 +1404,13 @@ Then repeat Task 3 Step 7's checks:
 - the yt-dlp line prints metadata;
 - the container is `healthy`;
 - `curl -s --path-as-is 'http://localhost:38000/../data/youtube-watcher.db' | head -c 15` and `curl -s --path-as-is 'http://localhost:38000//etc/passwd' | head -c 15` both print the start of the SPA HTML (`<!doctype html>`), never `SQLite format 3` or `root:`.
+
+**Session check (C11).** Set `AUTH_ENABLED=true`, `AUTH_USERNAME` and `AUTH_PASSWORD_HASH` (from `scripts/generate-password-hash.sh`) in `.env`, leave `JWT_SECRET_KEY` unset, and run `docker compose -f docker-compose-local.yml up -d`. Then, in a browser at http://localhost:38000:
+1. Log in.
+2. Run `docker compose -f docker-compose-local.yml restart` and reload the page. Expected: still logged in.
+3. Run `docker compose -f docker-compose-local.yml stop`, reload, then `start`, and reload again. Expected: still logged in; the token was not discarded while the server was down.
+
+Afterwards, restore `.env`.
 
 Finish with `docker compose -f docker-compose-local.yml down`.
 
