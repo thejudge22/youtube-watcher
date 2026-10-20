@@ -160,6 +160,13 @@ Configured in Vite (`vite.config.ts`) and served by FastAPI (`backend/app/main.p
 - **Testing**: Always implement mock fixtures for network operations.
 - **Compose**: Use the space-separated `docker compose` CLI command rather than legacy hyphenated `docker-compose`.
 
+### Running Locally
+To build and run the app from this checkout (requires a `.env`; copy `.env.example`):
+```bash
+docker compose -f docker-compose-local.yml up
+```
+The app is served at http://localhost:38000. Add `--build` to rebuild the image after code changes.
+
 ### Testing Suite
 Backend tests use `pytest` + `pytest-asyncio` + `pytest-mock`.
 - **Database isolation**: Tests run against an in-memory SQLite database using `StaticPool` to maintain database state across connections while preventing file-locking conflicts.

@@ -52,9 +52,13 @@ No known issues - project is complete and fully functional.
 ## Development Commands
 
 ```bash
-# Production mode (single container)
-docker compose up --build
-# Access at http://localhost:8000
+# Run locally from source (single container, built from this checkout; needs .env)
+docker compose -f docker-compose-local.yml up
+# Access at http://localhost:38000 (add --build to rebuild after code changes)
+
+# Production mode (pulls the published ghcr.io image)
+docker compose up -d
+# Access at http://localhost:38000
 
 # Development mode (hot reload for both frontend and backend)
 docker compose -f docker-compose.dev.yml up --build
@@ -83,7 +87,8 @@ cd backend && pytest
 | [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) | Comprehensive system architecture & onboarding guide |
 | `Dockerfile` | Single-container production build |
 | `Dockerfile.dev` | Development environment image build |
-| `docker-compose.yml` | Production compose service mapping |
+| `docker-compose.yml` | Production compose service mapping (published image) |
+| `docker-compose-local.yml` | Local single-container build from source |
 | `docker-compose.dev.yml` | Hot-reloaded dev composition |
 | [backend/app/main.py](backend/app/main.py) | FastAPI app entrypoint, mounts, and PWA routes |
 | [backend/app/auth.py](backend/app/auth.py) | Password hashing, JWT token creation, and API Key middleware |

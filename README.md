@@ -45,13 +45,18 @@ Data is persisted in `./data/youtube-watcher.db` via the volume mount.
 
 > The `:latest` tag builds from every commit. For a static version, use a release tag like `:v2026-04-20`.
 
-### Development
+### Running Locally from Source
+
+To build and run the app from your own checkout instead of the published image:
 
 ```bash
 git clone https://github.com/thejudge22/youtube-watcher.git
 cd youtube-watcher
-docker compose -f docker-compose-local.yml up --build
+cp .env.example .env
+docker compose -f docker-compose-local.yml up
 ```
+
+Open http://localhost:38000. After changing the code, add `--build` to rebuild the image.
 
 ## Authentication
 
