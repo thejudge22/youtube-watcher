@@ -15,7 +15,8 @@ import {
   useEffect,
   type ReactNode,
 } from 'react';
-import { authApi, setAuthToken, clearAuthToken } from '../api/client';
+import axios from 'axios';
+import { authApi, setAuthToken, clearAuthToken, setUnauthorizedHandler } from '../api/client';
 
 interface AuthState {
   /** Whether authentication is enabled on the backend */
@@ -91,8 +92,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const verifyResponse = await authApi.verifyToken(storedToken);
         if (verifyResponse.data.valid) {
-          // Token is valid
-          setAuthToken(storedToken);
+          // Token is valid; the server may hand back a renewed one (sliding sessions)
+          const token = verifyResponse.data.token ?? storedToken;
+          localStorage.setItem(STORAGE_KEY, token);
+          setAuthToken(token);
           setState({
             isAuthEnabled: true,
             isAuthenticated: true,
@@ -109,15 +112,27 @@ export function AuthProvider({ children }: AuthProviderProps) {
             error: null,
           });
         }
-      } catch {
-        // Token validation failed, remove it
-        localStorage.removeItem(STORAGE_KEY);
-        setState({
-          isAuthEnabled: true,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        });
+      } catch (err) {
+        if (axios.isAxiosError(err) && err.response && err.response.status < 500) {
+          // The server rejected the token check outright: log in again
+          localStorage.removeItem(STORAGE_KEY);
+          setState({
+            isAuthEnabled: true,
+            isAuthenticated: false,
+            isLoading: false,
+            error: null,
+          });
+        } else {
+          // Network error, timeout or server error: keep the session. A token that
+          // really is invalid will be caught by the 401 handler on the next request.
+          setAuthToken(storedToken);
+          setState({
+            isAuthEnabled: true,
+            isAuthenticated: true,
+            isLoading: false,
+            error: null,
+          });
+        }
       }
     } catch (_err) {
       // Failed to check auth status, assume auth is disabled to allow access
@@ -130,10 +145,55 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
+  /**
+   * Drop the stored session and show the login page
+   */
+  const handleSessionExpired = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY);
+    clearAuthToken();
+    setState({
+      isAuthEnabled: true,
+      isAuthenticated: false,
+      isLoading: false,
+      error: null,
+    });
+  }, []);
+
   // Initialize auth on mount
   useEffect(() => {
     initializeAuth();
   }, [initializeAuth]);
+
+  // Send the user to the login page when an API request comes back 401
+  useEffect(() => {
+    setUnauthorizedHandler(handleSessionExpired);
+    return () => setUnauthorizedHandler(null);
+  }, [handleSessionExpired]);
+
+  // Re-check (and renew) the session whenever the tab becomes visible again
+  useEffect(() => {
+    if (!state.isAuthEnabled || !state.isAuthenticated) return;
+
+    const onVisibilityChange = async () => {
+      if (document.visibilityState !== 'visible') return;
+      const currentToken = localStorage.getItem(STORAGE_KEY);
+      if (!currentToken) return;
+      try {
+        const { data } = await authApi.verifyToken(currentToken);
+        if (!data.valid) {
+          handleSessionExpired();
+        } else if (data.token) {
+          localStorage.setItem(STORAGE_KEY, data.token);
+          setAuthToken(data.token);
+        }
+      } catch {
+        // Offline or server unavailable: keep the session and try again later
+      }
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, [state.isAuthEnabled, state.isAuthenticated, handleSessionExpired]);
 
   /**
    * Log in with username and password

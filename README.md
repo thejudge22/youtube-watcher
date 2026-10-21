@@ -77,7 +77,7 @@ AUTH_USERNAME=admin
 AUTH_PASSWORD_HASH=<hash from script>
 ```
 
-Sessions last 14 days by default (configurable via `JWT_EXPIRE_HOURS`).
+Sessions renew automatically while you use the app. You only have to log in again after going 14 days without opening it (configurable via `JWT_EXPIRE_HOURS`). Server restarts don't log you out: if `JWT_SECRET_KEY` isn't set, a secret is generated once and kept in `data/.jwt_secret`.
 
 After 10 failed logins from one IP address within 15 minutes, further attempts are refused for the rest of that window. Behind a reverse proxy, every client may appear as the proxy's IP, so a lockout then applies to everyone until it expires.
 

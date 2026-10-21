@@ -3,11 +3,19 @@ Authentication router for Issue #41: Optional Authentication
 """
 import asyncio
 import math
+import time
+from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
-from ..auth import authenticate_user, create_access_token, login_limiter, verify_token
+from ..auth import (
+    TOKEN_RENEW_AFTER_SECONDS,
+    authenticate_user,
+    create_access_token,
+    get_token_payload,
+    login_limiter,
+)
 from ..config import settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -38,6 +46,8 @@ class TokenVerifyRequest(BaseModel):
 class TokenVerifyResponse(BaseModel):
     """Response for token verification."""
     valid: bool
+    # A renewed token when the current one is more than a day old (sliding sessions)
+    token: Optional[str] = None
 
 
 @router.get("/status", response_model=AuthStatusResponse)
@@ -105,10 +115,18 @@ async def verify_token_endpoint(request: TokenVerifyRequest):
         request: Token to verify
         
     Returns:
-        { valid: true } if token is valid
-        { valid: false } if token is invalid or expired
+        { valid: true, token: null } if token is valid
+        { valid: true, token: <new token> } if valid and more than a day old
+        { valid: false, token: null } if token is invalid or expired
     """
-    return TokenVerifyResponse(valid=verify_token(request.token))
+    payload = get_token_payload(request.token)
+    if payload is None:
+        return TokenVerifyResponse(valid=False)
+
+    issued_at = float(payload["iat"])
+    if time.time() - issued_at >= TOKEN_RENEW_AFTER_SECONDS:
+        return TokenVerifyResponse(valid=True, token=create_access_token())
+    return TokenVerifyResponse(valid=True)
 
 
 @router.post("/logout")

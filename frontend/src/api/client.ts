@@ -34,6 +34,16 @@ export function clearAuthToken(): void {
   authToken = null;
 }
 
+// Called when a non-auth API request comes back 401 (session expired or revoked)
+let unauthorizedHandler: (() => void) | null = null;
+
+/**
+ * Register the handler to run when an API request is rejected as unauthorized
+ */
+export function setUnauthorizedHandler(handler: (() => void) | null): void {
+  unauthorizedHandler = handler;
+}
+
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
@@ -62,6 +72,11 @@ api.interceptors.response.use(
       error.errorCode = code;
       error.errorMessage = message;
       error.errorDetails = details;
+    }
+    // A 401 outside /auth/ means the stored session is no longer valid
+    const url = String(error.config?.url ?? '');
+    if (error.response?.status === 401 && !url.startsWith('/auth/') && unauthorizedHandler) {
+      unauthorizedHandler();
     }
     return Promise.reject(error);
   }
@@ -122,6 +137,8 @@ export interface TokenVerifyRequest {
 
 export interface TokenVerifyResponse {
   valid: boolean;
+  /** A renewed token, returned once the current one is more than a day old */
+  token?: string | null;
 }
 
 // Channel API

@@ -52,3 +52,34 @@ def test_missing_iat_rejected():
     now = datetime.now(timezone.utc)
     token = _encode({"type": "access", "exp": now + timedelta(hours=1)})
     assert not verify_token(token)
+
+
+def make_token(age_hours: float) -> str:
+    issued = datetime.now(timezone.utc) - timedelta(hours=age_hours)
+    return _encode({"type": "access", "iat": issued, "exp": issued + timedelta(hours=336)})
+
+
+async def test_verify_fresh_token_not_renewed(client):
+    response = await client.post("/api/auth/verify", json={"token": make_token(1)})
+    assert response.json() == {"valid": True, "token": None}
+
+
+async def test_verify_day_old_token_renewed(client):
+    old = make_token(25)
+    data = (await client.post("/api/auth/verify", json={"token": old})).json()
+    assert data["valid"] is True
+    assert isinstance(data["token"], str) and data["token"]
+    assert verify_token(data["token"])
+    unverified = {"verify_signature": False}
+    assert jwt.decode(data["token"], options=unverified)["exp"] > jwt.decode(old, options=unverified)["exp"]
+
+
+async def test_verify_garbage_token(client):
+    response = await client.post("/api/auth/verify", json={"token": "garbage"})
+    assert response.json() == {"valid": False, "token": None}
+
+
+def test_token_survives_restart():
+    token = create_access_token()
+    app.auth._jwt_secret = None  # simulated restart; the secret file remains
+    assert verify_token(token)

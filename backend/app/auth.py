@@ -97,6 +97,8 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 # Where a generated JWT secret is kept when JWT_SECRET_KEY isn't set (relative to the app's working directory)
 JWT_SECRET_FILE = Path("data") / ".jwt_secret"
 _jwt_secret: Optional[str] = None
+# Sliding sessions: /api/auth/verify issues a fresh token once the current one is this old
+TOKEN_RENEW_AFTER_SECONDS = 24 * 3600
 
 
 def get_jwt_secret() -> str:
@@ -148,23 +150,25 @@ def create_access_token() -> str:
     return jwt.encode(payload, get_jwt_secret(), algorithm="HS256")
 
 
-def verify_token(token: str) -> bool:
+def get_token_payload(token: str) -> Optional[dict]:
     """
-    Verify a token is a valid, unexpired access token.
-
-    Args:
-        token: The JWT token to verify
-
-    Returns:
-        True if token is valid, False otherwise
+    Decode a token, returning its payload only if it is a valid, unexpired
+    access token (signature, exp, iat and type all check out); else None.
     """
     try:
         payload = jwt.decode(
             token, get_jwt_secret(), algorithms=["HS256"], options={"require": ["exp", "iat"]}
         )
     except jwt.InvalidTokenError:
-        return False
-    return payload.get("type") == "access"
+        return None
+    if payload.get("type") != "access":
+        return None
+    return payload
+
+
+def verify_token(token: str) -> bool:
+    """True if token is a valid, unexpired access token."""
+    return get_token_payload(token) is not None
 
 
 async def require_auth(
