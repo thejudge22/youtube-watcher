@@ -165,7 +165,7 @@ async def health(db: AsyncSession = Depends(get_db)):
     """
     try:
         await db.execute(text("SELECT 1"))
-        return {"status": "ok", "database": "connected", "version": "2026-09-11", "api_version": "1"}
+        return {"status": "ok", "database": "connected", "version": "2026-10-21", "api_version": "1"}
     except Exception as e:
         raise HTTPException(
             status_code=503,

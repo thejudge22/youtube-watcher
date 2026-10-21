@@ -26,6 +26,7 @@ YouTube-Watcher is a self-hosted, Docker-based web application for managing YouT
 
 | Date | Change |
 |------|--------|
+| 2026-10-21 | Release prep `v2026-10-21`: README slimmed to overview/run/use with a new screenshot (`docs/images/inbox.png`); details moved to `docs/user-guide.md` and `docs/configuration.md`; PWA update toast given a solid background; version bumped. |
 | 2026-10-20 | Visual refresh (merged to local `main`, not pushed): slate theme with one coral accent, desktop sidebar + phone bottom tab bar, flat cards (Save solid, Discard ghost), shared `PageHeader` and segmented toggles, gradients/glows removed, hard-coded colours replaced by theme tokens. All Inbox actions unchanged. QuickPlay: Play All removed, Play moved into each panel. |
 | 2026-10-20 | Backend hardening: closed a static-file path traversal, login rate limiting and versioned password hashes, persistent JWT secret with sliding sessions, safe import validation, subscriptions independent of saved videos, yt-dlp off the event loop, batched refresh, composite indexes, SQLite backup API, hashed dependency lock, CI test gate. See [plans/backend-improvements.md](plans/backend-improvements.md). |
 | 2026-09-11 | Added independent QuickPlay batch-removal controls for videos and Shorts; removed items move to Recently Deleted. |
@@ -122,7 +123,9 @@ cd backend && python3 -m venv .venv
 | [backend/app/services/shorts_detector.py](backend/app/services/shorts_detector.py) | Batch concurrent HTTP-status based Shorts detector |
 | [frontend/src/App.tsx](frontend/src/App.tsx) | React application shell and routing entrypoint |
 | [frontend/src/context/AuthContext.tsx](frontend/src/context/AuthContext.tsx) | React authentication context provider |
-| [README.md](README.md) | User-facing installation and usage guide |
+| [README.md](README.md) | Short user-facing overview: what the app does, how to run it, basic use |
+| [docs/user-guide.md](docs/user-guide.md) | Detailed page-by-page usage, supported links, backups, import/export |
+| [docs/configuration.md](docs/configuration.md) | Environment variables, login, API keys, ALLOWED_HOSTS, image tags |
 
 ## Core Features Reference
 

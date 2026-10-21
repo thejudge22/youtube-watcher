@@ -40,8 +40,8 @@ export function PWAUpdatePrompt() {
   }
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-slide-up">
-      <div className="bg-surface border border-border rounded-lg shadow-lg p-4 flex items-start gap-3">
+    <div className="fixed bottom-[calc(5rem+env(safe-area-inset-bottom))] lg:bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 z-50 animate-slide-up">
+      <div className="bg-bg-secondary border border-border rounded-xl shadow-lg p-4 flex items-start gap-3">
         <div className="flex-shrink-0 mt-0.5">
           {needRefresh ? (
             <svg
@@ -88,14 +88,14 @@ export function PWAUpdatePrompt() {
             {needRefresh && (
               <button
                 onClick={handleUpdate}
-                className="px-3 py-1.5 bg-accent-red hover:bg-accent-red-hover text-white text-sm font-medium rounded transition-colors"
+                className="px-3 py-1.5 bg-accent-red hover:bg-accent-red-hover text-white text-sm font-medium rounded-lg transition-colors"
               >
                 Reload
               </button>
             )}
             <button
               onClick={closePrompt}
-              className="px-3 py-1.5 bg-surface-hover hover:bg-border text-text-primary text-sm font-medium rounded transition-colors"
+              className="px-3 py-1.5 bg-bg-tertiary hover:bg-bg-elevated text-text-primary text-sm font-medium rounded-lg transition-colors"
             >
               Close
             </button>

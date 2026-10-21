@@ -1,143 +1,78 @@
 # YouTube-Watcher
 
-A self-hosted web app for managing YouTube content discovery. Monitor channels via RSS feeds, triage new videos in an inbox, and maintain a personal watch-later list.
+A self-hosted app for keeping up with YouTube channels without the YouTube homepage. It checks the channels you follow for new uploads, puts them in an inbox for you to save or discard, and keeps the ones you save in a watch-later library.
 
-<img width="1280" height="714" alt="image" src="https://github.com/user-attachments/assets/f709ce63-3f6b-43c6-852f-5f291a81ec89" />
+![The Inbox, with new videos grouped by channel](docs/images/inbox.png)
 
-## Features
+## What it does
 
-- **Channel Management** - Track YouTube channels via RSS feeds (no API key needed)
-- **Video Inbox** - Review new videos with save/discard options
-- **Saved Library** - Filter, sort, and bulk-manage saved videos
-- **Play as Playlist** - Generate a YouTube playlist from selected videos
-- **QuickPlay** - Play up to 50 of the oldest saved videos or Shorts, then move the visible batch to Recently Deleted to load the next batch or empty the section
-- **Import/Export** - Backup and restore channels and saved videos
-- **Optional Authentication** - Secure your instance with login or API keys
-- **PWA Support** - Install as a Progressive Web App
+- **Follow channels without an API key.** New uploads are read from YouTube's RSS feeds, on demand or on a schedule.
+- **Triage an inbox.** Save or discard each new video, or a whole channel's worth at once. Shorts are detected automatically and can be filtered out.
+- **Keep a watch-later library.** Filter by channel, sort by date, pick a layout, and play any selection as a YouTube playlist.
+- **QuickPlay.** Play your 50 oldest saved videos or Shorts in one click, then clear that batch to load the next.
+- **Save any video directly.** Paste a YouTube link to add it to your library without following the channel.
+- **Recover mistakes.** Removed videos go to Recently Deleted, where they can be restored.
+- **Back up and move your data.** Scheduled backups, plus JSON import and export.
+- **Use it anywhere.** Works on desktop and phone, and can be installed as an app (PWA). Login is optional.
 
-## Installation
+## Run it
 
-Requires Docker, Docker Compose, and Git.
+You need Docker with Docker Compose.
 
-### Quick Start
+1. Create a folder with this `docker-compose.yml`:
 
-1. Create `docker-compose.yml`:
+   ```yaml
+   services:
+     app:
+       image: ghcr.io/thejudge22/youtube-watcher:latest
+       ports:
+         - "38000:8000"
+       volumes:
+         - ./data:/app/data
+       env_file:
+         - .env
+       user: "1000:1000"
+       restart: unless-stopped
+   ```
 
-```yaml
-services:
-  app:
-    image: ghcr.io/thejudge22/youtube-watcher:latest
-    ports:
-      - "38000:8000"
-    volumes:
-      - ./data:/app/data
-    env_file:
-      - .env
-    user: "1000:1000"
-    restart: unless-stopped
-```
+2. Download [`.env.example`](.env.example) into the same folder and rename it to `.env`.
+3. Start it:
 
-2. Copy `.env.example` to `.env`
-3. Start: `docker compose up -d`
-4. Open http://localhost:38000
+   ```bash
+   docker compose up -d
+   ```
 
-Data is persisted in `./data/youtube-watcher.db` via the volume mount.
+4. Open http://localhost:38000.
 
-> The `:latest` tag builds from every commit. Starting with the next release, each release tag also publishes a pinned image such as `:vYYYY-MM-DD`.
+Your data lives in `./data` (the database, backups and the login secret). To update, run `docker compose pull` and then `docker compose up -d`. To stay on a specific release instead of `:latest`, use a tag such as `:v2026-10-21`.
 
-### Running Locally from Source
+**Exposing it beyond your own machine?** Turn on login first. See [Configuration](docs/configuration.md#authentication).
 
-To build and run the app from your own checkout instead of the published image:
+### Run from source
 
 ```bash
 git clone https://github.com/thejudge22/youtube-watcher.git
 cd youtube-watcher
 cp .env.example .env
-docker compose -f docker-compose-local.yml up
+docker compose -f docker-compose-local.yml up --build
 ```
 
-Open http://localhost:38000. After changing the code, add `--build` to rebuild the image.
+Then open http://localhost:38000.
 
-## Authentication
+## Use it
 
-Authentication is disabled by default. Enable it on any network you don't fully trust: with it off, any web page you visit could reach the app's API through DNS rebinding. You can also set `ALLOWED_HOSTS` (comma-separated host names or IPs you use to reach the app) to reject requests addressed to any other host.
+1. **Add channels.** Open **Channels**, choose **Add Channel**, and paste a channel link (`@handle`, `/channel/…` or `/c/…`).
+2. **Check the Inbox.** New videos appear here. Use **Refresh** to check now, or turn on auto-refresh in **Settings**.
+3. **Save or discard.** Saved videos go to **Saved**; discarded ones go to Recently Deleted.
+4. **Watch.** Open a video from **Saved**, select several and choose **Play as Playlist**, or use **QuickPlay**.
 
-### Username/Password Login
+The [User Guide](docs/user-guide.md) covers every page, supported links, backups and import/export.
 
-Generate a password hash and update your `.env`:
+## More documentation
 
-```bash
-./scripts/generate-password-hash.sh
-```
-
-Set in `.env`:
-```ini
-AUTH_ENABLED=true
-AUTH_USERNAME=admin
-AUTH_PASSWORD_HASH=<hash from script>
-```
-
-Sessions renew automatically while you use the app. You only have to log in again after going 14 days without opening it (configurable via `JWT_EXPIRE_HOURS`). Server restarts don't log you out: if `JWT_SECRET_KEY` isn't set, a secret is generated once and kept in `data/.jwt_secret`.
-
-After 10 failed logins from one IP address within 15 minutes, further attempts are refused for the rest of that window. Behind a reverse proxy, every client may appear as the proxy's IP, so a lockout then applies to everyone until it expires.
-
-### API Key Access
-
-For programmatic access to protected endpoints, generate an API key:
-
-```bash
-./scripts/generate-api-key.sh
-```
-
-Set in `.env`:
-```ini
-API_KEY=<key from script>
-```
-
-Include the header on API requests:
-
-```bash
-curl http://localhost:38000/api/channels \
-  -H "X-API-Key: <your-api-key>"
-```
-
-## Usage
-
-**Adding Channels** - Navigate to Channels, click Add Channel, and paste a YouTube URL. Supports `@handle`, channel ID, custom URLs, and direct video URLs.
-
-**Inbox** - Review new videos, save or discard individually, or use Save All / Discard All.
-
-**Saved Videos** - Filter by channel, sort by date, switch between Large/Compact/List views, select multiple for bulk operations, or play as a YouTube playlist.
-
-**QuickPlay** - Load separate lists of up to 50 oldest saved videos and 50 oldest saved Shorts. Each visible batch can be moved to Recently Deleted, where it remains restorable, to load the next oldest batch.
-
-**Direct URL Save** - Click the **+** button to add any YouTube URL directly to your saved list.
-
-**Settings** - Configure HTTP timeout, import/export data, and manage recently deleted videos.
-
-## Supported URL Formats
-
-| Type | Example |
-|------|---------|
-| Channel Handle | `https://youtube.com/@JoshuaWeissman` |
-| Channel ID | `https://youtube.com/channel/UC_x5XG1OV2P6uZZ5FSM9Ttw` |
-| Custom URL | `https://youtube.com/c/SomeChannel` |
-| Video | `https://youtube.com/watch?v=dQw4w9WgXcQ` |
-| Shorts | `https://youtube.com/shorts/mccyHdidiG8` |
-| Short URL | `https://youtu.be/dQw4w9WgXcQ` |
-
-## API Documentation
-
-Interactive docs are available at `/docs` when authentication is disabled.
-
-## Tech Stack
-
-| Component | Technology |
-|-----------|------------|
-| Backend | Python + FastAPI |
-| Frontend | React + TypeScript + TailwindCSS |
-| Database | SQLite |
-| Deployment | Docker |
+- [User Guide](docs/user-guide.md): pages and features in detail, supported URL formats, backups, import and export
+- [Configuration](docs/configuration.md): environment variables, login, API keys, security options
+- [Developer Guide](DEVELOPER_GUIDE.md): architecture, local development, tests and releases
 
 ## License
 
