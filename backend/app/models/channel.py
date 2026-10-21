@@ -19,4 +19,5 @@ class Channel(Base):
     updated_at = Column(DateTime, default=func.now(), onupdate=func.now())
 
     # Relationship to videos
-    videos = relationship("Video", back_populates="channel", cascade="all, delete-orphan")
+    # No delete cascade: unsubscribing must never delete saved videos.
+    videos = relationship("Video", back_populates="channel")

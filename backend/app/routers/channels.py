@@ -5,7 +5,7 @@ Channel management API router.
 import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Path
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, delete
+from sqlalchemy import select, func, delete, update
 from datetime import datetime, timezone
 from typing import List, Dict
 
@@ -197,10 +197,16 @@ async def delete_channel(
     db: AsyncSession = Depends(get_db)
 ):
     """
-    Delete a channel and all its videos.
+    Unsubscribe from a channel.
 
-    The cascade delete on the foreign key will automatically delete all videos
-    associated with this channel.
+    - Saved videos stay saved; they keep their copied channel info and are unlinked
+      (channel_id = NULL).
+    - Inbox videos move to Recently Deleted (status 'discarded').
+    - Already-discarded videos are unchanged.
+
+    Videos are unlinked explicitly instead of relying on foreign keys: existing
+    SQLite databases still declare ON DELETE CASCADE, so enabling foreign keys
+    would delete saved videos.
     """
     # Check if channel exists
     result = await db.execute(select(Channel).where(Channel.id == channel_id))
@@ -209,7 +215,13 @@ async def delete_channel(
     if not channel:
         raise NotFoundError("Channel", channel_id)
 
-    # Delete the channel (cascade will delete videos)
+    now = datetime.now(timezone.utc)
+    await db.execute(
+        update(Video)
+        .where(Video.channel_id == channel_id, Video.status == 'inbox')
+        .values(status='discarded', discarded_at=now, saved_at=None)
+    )
+    await db.execute(update(Video).where(Video.channel_id == channel_id).values(channel_id=None))
     await db.execute(delete(Channel).where(Channel.id == channel_id))
     await db.commit()
 
