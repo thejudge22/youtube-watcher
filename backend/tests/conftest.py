@@ -39,6 +39,13 @@ async def override_get_db():
 app.dependency_overrides[get_db] = override_get_db
 
 
+@pytest.fixture(autouse=True)
+def fixed_jwt_secret(monkeypatch):
+    """Use a fixed JWT secret so tests never write backend/data/.jwt_secret."""
+    from app.config import settings
+    monkeypatch.setattr(settings, "jwt_secret_key", "test-secret-0123456789abcdef0123456789")
+
+
 @pytest_asyncio.fixture(autouse=True)
 async def setup_database():
     """Create tables before each test and drop after."""

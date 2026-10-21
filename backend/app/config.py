@@ -1,4 +1,3 @@
-import secrets
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,7 +20,7 @@ class Settings(BaseSettings):
     # Generate using: ./scripts/generate-password-hash.sh YOUR_PASSWORD
     auth_password_hash: str = ""
 
-    # Secret key for JWT signing (auto-generated if not provided)
+    # Secret key for JWT signing (if empty, one is generated once and stored in data/.jwt_secret)
     jwt_secret_key: str = ""
 
     # JWT token expiration in hours (default: 336 = 14 days)
@@ -31,10 +30,5 @@ class Settings(BaseSettings):
     # Generate using: ./scripts/generate-api-key.sh
     # When set, include the header X-API-Key: <your-api-key> on API requests
     api_key: str = ""
-
-    def model_post_init(self, __context):
-        """Auto-generate JWT secret if not provided."""
-        if not self.jwt_secret_key:
-            self.jwt_secret_key = secrets.token_urlsafe(32)
 
 settings = Settings()

@@ -5,12 +5,13 @@ Issue #41: Optional Authentication
 Uses versioned PBKDF2-SHA256 hashes (pbkdf2_sha256.<iterations>.<salt>.<hash>), URL-safe Base64.
 """
 from datetime import datetime, timedelta, timezone
-from typing import Optional
 import base64
+import os
 import hashlib
 import secrets
 import time
-from typing import Callable
+from pathlib import Path
+from typing import Callable, Optional
 
 import jwt
 from fastapi import Depends, Header, HTTPException, status
@@ -93,39 +94,77 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
+# Where a generated JWT secret is kept when JWT_SECRET_KEY isn't set (relative to the app's working directory)
+JWT_SECRET_FILE = Path("data") / ".jwt_secret"
+_jwt_secret: Optional[str] = None
+
+
+def get_jwt_secret() -> str:
+    """
+    Return the JWT signing secret.
+
+    Precedence: JWT_SECRET_KEY from the environment; else the secret stored in
+    JWT_SECRET_FILE; else a new random secret, written there once (mode 0600) so
+    sessions survive restarts.
+    """
+    global _jwt_secret
+    if settings.jwt_secret_key:
+        return settings.jwt_secret_key
+    if _jwt_secret:
+        return _jwt_secret
+
+    path = JWT_SECRET_FILE
+    if path.exists() and path.read_text().strip():
+        _jwt_secret = path.read_text().strip()
+        return _jwt_secret
+
+    secret = secrets.token_urlsafe(32)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        # Another process created it first; use theirs
+        _jwt_secret = path.read_text().strip()
+        return _jwt_secret
+    with os.fdopen(fd, "w") as f:
+        f.write(secret)
+    _jwt_secret = secret
+    return _jwt_secret
+
+
 def create_access_token() -> str:
     """
     Create a JWT access token for authenticated sessions.
-    
+
     Returns:
         JWT token string
     """
-    expire = datetime.now(timezone.utc) + timedelta(hours=settings.jwt_expire_hours)
+    now = datetime.now(timezone.utc)
     payload = {
-        "exp": expire,
-        "iat": datetime.now(timezone.utc),
+        "exp": now + timedelta(hours=settings.jwt_expire_hours),
+        "iat": now,
         "type": "access"
     }
-    return jwt.encode(payload, settings.jwt_secret_key, algorithm="HS256")
+    return jwt.encode(payload, get_jwt_secret(), algorithm="HS256")
 
 
 def verify_token(token: str) -> bool:
     """
-    Verify a JWT token is valid and not expired.
-    
+    Verify a token is a valid, unexpired access token.
+
     Args:
         token: The JWT token to verify
-        
+
     Returns:
         True if token is valid, False otherwise
     """
     try:
-        jwt.decode(token, settings.jwt_secret_key, algorithms=["HS256"])
-        return True
-    except jwt.ExpiredSignatureError:
-        return False
+        payload = jwt.decode(
+            token, get_jwt_secret(), algorithms=["HS256"], options={"require": ["exp", "iat"]}
+        )
     except jwt.InvalidTokenError:
         return False
+    return payload.get("type") == "access"
 
 
 async def require_auth(
