@@ -3,8 +3,8 @@ Pydantic schemas for channel API requests and responses.
 """
 
 from pydantic import BaseModel
-from datetime import datetime
 from typing import Optional
+from .types import UTCDateTime
 
 
 class ChannelCreate(BaseModel):
@@ -19,7 +19,7 @@ class ChannelResponse(BaseModel):
     name: str
     youtube_url: str
     thumbnail_url: Optional[str]
-    last_checked: Optional[datetime]
+    last_checked: Optional[UTCDateTime]
     video_count: int  # Count of inbox + saved videos
 
 

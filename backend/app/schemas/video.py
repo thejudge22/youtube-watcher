@@ -3,8 +3,8 @@ Pydantic schemas for video API requests and responses.
 """
 
 from pydantic import BaseModel, Field
-from datetime import datetime
 from typing import Optional, List
+from .types import UTCDateTime
 
 
 class VideoResponse(BaseModel):
@@ -19,12 +19,12 @@ class VideoResponse(BaseModel):
     description: Optional[str]
     thumbnail_url: Optional[str]
     video_url: str
-    published_at: datetime
+    published_at: UTCDateTime
     status: str
-    saved_at: Optional[datetime]
-    discarded_at: Optional[datetime]
+    saved_at: Optional[UTCDateTime]
+    discarded_at: Optional[UTCDateTime]
     is_short: bool = False  # Issue #8: YouTube Shorts detection
-    is_short_detected_at: Optional[datetime] = None  # Issue #55: Last detection timestamp
+    is_short_detected_at: Optional[UTCDateTime] = None  # Issue #55: Last detection timestamp
 
 
 class ChannelFilterOption(BaseModel):

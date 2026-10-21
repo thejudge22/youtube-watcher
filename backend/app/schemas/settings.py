@@ -6,6 +6,8 @@ Issue #12: Scheduled Backups - Added backup settings schemas.
 
 from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
+
+from .types import UTCDateTime
 from typing import Optional, List
 import re
 
@@ -28,7 +30,7 @@ class BackupSettings(BaseModel):
 
 class BackupStatus(BaseModel):
     """Schema for backup status information."""
-    last_backup_at: Optional[datetime]
+    last_backup_at: Optional[UTCDateTime]
     last_backup_status: Optional[str]
     last_backup_error: Optional[str]
 
@@ -58,7 +60,7 @@ class RefreshStatus(BaseModel):
     """Schema for auto-refresh status information."""
     auto_refresh_enabled: bool
     auto_refresh_interval: str
-    last_refresh_at: Optional[datetime] = None
+    last_refresh_at: Optional[UTCDateTime] = None
     last_refresh_status: Optional[str] = None
     last_refresh_error: Optional[str] = None
 
