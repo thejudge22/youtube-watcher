@@ -56,7 +56,7 @@ The application uses SQLite as its database engine. DB files are stored in `./da
 2. **[Video](backend/app/models/video.py)**: Represents a video.
    - `id`: UUID (String, PK)
    - `youtube_video_id`: Unique YouTube video ID (11 characters)
-   - `channel_id`: FK to channels table (SET NULL on delete)
+   - `channel_id`: link to the subscribed channel, or NULL. The model declares SET NULL, but existing SQLite databases still have `ON DELETE CASCADE` and foreign keys are off; the delete-channel endpoint unlinks videos itself. Never enable `PRAGMA foreign_keys`.
    - `channel_youtube_id`, `channel_name`, `channel_thumbnail_url`: Denormalized channel info for fast retrieval and detached video records (when a channel is removed)
    - `title`: Video title
    - `description`: Video description
@@ -97,7 +97,9 @@ Custom exceptions inherit from `AppException` in [backend/app/exceptions.py](bac
 ### Optional Authentication
 Managed in [backend/app/auth.py](backend/app/auth.py) and configured in [backend/app/config.py](backend/app/config.py):
 - **Toggled by**: `AUTH_ENABLED` environment variable.
-- **Hashing**: Uses standard `hashlib` with PBKDF2-SHA256 and salt size of 16 bytes with 100,000 iterations. Salt + hash are combined and URL-safe Base64 encoded.
+- **Hashing**: PBKDF2-SHA256 with a 16-byte salt and 600,000 iterations, stored as `pbkdf2_sha256.<iterations>.<salt>.<hash>` (URL-safe Base64). Legacy unversioned hashes (100,000 iterations) still verify.
+- **Login protection**: 10 failed logins from one IP within 15 minutes are refused with HTTP 429 until the window passes. Password checks run in a worker thread.
+- **Sessions**: JWTs are signed with `JWT_SECRET_KEY`, or a secret generated once into `data/.jwt_secret`. `/api/auth/verify` returns a renewed token once the current one is more than a day old, so sessions slide; `JWT_EXPIRE_HOURS` (default 336) is the inactivity window.
 - **Authentication Methods**:
   1. **JWT Session Token**: Created on login (`create_access_token`) and validated on subsequent requests via a Bearer header.
   2. **API Key Header**: Checks the `X-API-Key` header against the `API_KEY` environment variable. This allows programmatic API consumers to bypass login.
@@ -137,7 +139,8 @@ Managed in [backend/app/services/backup_scheduler.py](backend/app/services/backu
 - Leverages `APScheduler` to trigger background jobs inside the FastAPI application lifespan.
 - **Auto-Refresh**: Resolves RSS XML files for tracked channels on configurable intervals (`1h`, `6h`, `12h`, `24h`) and imports new videos to the inbox.
 - **Backups**: Supports JSON exports, SQLite database files (gzip-compressed), or both.
-  - Backups are stored in `/app/data/backups/`.
+  - Backups are stored in a `backups` directory next to the database file (`/app/data/backups/` in the container); the database path comes from `DATABASE_URL`.
+  - Database backups use SQLite's online backup API, so they're consistent while the app is writing.
   - Automatic retention sweeps purge backups older than the configured threshold (default: 30 days).
   - To prevent database locking, JSON and database backup operations are dispatched to synchronous worker threads via `asyncio.to_thread`.
 

@@ -26,6 +26,7 @@ YouTube-Watcher is a self-hosted, Docker-based web application for managing YouT
 
 | Date | Change |
 |------|--------|
+| 2026-10-20 | Backend hardening: closed a static-file path traversal, login rate limiting and versioned password hashes, persistent JWT secret with sliding sessions, safe import validation, subscriptions independent of saved videos, yt-dlp off the event loop, batched refresh, composite indexes, SQLite backup API, hashed dependency lock, CI test gate. See [plans/backend-improvements.md](plans/backend-improvements.md). |
 | 2026-09-11 | Added independent QuickPlay batch-removal controls for videos and Shorts; removed items move to Recently Deleted. |
 | 2026-05-27 | Created [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) and updated `AGENTS.md` context for future developers/agents. |
 | 2026-05-08 | Added PWA Support with Service Worker route overrides, automated scheduled backups, and background feed auto-refresh. |
@@ -121,6 +122,9 @@ cd backend && python3 -m venv .venv
 - Use UUID for all database primary keys.
 - **Version Release Workflow**: Date-based versions (`vYYYY-MM-DD`). Run `./scripts/update_version.sh vYYYY-MM-DD` to sync frontend and API versions, commit the result, create the matching tag, and push the commit and tag.
 - **Testing:** Always run pytest on the backend and ensure all test fixtures pass before merging changes.
+- **Subscriptions vs saved videos:** Only `POST /api/channels` and `POST /api/import-export/import/channels` create channels (subscriptions). Saving or importing a video never subscribes. Unsubscribing keeps saved videos (unlinked, with their copied channel info) and moves the channel's inbox videos to Recently Deleted.
+- **Never enable `PRAGMA foreign_keys`:** existing SQLite databases still declare `ON DELETE CASCADE` on `videos.channel_id`, so enabling it would delete saved videos. Code unlinks videos explicitly instead.
+- **Dependencies** are pinned with hashes in `backend/requirements.lock` (see DEVELOPER_GUIDE.md, Updating Dependencies).
 
 ## Supported YouTube URL Formats
 
