@@ -60,24 +60,7 @@ async def list_inbox_videos(
     )
 
     return [
-        VideoResponse(
-            id=video.id,
-            youtube_video_id=video.youtube_video_id,
-            channel_id=video.channel_id,
-            channel_youtube_id=video.channel_youtube_id,
-            channel_name=video.channel_name or (video.channel.name if video.channel else None),
-            channel_thumbnail_url=video.channel_thumbnail_url or (video.channel.thumbnail_url if video.channel else None),
-            title=video.title,
-            description=video.description,
-            thumbnail_url=video.thumbnail_url,
-            video_url=video.video_url,
-            published_at=video.published_at,
-            status=video.status,
-            saved_at=video.saved_at,
-            discarded_at=video.discarded_at,
-            is_short=video.is_short,  # Issue #8
-            is_short_detected_at=video.is_short_detected_at  # Issue #55
-        )
+        map_video_to_response(video)
         for video in videos
     ]
 
@@ -140,24 +123,7 @@ async def list_saved_videos(
     )
 
     video_responses = [
-        VideoResponse(
-            id=video.id,
-            youtube_video_id=video.youtube_video_id,
-            channel_id=video.channel_id,
-            channel_youtube_id=video.channel_youtube_id,
-            channel_name=video.channel_name or (video.channel.name if video.channel else None),
-            channel_thumbnail_url=video.channel_thumbnail_url or (video.channel.thumbnail_url if video.channel else None),
-            title=video.title,
-            description=video.description,
-            thumbnail_url=video.thumbnail_url,
-            video_url=video.video_url,
-            published_at=video.published_at,
-            status=video.status,
-            saved_at=video.saved_at,
-            discarded_at=video.discarded_at,
-            is_short=video.is_short,  # Issue #8
-            is_short_detected_at=video.is_short_detected_at  # Issue #55
-        )
+        map_video_to_response(video)
         for video in videos
     ]
 
@@ -234,24 +200,7 @@ async def list_discarded_videos(
     )
 
     return [
-        VideoResponse(
-            id=video.id,
-            youtube_video_id=video.youtube_video_id,
-            channel_id=video.channel_id,
-            channel_youtube_id=video.channel_youtube_id,
-            channel_name=video.channel_name or (video.channel.name if video.channel else None),
-            channel_thumbnail_url=video.channel_thumbnail_url or (video.channel.thumbnail_url if video.channel else None),
-            title=video.title,
-            description=video.description,
-            thumbnail_url=video.thumbnail_url,
-            video_url=video.video_url,
-            published_at=video.published_at,
-            status=video.status,
-            saved_at=video.saved_at,
-            discarded_at=video.discarded_at,
-            is_short=video.is_short,  # Issue #8
-            is_short_detected_at=video.is_short_detected_at  # Issue #55
-        )
+        map_video_to_response(video)
         for video in videos
     ]
 

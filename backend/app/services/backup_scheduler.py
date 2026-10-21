@@ -94,7 +94,7 @@ async def run_scheduled_backup():
                     )
                 )
                 await db.commit()
-            except:
+            except Exception:
                 pass
 
 

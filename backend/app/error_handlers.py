@@ -1,6 +1,7 @@
 """
 Global exception handlers for consistent error responses.
 """
+import logging
 from datetime import datetime, timezone
 from fastapi import Request, status
 from fastapi.responses import JSONResponse
@@ -9,6 +10,8 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .exceptions import AppException
 from .schemas.error import ErrorResponse, ErrorDetail
+
+logger = logging.getLogger(__name__)
 
 
 async def app_exception_handler(request: Request, exc: AppException) -> JSONResponse:
@@ -90,9 +93,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 
 async def generic_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Catch-all handler for unexpected exceptions."""
-    # Log the full exception for debugging
-    import traceback
-    print("Unexpected error:", traceback.format_exc())
+    # Log the full exception (with traceback) for debugging
+    logger.exception("Unexpected error on %s", request.url.path)
 
     error_response = ErrorResponse(
         error=ErrorDetail(
