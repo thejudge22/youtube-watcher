@@ -48,7 +48,16 @@ See [plans/development-plan.md](plans/development-plan.md) and [DEVELOPER_GUIDE.
 
 ## Known Issues & TODOs
 
-No known issues - project is complete and fully functional.
+Open follow-ups from the 2026-10-20 backend hardening (all minor; see [plans/backend-improvements.md](plans/backend-improvements.md#implementation-record-2026-10-20)):
+
+- A refresh holds the SQLite write lock while it runs Shorts detection over HTTP; after a long gap with many new videos, a save/discard during a scheduled refresh can hit "database is locked".
+- `GET /api` (no trailing path) serves `index.html` instead of 404.
+- The login rate limiter keeps one in-memory entry per failing IP until that IP returns.
+- `create_channel`, video imports and `from-url` insert videos outside `refresh_lock`, so a race with a refresh can still raise an IntegrityError (rare).
+- `detect_and_store_shorts` swallows exceptions; a DB error inside it would break the caller's commit.
+- Importing more than 1,000 URLs returns a 422; the frontend shows only a generic error.
+- Not browser-tested: the frontend keeping the stored token when `/api/auth/verify` fails with a network error or 5xx.
+- Frontend `npm audit`: advisories in axios's Node-only dependencies (`form-data`, `follow-redirects`).
 
 ## Development Commands
 
@@ -97,7 +106,16 @@ cd backend && python3 -m venv .venv
 | `docker-compose-local.yml` | Local single-container build from source |
 | `docker-compose.dev.yml` | Hot-reloaded dev composition |
 | [backend/app/main.py](backend/app/main.py) | FastAPI app entrypoint, mounts, and PWA routes |
-| [backend/app/auth.py](backend/app/auth.py) | Password hashing, JWT token creation, and API Key middleware |
+| [backend/app/auth.py](backend/app/auth.py) | Versioned PBKDF2 hashing, login rate limiter, JWT secret persistence and sliding-session tokens, API key check |
+| [backend/app/spa.py](backend/app/spa.py) | Serves the built frontend; `resolve_static_file` confines paths to `static/` |
+| [backend/app/services/video_import_service.py](backend/app/services/video_import_service.py) | Shared URL-list/playlist import: DB-first, never subscribes |
+| [backend/app/services/channels_service.py](backend/app/services/channels_service.py) | Feed refresh (`refresh_lock`, batched Shorts detection via `detect_and_store_shorts`) |
+| [backend/app/services/backup_service.py](backend/app/services/backup_service.py) | JSON and SQLite-backup-API database backups; paths from `DATABASE_URL` |
+| [backend/app/schemas/types.py](backend/app/schemas/types.py) | `UTCDateTime`: API datetimes serialized as UTC (`Z`) |
+| [backend/requirements.lock](backend/requirements.lock) | Hashed dependency lock installed by both Dockerfiles and CI |
+| [backend/tests/factories.py](backend/tests/factories.py) | Test factories (`make_channel`, `make_video`, `reload`) |
+| [frontend/src/utils/safeUrl.ts](frontend/src/utils/safeUrl.ts) | `safeExternalUrl`: only http(s) links reach `href` |
+| [plans/backend-improvements.md](plans/backend-improvements.md) | 2026-10-20 backend hardening spec, decisions and implementation record |
 | [backend/app/services/shorts_detector.py](backend/app/services/shorts_detector.py) | Batch concurrent HTTP-status based Shorts detector |
 | [frontend/src/App.tsx](frontend/src/App.tsx) | React application shell and routing entrypoint |
 | [frontend/src/context/AuthContext.tsx](frontend/src/context/AuthContext.tsx) | React authentication context provider |
@@ -157,3 +175,12 @@ cd backend && python3 -m venv .venv
 ## QuickPlay Batch Removal (2026-09-11)
 * Added independent controls for moving the displayed video or Shorts batch to Recently Deleted.
 * Each successful removal refreshes only its section with the next oldest batch, if one exists.
+
+## Backend Hardening (2026-10-20)
+* Spec, decisions and implementation record: [plans/backend-improvements.md](plans/backend-improvements.md); task-by-task plan: [plans/2026-10-20-backend-improvements-implementation.md](plans/2026-10-20-backend-improvements-implementation.md). Merged to local `main` as of 2026-10-20 (head `dde0bbb`); check `git status` before assuming it is on GitHub.
+* **Security:** SPA path traversal fixed (`app/spa.py`); playlist URLs rebuilt from the playlist ID (no SSRF); imported video/channel IDs validated and URLs rebuilt, with migration `d4e5f6a7b8c9` normalizing stored URLs; frontend only renders http(s) links; `quickplay.html` escapes quotes; login rate limit (10 failures/IP/15 min, counted before hashing); PBKDF2 at 600k with versioned hashes (legacy still verify); JWT secret persisted to `data/.jwt_secret`; `/docs` hidden when auth is on; security headers; optional `ALLOWED_HOSTS`.
+* **Sessions:** `/api/auth/verify` returns a renewed token once the current one is a day old; the frontend keeps the token on network errors and returns to login on any non-auth 401. This fixed daily logouts (caused by the per-restart JWT secret).
+* **Subscriptions vs saved videos:** imports never create channels; unsubscribing discards inbox videos, keeps saved ones and backfills their copied channel info; exports and JSON backups use the video's own channel fields.
+* **Correctness:** fresh installs no longer 500 (settings getters are read-only); tests use production's `expire_on_commit=True` (read ids before committing in tests; use `tests/factories.reload`); backups use SQLite's backup API; refresh/backup status reflects failures; partial settings updates keep other fields; API datetimes are UTC.
+* **Performance:** yt-dlp runs in a worker thread; imports check the DB before fetching; refresh uses one `IN` query per channel, one Shorts batch per run and one HTTP client per batch; bulk save/discard is one UPDATE; composite indexes (migration `c3d4e5f6a7b8`); request size caps; JSON import lookups are chunked under SQLite's variable limit.
+* **Build/CI:** `backend/requirements.lock` (hashed, from `uv pip compile`); Python 3.13 and Node 24 images with a healthcheck; CI runs offline pytest, pip-audit and frontend tsc/lint before building; `v*` tags publish versioned images.

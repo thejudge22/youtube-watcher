@@ -74,6 +74,35 @@ Baseline: `pytest -m "not integration"` passes 52 tests with no network; the ful
 | B5 | The 500 handler uses `print(traceback)`, and the backup scheduler has a bare `except:`. | Use `logger.exception` and `except Exception`. |
 | B6 | `VideoResponse` is built inline three times in `videos.py`. | Use `map_video_to_response`. |
 
+## Implementation record (2026-10-20)
+
+Implemented task by task from the implementation plan on branch `backend-improvements`, then merged into local `main` (head `dde0bbb`, not yet pushed). The final suite was 159 backend tests passing, including network tests; frontend `tsc` was clean and lint had 0 errors.
+
+**Verified in the built Docker image:**
+- health OK;
+- traversal paths return the SPA;
+- unknown `/api/*` returns 404;
+- security headers present;
+- yt-dlp extraction works *without* deno (B4 needed no change);
+- with auth on, a token survives a container restart and the 11th bad login gets 429.
+
+**Deviations from the plan (rulings):**
+- `.dockerignore` also excludes `.claude/`, `.pytest_cache/` and `.DS_Store`.
+- The integration test that expected playlist imports to create channels was inverted.
+- One JSON-import test gained `assert_not_awaited`, because the old code swallowed the mocked error.
+- The deprecated `HTTP_422_UNPROCESSABLE_ENTITY` was replaced.
+- `http_exception_handler` now forwards exception headers (it had been dropping `Retry-After` and `WWW-Authenticate`).
+- A test switched to a realistic `UC`+22 channel ID because of strict validation.
+- The session check ran via curl on a separate container instead of a browser.
+
+**Fresh-reviewer findings fixed (commit `dde0bbb`):**
+- Parallel logins could exceed the limit; attempts are now counted before hashing.
+- JSON imports over about 32k IDs hit SQLite's bound-variable limit; lookups are now chunked by 5000.
+- Unsubscribing now backfills empty copied channel fields before unlinking.
+- A blank `data/.jwt_secret` is replaced instead of breaking every login.
+
+**Still open** (minor): listed under "Known Issues & TODOs" in [AGENTS.md](../AGENTS.md).
+
 ## Considered and dropped
 - **SQLite WAL / `busy_timeout`:** aiosqlite already passes Python's default 5-second busy timeout. WAL misbehaves on network filesystems and complicates file-level backups.
 - **`PRAGMA foreign_keys=ON`:** it would cascade-delete saved videos (C2).
