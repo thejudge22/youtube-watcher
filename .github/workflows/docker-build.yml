@@ -7,7 +7,7 @@ on:
       - main
       - develop
     tags:
-      - 'v*.*.*'
+      - 'v*'
   pull_request:
     branches:
       - main
@@ -17,8 +17,47 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
 
+permissions:
+  contents: read
+
 jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Install dependencies
+        run: |
+          pip install --require-hashes -r requirements.lock
+          pip install -r requirements-dev.txt pip-audit
+      - name: Run tests (offline)
+        run: python -m pytest -m "not integration" -q
+      - name: Audit dependencies
+        run: pip-audit --disable-pip --require-hashes -r requirements.lock
+
+  frontend-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run lint
+
   build-and-push:
+    needs: [backend-tests, frontend-check]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -49,6 +88,7 @@ jobs:
           tags: |
             type=ref,event=branch
             type=ref,event=pr
+            type=ref,event=tag
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=
