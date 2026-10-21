@@ -75,6 +75,8 @@ Scripts and other programs can call the API with a key instead of logging in.
      -H "X-API-Key: <your-api-key>"
    ```
 
+The native QuickPlay apps (macOS/iPhone/iPad and Android) sign in only with this key. With login on, set `API_KEY` or they can't connect. See [native-clients.md](native-clients.md).
+
 ## Restricting host names
 
 Set `ALLOWED_HOSTS` to the names or addresses you use to reach the app, for example:
@@ -84,6 +86,8 @@ ALLOWED_HOSTS=watcher.example.com,192.168.1.10
 ```
 
 Requests addressed to any other host are rejected, which blocks DNS-rebinding attacks. `localhost` and `127.0.0.1` are always allowed.
+
+Include every name or address that a phone, tablet or Mac uses in the native QuickPlay apps' server URL. An unlisted host gets `400 Invalid host header`, which the apps show as "The server rejected this address".
 
 ## API documentation
 

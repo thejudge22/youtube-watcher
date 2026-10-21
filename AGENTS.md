@@ -26,6 +26,7 @@ YouTube-Watcher is a self-hosted, Docker-based web application for managing YouT
 
 | Date | Change |
 |------|--------|
+| 2026-10-21 | Native clients: added [docs/native-clients.md](docs/native-clients.md) (what the macOS/iPhone/iPad and Android apps call, and the compatibility rules) and `backend/tests/test_native_client_contract.py`, which fails CI on changes that would break installed apps. Apps 1.1 now use `bulk-discard` for QuickPlay Remove (with Undo), so they match the web app. Open work: [plans/native-client-support.md](plans/native-client-support.md). |
 | 2026-10-21 | Release prep `v2026-10-21`: README slimmed to overview/run/use with a new screenshot (`docs/images/inbox.png`); details moved to `docs/user-guide.md` and `docs/configuration.md`; PWA update toast given a solid background; version bumped. |
 | 2026-10-20 | Visual refresh (merged to local `main`, not pushed): slate theme with one coral accent, desktop sidebar + phone bottom tab bar, flat cards (Save solid, Discard ghost), shared `PageHeader` and segmented toggles, gradients/glows removed, hard-coded colours replaced by theme tokens. All Inbox actions unchanged. QuickPlay: Play All removed, Play moved into each panel. |
 | 2026-10-20 | Backend hardening: closed a static-file path traversal, login rate limiting and versioned password hashes, persistent JWT secret with sliding sessions, safe import validation, subscriptions independent of saved videos, yt-dlp off the event loop, batched refresh, composite indexes, SQLite backup API, hashed dependency lock, CI test gate. See [plans/backend-improvements.md](plans/backend-improvements.md). |
@@ -126,6 +127,9 @@ cd backend && python3 -m venv .venv
 | [README.md](README.md) | Short user-facing overview: what the app does, how to run it, basic use |
 | [docs/user-guide.md](docs/user-guide.md) | Detailed page-by-page usage, supported links, backups, import/export |
 | [docs/configuration.md](docs/configuration.md) | Environment variables, login, API keys, ALLOWED_HOSTS, image tags |
+| [docs/native-clients.md](docs/native-clients.md) | Endpoints the native macOS/iPhone/iPad and Android apps depend on, and the compatibility rules |
+| [backend/tests/test_native_client_contract.py](backend/tests/test_native_client_contract.py) | Contract test for the native apps' requests; a failure means installed apps would break |
+| [plans/native-client-support.md](plans/native-client-support.md) | Backend work for the native apps: status of the contract test, restore-to-inbox, where the native docs live |
 
 ## Core Features Reference
 
@@ -144,11 +148,12 @@ cd backend && python3 -m venv .venv
 - API endpoints prefixed with `/api/`.
 - Video status enum: `inbox`, `saved`, `discarded`.
 - Use UUID for all database primary keys.
-- **Version Release Workflow**: Date-based versions (`vYYYY-MM-DD`). Run `./scripts/update_version.sh vYYYY-MM-DD` to sync frontend and API versions, commit the result, create the matching tag, and push the commit and tag.
+- **Version Release Workflow**: Date-based versions (`vYYYY-MM-DD`). Run `./scripts/update_version.sh vYYYY-MM-DD` to sync frontend and API versions, commit the result, create the matching tag, and push the commit and tag. Before tagging, run the native-client release checklist (`QuickPlayNativeAppsPlans/API_SYNC_PROCESS.md` § Backend release, in the QuickPlayClient folder): re-capture the fixtures, smoke-test both apps, and add a row to the compatibility log.
 - **Testing:** Always run pytest on the backend and ensure all test fixtures pass before merging changes.
 - **Subscriptions vs saved videos:** Only `POST /api/channels` and `POST /api/import-export/import/channels` create channels (subscriptions). Saving or importing a video never subscribes. Unsubscribing keeps saved videos (unlinked, with their copied channel info) and moves the channel's inbox videos to Recently Deleted.
 - **Never enable `PRAGMA foreign_keys`:** existing SQLite databases still declare `ON DELETE CASCADE` on `videos.channel_id`, so enabling it would delete saved videos. Code unlinks videos explicitly instead.
 - **Dependencies** are pinned with hashes in `backend/requirements.lock` (see DEVELOPER_GUIDE.md, Updating Dependencies).
+- **Native clients are first-class:** the macOS/iPhone/iPad and Android QuickPlay apps call the API with `X-API-Key`. Before changing routers, schemas, auth, middleware or error handling, check the compatibility rules in [docs/native-clients.md](docs/native-clients.md): additive only, same status codes, inbox `limit=10000` and saved `limit=50` must keep working, `/api/health` stays open. `tests/test_native_client_contract.py` enforces these; if it fails, don't edit the test (see the doc). Web changes to QuickPlay, Inbox or Add URL behavior are parity changes for the native apps too. Open work: [plans/native-client-support.md](plans/native-client-support.md).
 
 ## Supported YouTube URL Formats
 
