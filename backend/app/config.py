@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # Username for login (only used if auth_enabled is true)
     auth_username: str = ""
 
-    # PBKDF2-SHA256 hashed password in hex format (only used if auth_enabled is true)
+    # PBKDF2-SHA256 password hash from scripts/generate-password-hash.sh (only used if auth_enabled is true)
     # Generate using: ./scripts/generate-password-hash.sh YOUR_PASSWORD
     auth_password_hash: str = ""
 

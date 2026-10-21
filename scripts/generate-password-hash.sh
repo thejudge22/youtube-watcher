@@ -3,7 +3,7 @@
 # Helper script to generate password hash for YouTube-Watcher authentication
 # Issue #41: Optional Authentication
 #
-# Uses PBKDF2-SHA256 with Base64 output (~64 characters, URL-safe)
+# Uses PBKDF2-SHA256 (600,000 iterations), versioned output (~90 characters, URL-safe)
 #
 # Usage: ./generate-password-hash.sh [password]
 # If no password is provided, you will be prompted to enter one
@@ -40,12 +40,12 @@ import secrets
 import sys
 
 password = sys.argv[1]
+iterations = 600000
 salt = secrets.token_bytes(16)
-pwdhash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000)
-combined = salt + pwdhash
-# URL-safe Base64 without padding
-result = base64.urlsafe_b64encode(combined).decode('ascii').rstrip('=')
-print(result)
+pwdhash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, iterations)
+b64 = lambda data: base64.urlsafe_b64encode(data).decode('ascii').rstrip('=')
+# Versioned format: pbkdf2_sha256.<iterations>.<salt>.<hash> (URL-safe Base64, no padding)
+print(f'pbkdf2_sha256.{iterations}.{b64(salt)}.{b64(pwdhash)}')
 " "$PASSWORD" 2>/dev/null)
 
 if [ $? -eq 0 ] && [ -n "$HASH" ]; then

@@ -2,7 +2,7 @@
 Authentication module for optional login functionality.
 Issue #41: Optional Authentication
 
-Uses PBKDF2-SHA256 with Base64 encoding for compact, URL-safe hashes.
+Uses versioned PBKDF2-SHA256 hashes (pbkdf2_sha256.<iterations>.<salt>.<hash>), URL-safe Base64.
 """
 from datetime import datetime, timedelta, timezone
 from typing import Optional
@@ -19,64 +19,75 @@ from .config import settings
 # HTTP Bearer scheme for JWT token extraction
 security = HTTPBearer(auto_error=False)
 
-# PBKDF2 iteration count (higher = more secure but slower)
-PBKDF2_ITERATIONS = 100000
+# PBKDF2 iteration count for new hashes (OWASP 2023 guidance for PBKDF2-SHA256)
+PBKDF2_ITERATIONS = 600_000
+# Iteration count of the original, unversioned hash format
+LEGACY_PBKDF2_ITERATIONS = 100_000
+# Accepted iteration range for versioned hashes
+MIN_ITERATIONS = 100_000
+MAX_ITERATIONS = 10_000_000
 # Salt size in bytes
 SALT_SIZE = 16
+# Scheme prefix of the versioned format: pbkdf2_sha256.<iterations>.<salt>.<hash>
+HASH_SCHEME = "pbkdf2_sha256"
+
+
+def _b64encode(data: bytes) -> str:
+    """URL-safe Base64 without padding (safe in .env files and shells)."""
+    return base64.urlsafe_b64encode(data).decode('ascii').rstrip('=')
+
+
+def _b64decode(text: str) -> bytes:
+    padding_needed = (4 - len(text) % 4) % 4
+    return base64.urlsafe_b64decode((text + '=' * padding_needed).encode('ascii'))
 
 
 def hash_password(password: str) -> str:
     """
     Hash a password using PBKDF2-SHA256 with a random salt.
-    Returns URL-safe Base64 string (no padding, no special chars that cause shell issues)
-    
-    Args:
-        password: The plain text password
-        
-    Returns:
-        Base64url-encoded hash string (~64 characters)
+
+    Returns "pbkdf2_sha256.<iterations>.<salt>.<hash>" using only [A-Za-z0-9_.-],
+    so it can be pasted into .env files and docker compose without escaping.
     """
-    # Generate a random salt
     salt = secrets.token_bytes(SALT_SIZE)
-    # Hash the password (PBKDF2-SHA256 produces 32 bytes)
     pwdhash = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, PBKDF2_ITERATIONS)
-    # Combine salt + hash and encode as URL-safe Base64 (no padding)
-    combined = salt + pwdhash  # 16 + 32 = 48 bytes
-    return base64.urlsafe_b64encode(combined).decode('ascii').rstrip('=')
+    return f"{HASH_SCHEME}.{PBKDF2_ITERATIONS}.{_b64encode(salt)}.{_b64encode(pwdhash)}"
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Verify a plain password against a PBKDF2 hash.
-    
-    Args:
-        plain_password: The plain text password
-        hashed_password: The Base64url-encoded hash (salt + hash)
-        
-    Returns:
-        True if password matches, False otherwise
+    Verify a plain password against a stored hash.
+
+    Accepts the versioned format from hash_password() and the legacy format
+    (Base64 of 16-byte salt + 32-byte hash at 100k iterations).
     """
     if not hashed_password:
         return False
-    
+
     try:
-        # Add padding back for base64 decoding (length should be ~64 chars for 48 bytes)
-        padding_needed = (4 - len(hashed_password) % 4) % 4
-        padded = hashed_password + ('=' * padding_needed)
-        # Decode
-        combined = base64.urlsafe_b64decode(padded.encode('ascii'))
-        # Must be 48 bytes: 16 (salt) + 32 (hash)
-        if len(combined) != SALT_SIZE + 32:
-            return False
-        # Extract salt and stored hash
-        salt = combined[:SALT_SIZE]
-        stored_hash = combined[SALT_SIZE:]
-        # Hash the provided password with the same salt
-        pwdhash = hashlib.pbkdf2_hmac('sha256', plain_password.encode('utf-8'), salt, PBKDF2_ITERATIONS)
+        if hashed_password.startswith(HASH_SCHEME + "."):
+            parts = hashed_password.split(".")
+            if len(parts) != 4:
+                return False
+            iterations = int(parts[1])
+            if not MIN_ITERATIONS <= iterations <= MAX_ITERATIONS:
+                return False
+            salt = _b64decode(parts[2])
+            stored_hash = _b64decode(parts[3])
+        else:
+            combined = _b64decode(hashed_password)
+            # Must be 48 bytes: 16 (salt) + 32 (hash)
+            if len(combined) != SALT_SIZE + 32:
+                return False
+            iterations = LEGACY_PBKDF2_ITERATIONS
+            salt = combined[:SALT_SIZE]
+            stored_hash = combined[SALT_SIZE:]
+
+        pwdhash = hashlib.pbkdf2_hmac('sha256', plain_password.encode('utf-8'), salt, iterations)
         # Compare using constant-time comparison to prevent timing attacks
         return secrets.compare_digest(pwdhash, stored_hash)
     except (ValueError, TypeError):
-        # Invalid base64 or malformed hash
+        # Invalid base64, iteration count or malformed hash
         return False
 
 
