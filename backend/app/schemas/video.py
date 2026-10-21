@@ -2,7 +2,7 @@
 Pydantic schemas for video API requests and responses.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional, List
 
@@ -42,7 +42,7 @@ class VideoFromUrl(BaseModel):
 
 class BulkVideoAction(BaseModel):
     """Schema for bulk video actions."""
-    video_ids: List[str]
+    video_ids: List[str] = Field(max_length=10000)
 
 
 class PaginatedVideosResponse(BaseModel):

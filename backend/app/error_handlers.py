@@ -78,11 +78,11 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         ),
         timestamp=datetime.now(timezone.utc),
         path=str(request.url.path),
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT
     )
 
     return JSONResponse(
-        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
         content=error_response.model_dump(mode='json')
     )
 

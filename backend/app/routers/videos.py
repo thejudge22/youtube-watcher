@@ -9,14 +9,14 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException, status, Query, Path
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, delete
+from sqlalchemy import select, func, delete, update
 from sqlalchemy.orm import selectinload
 
 from ..database import get_db
 from ..models.video import Video
 from ..models.channel import Channel
 from ..schemas.video import VideoResponse, VideoFromUrl, BulkVideoAction, ChannelFilterOption, PaginatedVideosResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from ..schemas.mappers import map_video_to_response
 from ..services.youtube_utils import extract_video_id, get_video_url, get_rss_url, get_channel_url
 from ..services.rss_parser import fetch_video_by_id, fetch_channel_info
@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 @router.get("/videos/inbox", response_model=List[VideoResponse])
 async def list_inbox_videos(
-    limit: int = Query(10000, ge=1, description="Maximum number of videos to return"),
+    limit: int = Query(10000, ge=1, le=10000, description="Maximum number of videos to return"),
     offset: int = Query(0, ge=0, description="Number of videos to skip"),
     channel_id: Optional[str] = Query(None, description="Filter by channel ID"),
     is_short: Optional[bool] = Query(None, description="Filter by Shorts status (True=Shorts only, False=regular only, None=all)"),
@@ -316,6 +316,30 @@ async def discard_video(
     return map_video_to_response(video)
 
 
+async def _bulk_set_status(db: AsyncSession, video_ids: List[str], status: str) -> List[Video]:
+    """Set the status of many videos in one UPDATE, then load them back in one SELECT."""
+    now = datetime.now(timezone.utc)
+    if status == 'saved':
+        values = {"status": "saved", "saved_at": now, "discarded_at": None}
+    else:
+        values = {"status": "discarded", "discarded_at": now, "saved_at": None}
+
+    await db.execute(
+        update(Video)
+        .where(Video.id.in_(video_ids))
+        .values(**values)
+        .execution_options(synchronize_session=False)
+    )
+    await db.commit()
+
+    result = await db.execute(
+        select(Video)
+        .options(selectinload(Video.channel))
+        .where(Video.id.in_(video_ids))
+    )
+    return list(result.scalars().all())
+
+
 @router.post("/videos/bulk-save", response_model=List[VideoResponse])
 async def bulk_save_videos(action: BulkVideoAction, db: AsyncSession = Depends(get_db)):
     """
@@ -323,32 +347,8 @@ async def bulk_save_videos(action: BulkVideoAction, db: AsyncSession = Depends(g
     """
     if not action.video_ids:
         return []
-    
-    # Fetch all videos
-    result = await db.execute(
-        select(Video)
-        .options(selectinload(Video.channel))
-        .where(Video.id.in_(action.video_ids))
-    )
-    videos = result.scalars().all()
-    
-    # Update each video
-    now = datetime.now(timezone.utc)
-    for video in videos:
-        video.status = 'saved'
-        video.saved_at = now
-        video.discarded_at = None
-    
-    await db.commit()
-    
-    # Build responses
-    responses = []
-    for video in videos:
-        await db.refresh(video)
-        response = map_video_to_response(video)
-        responses.append(response)
-    
-    return responses
+    videos = await _bulk_set_status(db, action.video_ids, 'saved')
+    return [map_video_to_response(video) for video in videos]
 
 
 @router.post("/videos/bulk-discard", response_model=List[VideoResponse])
@@ -358,32 +358,8 @@ async def bulk_discard_videos(action: BulkVideoAction, db: AsyncSession = Depend
     """
     if not action.video_ids:
         return []
-    
-    # Fetch all videos
-    result = await db.execute(
-        select(Video)
-        .options(selectinload(Video.channel))
-        .where(Video.id.in_(action.video_ids))
-    )
-    videos = result.scalars().all()
-    
-    # Update each video
-    now = datetime.now(timezone.utc)
-    for video in videos:
-        video.status = 'discarded'
-        video.discarded_at = now
-        video.saved_at = None
-    
-    await db.commit()
-    
-    # Build responses
-    responses = []
-    for video in videos:
-        await db.refresh(video)
-        response = map_video_to_response(video)
-        responses.append(response)
-    
-    return responses
+    videos = await _bulk_set_status(db, action.video_ids, 'discarded')
+    return [map_video_to_response(video) for video in videos]
 
 
 @router.post("/videos/from-url", response_model=VideoResponse)
@@ -525,7 +501,7 @@ async def purge_all_discarded_videos(db: AsyncSession = Depends(get_db)):
 
 class BatchDetectRequest(BaseModel):
     """Request schema for batch Shorts detection."""
-    video_ids: Optional[List[str]] = None
+    video_ids: Optional[List[str]] = Field(default=None, max_length=10000)
     scope: str = "inbox"  # "inbox", "undetected", "all" — Issue #55
     channel_youtube_id: Optional[str] = None  # Filter to a specific channel
 

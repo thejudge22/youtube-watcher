@@ -1,5 +1,5 @@
 from datetime import datetime
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ChannelExport(BaseModel):
@@ -27,15 +27,15 @@ class ExportData(BaseModel):
 
 
 class ImportChannelsRequest(BaseModel):
-    channels: list[ChannelExport]
+    channels: list[ChannelExport] = Field(max_length=5000)
 
 
 class ImportVideosRequest(BaseModel):
-    videos: list[VideoExport]
+    videos: list[VideoExport] = Field(max_length=100000)
 
 
 class ImportUrlsRequest(BaseModel):
-    urls: list[str]
+    urls: list[str] = Field(max_length=1000)
 
 
 class ImportPlaylistRequest(BaseModel):
