@@ -21,6 +21,7 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import ViewModeToggle, { ViewMode } from '../components/common/ViewModeToggle';
 import { ShortsFilterToggle } from '../components/inbox/ShortsFilterToggle';
 import { useLocalStorage } from '../hooks/useLocalStorage';
+import { PageHeader, ToolbarDivider } from '../components/layout/PageHeader';
 import { openPlaylist } from '../utils/playlist';
 import type { SavedVideosParams, Video, ShortsFilter } from '../types';
 
@@ -239,54 +240,44 @@ export function Saved() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-green to-accent-blue flex items-center justify-center shadow-glow-green">
-            <BookmarkIcon className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-text-primary">Saved Videos</h1>
-            {totalCount > 0 && (
-              <p className="text-text-secondary text-sm">
-                {totalCount} video{totalCount !== 1 ? 's' : ''} saved
-              </p>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-wrap gap-2 items-center">
-          <ShortsFilterToggle value={shortsFilter} onChange={(v) => { setShortsFilter(v); handleFilterChange(); }} />
-          <div className="w-px h-6 bg-border mx-1" />
-          <Button
-            variant="secondary"
-            onClick={handleDetectShorts}
-            isLoading={detectShortsBatch.isPending}
-            title="Detect which videos are Shorts"
-            size="sm"
-          >
-            <SparklesIcon className="w-4 h-4 mr-1.5" />
-            Detect Shorts
-          </Button>
-          <Button
-            variant={isSelectionMode ? "primary" : "secondary"}
-            onClick={handleToggleSelectionMode}
-            size="sm"
-          >
-            {isSelectionMode ? 'Cancel Selection' : 'Select Videos'}
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={() => setShowRecentlyDeleted(true)}
-            size="sm"
-          >
-            <ClockIcon className="w-4 h-4 mr-1.5" />
-            Recently Deleted
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Saved Videos"
+        subtitle={totalCount > 0 ? `${totalCount} video${totalCount !== 1 ? 's' : ''} saved` : undefined}
+        actions={
+          <>
+            <ShortsFilterToggle value={shortsFilter} onChange={(v) => { setShortsFilter(v); handleFilterChange(); }} />
+            <ToolbarDivider />
+            <Button
+              variant="secondary"
+              onClick={handleDetectShorts}
+              isLoading={detectShortsBatch.isPending}
+              title="Detect which videos are Shorts"
+              size="sm"
+            >
+              <SparklesIcon className="w-4 h-4 mr-1.5" />
+              Detect Shorts
+            </Button>
+            <Button
+              variant={isSelectionMode ? 'primary' : 'secondary'}
+              onClick={handleToggleSelectionMode}
+              size="sm"
+            >
+              {isSelectionMode ? 'Cancel Selection' : 'Select Videos'}
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={() => setShowRecentlyDeleted(true)}
+              size="sm"
+            >
+              <ClockIcon className="w-4 h-4 mr-1.5" />
+              Recently Deleted
+            </Button>
+          </>
+        }
+      />
 
       {/* Filters */}
-      <div className="bg-bg-secondary rounded-xl p-4 mb-6 border border-border animate-slide-up">
+      <div className="bg-bg-secondary rounded-xl p-4 mb-6 border border-border">
         <div className="flex flex-wrap gap-4 items-end">
           {/* Channel Filter */}
           <div className="flex-1 min-w-[200px]">
@@ -298,7 +289,7 @@ export function Saved() {
               id="channel-filter"
               value={channelYoutubeId}
               onChange={handleChannelChange}
-              className="w-full bg-bg-tertiary border border-border text-text-primary rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent transition-all"
+              className="w-full bg-bg-tertiary border border-border text-text-primary rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-red/50 focus:border-transparent transition-colors"
             >
               <option value="">All Channels</option>
               {channelOptions?.map((option) => (
@@ -319,7 +310,7 @@ export function Saved() {
               id="sort-filter"
               value={SORT_OPTIONS.find((opt) => opt.value === sortBy && opt.order === order)?.label || ''}
               onChange={handleSortChange}
-              className="w-full bg-bg-tertiary border border-border text-text-primary rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent transition-all"
+              className="w-full bg-bg-tertiary border border-border text-text-primary rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-accent-red/50 focus:border-transparent transition-colors"
             >
               {SORT_OPTIONS.map((option) => (
                 <option key={option.label} value={option.label}>
@@ -341,7 +332,7 @@ export function Saved() {
 
       {/* Selection Toolbar */}
       {isSelectionMode && (
-        <div className="bg-bg-secondary rounded-xl p-4 mb-4 border border-accent-blue/30 flex flex-wrap items-center justify-between gap-4 animate-slide-up">
+        <div className="bg-bg-secondary rounded-xl p-4 mb-4 border border-accent-red/30 flex flex-wrap items-center justify-between gap-4 animate-slide-up">
           <div className="flex items-center gap-4">
             <span className="text-text-primary font-medium">
               {selectedIds.size} video{selectedIds.size !== 1 ? 's' : ''} selected
@@ -350,7 +341,7 @@ export function Saved() {
               variant="secondary" 
               onClick={handleSelectAll} 
               size="sm" 
-              className="gap-1.5 bg-bg-tertiary hover:bg-accent-blue/20 hover:text-accent-blue hover:border-accent-blue/50 transition-all"
+              className="gap-1.5"
             >
               <CheckCircleIcon className="w-4 h-4" />
               Select All
@@ -360,7 +351,7 @@ export function Saved() {
               onClick={handleDeselectAll} 
               size="sm"
               disabled={selectedIds.size === 0}
-              className="gap-1.5 bg-bg-tertiary hover:bg-accent-red/20 hover:text-accent-red hover:border-accent-red/50 transition-all disabled:opacity-40"
+              className="gap-1.5"
             >
               <XCircleIcon className="w-4 h-4" />
               Clear Selection
@@ -460,7 +451,7 @@ export function Saved() {
                   onClick={() => setCurrentPage(pageNum)}
                   className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                     currentPage === pageNum
-                      ? 'bg-accent-blue text-white shadow-glow-blue'
+                      ? 'bg-accent-red text-white'
                       : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary hover:text-text-primary'
                   }`}
                 >

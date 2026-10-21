@@ -62,7 +62,7 @@ export function BackupSettingsSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-medium text-text-primary mb-2">Scheduled Backups</h2>
+        <h2 className="text-lg font-semibold text-text-primary mb-2">Scheduled Backups</h2>
         <p className="text-text-secondary text-sm mb-4">
           Configure automatic backups to protect your data.
         </p>
@@ -77,7 +77,7 @@ export function BackupSettingsSection() {
         <button
           onClick={() => handleChange('backup_enabled', !formData.backup_enabled)}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            formData.backup_enabled ? 'bg-accent-blue' : 'bg-bg-elevated'
+            formData.backup_enabled ? 'bg-accent-red' : 'bg-bg-elevated'
           }`}
         >
           <span

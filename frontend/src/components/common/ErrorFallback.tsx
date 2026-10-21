@@ -9,11 +9,11 @@ interface ErrorFallbackProps {
 export function ErrorFallback({ error, resetError, componentName }: ErrorFallbackProps) {
   return (
     <div className="min-h-[400px] flex items-center justify-center p-6">
-      <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-6 max-w-2xl">
+      <div className="bg-accent-red/10 border border-accent-red/30 rounded-xl p-6 max-w-2xl">
         <div className="flex items-start gap-4">
           <div className="flex-shrink-0">
             <svg
-              className="w-8 h-8 text-red-500"
+              className="w-8 h-8 text-accent-red"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"

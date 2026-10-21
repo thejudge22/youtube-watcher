@@ -70,15 +70,15 @@ export function VideoCard({
   // List view - horizontal layout
   if (viewMode === 'list') {
     const getDragFeedbackClasses = () => {
-      if (isDragStart) return 'ring-2 ring-accent-blue shadow-glow-blue';
-      if (isDragEnd) return 'ring-2 ring-accent-blue/70';
-      if (isInPreviewRange) return 'bg-accent-blue/10 ring-1 ring-accent-blue/50';
+      if (isDragStart) return 'ring-2 ring-accent-red';
+      if (isDragEnd) return 'ring-2 ring-accent-red/70';
+      if (isInPreviewRange) return 'bg-accent-red/10 ring-1 ring-accent-red/50';
       return '';
     };
 
     return (
       <div
-        className={`flex items-center gap-4 p-3 bg-bg-secondary rounded-xl border border-transparent hover:border-border transition-all duration-200 ${getDragFeedbackClasses()}`}
+        className={`flex items-center gap-4 p-3 bg-bg-secondary rounded-xl border border-border hover:border-border-light transition-colors ${getDragFeedbackClasses()}`}
         {...touchProps}
       >
         {/* Checkbox - only visible in selection mode */}
@@ -91,7 +91,7 @@ export function VideoCard({
               type="checkbox"
               checked={isSelected}
               onChange={(e) => onToggleSelect?.(video.id, (e.nativeEvent as MouseEvent).shiftKey)}
-              className="w-5 h-5 rounded-md border-border bg-bg-tertiary text-accent-blue focus:ring-2 focus:ring-accent-blue focus:ring-offset-0 cursor-pointer transition-all"
+              className="w-5 h-5 rounded-md border-border bg-bg-tertiary text-accent-red focus:ring-2 focus:ring-accent-red focus:ring-offset-0 cursor-pointer transition-all"
             />
           </div>
         )}
@@ -112,7 +112,7 @@ export function VideoCard({
                 <img
                   src={video.thumbnail_url}
                   alt={video.title}
-                  className={`w-full h-full object-cover transition-all duration-300 group-hover:scale-105 ${
+                  className={`w-full h-full object-cover transition-opacity duration-300 ${
                     imageLoaded ? 'opacity-100' : 'opacity-0'
                   }`}
                   loading="lazy"
@@ -141,7 +141,7 @@ export function VideoCard({
             href={safeExternalUrl(video.video_url)}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-text-primary hover:text-accent-blue transition-colors line-clamp-1 block group/link"
+            className="font-medium text-text-primary hover:text-accent-red transition-colors line-clamp-1 block group/link"
           >
             {video.title}
             <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5 inline-block ml-1.5 opacity-0 group-hover/link:opacity-100 transition-opacity text-text-tertiary" />
@@ -152,7 +152,7 @@ export function VideoCard({
             )}
             <span className="text-text-tertiary">{formatDate(video.published_at)}</span>
             {video.saved_at && (
-              <span className="text-accent-blue text-xs bg-accent-blue/10 px-2 py-0.5 rounded-full">
+              <span className="text-text-secondary text-xs bg-bg-tertiary px-2 py-0.5 rounded-full">
                 Saved {formatSavedDate(video.saved_at)}
               </span>
             )}
@@ -175,10 +175,10 @@ export function VideoCard({
             )}
             {showDiscardButton && (
               <Button
-                variant="danger"
+                variant="ghost"
                 onClick={() => onDiscard(video.id)}
                 size="sm"
-                className="gap-1"
+                className="gap-1 hover:text-accent-red"
               >
                 <XCircleIcon className="w-4 h-4" />
                 {showSaveButton && onSave ? 'Discard' : 'Remove'}
@@ -193,9 +193,9 @@ export function VideoCard({
   // Compact view - smaller cards with hover actions
   if (viewMode === 'compact') {
     const getDragFeedbackClasses = () => {
-      if (isDragStart) return 'ring-2 ring-accent-blue shadow-glow-blue';
-      if (isDragEnd) return 'ring-2 ring-accent-blue/70';
-      if (isInPreviewRange) return 'bg-accent-blue/10 ring-1 ring-accent-blue/50';
+      if (isDragStart) return 'ring-2 ring-accent-red';
+      if (isDragEnd) return 'ring-2 ring-accent-red/70';
+      if (isInPreviewRange) return 'bg-accent-red/10 ring-1 ring-accent-red/50';
       return '';
     };
 
@@ -211,13 +211,13 @@ export function VideoCard({
               type="checkbox"
               checked={isSelected}
               onChange={(e) => onToggleSelect?.(video.id, (e.nativeEvent as MouseEvent).shiftKey)}
-              className="w-5 h-5 rounded-md border-border bg-bg-tertiary text-accent-blue focus:ring-2 focus:ring-accent-blue focus:ring-offset-0 cursor-pointer transition-all"
+              className="w-5 h-5 rounded-md border-border bg-bg-tertiary text-accent-red focus:ring-2 focus:ring-accent-red focus:ring-offset-0 cursor-pointer transition-all"
             />
           </div>
         )}
 
         <div
-          className={`flex-1 flex flex-col bg-bg-secondary rounded-xl overflow-hidden border border-transparent hover:border-border transition-all duration-300 relative h-full group ${getDragFeedbackClasses()} ${!isSelectionMode ? 'hover:-translate-y-1 hover:shadow-lg' : ''}`}
+          className={`flex-1 flex flex-col bg-bg-secondary rounded-xl overflow-hidden border border-border hover:border-border-light transition-colors relative h-full group ${getDragFeedbackClasses()}`}
           {...touchProps}
         >
           {/* Thumbnail - fixed aspect ratio */}
@@ -236,7 +236,7 @@ export function VideoCard({
                   <img
                     src={video.thumbnail_url}
                     alt={video.title}
-                    className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+                    className={`w-full h-full object-cover transition-opacity duration-300 ${
                       imageLoaded ? 'opacity-100' : 'opacity-0'
                     }`}
                     loading="lazy"
@@ -265,7 +265,7 @@ export function VideoCard({
               href={safeExternalUrl(video.video_url)}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm font-medium text-text-primary hover:text-accent-blue transition-colors line-clamp-2 block"
+              className="text-sm font-medium text-text-primary hover:text-accent-red transition-colors line-clamp-2 block"
             >
               {video.title}
             </a>
@@ -288,10 +288,10 @@ export function VideoCard({
                 )}
                 {showDiscardButton && (
                   <Button
-                    variant="danger"
+                    variant="ghost"
                     onClick={() => onDiscard(video.id)}
                     size="sm"
-                    className={showSaveButton && onSave ? 'flex-1 gap-1' : 'w-full gap-1'}
+                    className={`${showSaveButton && onSave ? 'flex-1' : 'w-full'} gap-1 hover:text-accent-red`}
                   >
                     <XCircleIcon className="w-3.5 h-3.5" />
                     {showSaveButton && onSave ? 'Discard' : 'Remove'}
@@ -307,9 +307,9 @@ export function VideoCard({
 
   // Large view (default) - original layout with improvements
   const getDragFeedbackClasses = () => {
-    if (isDragStart) return 'ring-2 ring-accent-blue shadow-glow-blue';
-    if (isDragEnd) return 'ring-2 ring-accent-blue/70';
-    if (isInPreviewRange) return 'bg-accent-blue/10 ring-1 ring-accent-blue/50';
+    if (isDragStart) return 'ring-2 ring-accent-red';
+    if (isDragEnd) return 'ring-2 ring-accent-red/70';
+    if (isInPreviewRange) return 'bg-accent-red/10 ring-1 ring-accent-red/50';
     return '';
   };
 
@@ -325,13 +325,13 @@ export function VideoCard({
             type="checkbox"
             checked={isSelected}
             onChange={(e) => onToggleSelect?.(video.id, (e.nativeEvent as MouseEvent).shiftKey)}
-            className="w-5 h-5 rounded-md border-border bg-bg-tertiary text-accent-blue focus:ring-2 focus:ring-accent-blue focus:ring-offset-0 cursor-pointer pointer-events-none transition-all"
+            className="w-5 h-5 rounded-md border-border bg-bg-tertiary text-accent-red focus:ring-2 focus:ring-accent-red focus:ring-offset-0 cursor-pointer pointer-events-none transition-all"
           />
         </div>
       )}
 
       <div
-        className={`flex-1 flex flex-col bg-bg-secondary rounded-xl overflow-hidden border border-transparent hover:border-border transition-all duration-300 h-full group ${getDragFeedbackClasses()} ${!isSelectionMode ? 'hover:-translate-y-1 hover:shadow-lg' : ''}`}
+        className={`flex-1 flex flex-col bg-bg-secondary rounded-xl overflow-hidden border border-border hover:border-border-light transition-colors h-full group ${getDragFeedbackClasses()}`}
         {...touchProps}
       >
         {/* Thumbnail - fixed aspect ratio */}
@@ -350,7 +350,7 @@ export function VideoCard({
                 <img
                   src={video.thumbnail_url}
                   alt={video.title}
-                  className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+                  className={`w-full h-full object-cover transition-opacity duration-300 ${
                     imageLoaded ? 'opacity-100' : 'opacity-0'
                   }`}
                   loading="lazy"
@@ -381,7 +381,7 @@ export function VideoCard({
             rel="noopener noreferrer"
             className="block group/link"
           >
-            <h3 className="text-text-primary font-medium line-clamp-2 hover:text-accent-blue transition-colors">
+            <h3 className="text-text-primary font-medium line-clamp-2 hover:text-accent-red transition-colors">
               {video.title}
             </h3>
           </a>
@@ -394,17 +394,16 @@ export function VideoCard({
               Published: {formatDate(video.published_at)}
             </p>
             {video.saved_at && (
-              <p className="text-accent-blue text-xs bg-accent-blue/10 inline-block px-2 py-0.5 rounded-full">
+              <p className="text-text-secondary text-xs bg-bg-tertiary inline-block px-2 py-0.5 rounded-full">
                 Saved: {formatSavedDate(video.saved_at)}
               </p>
             )}
             {!isSelectionMode && (showSaveButton && onSave || showDiscardButton) && (
-              <div className="flex space-x-2 mt-4 pt-2">
+              <div className="flex items-center justify-between gap-2 mt-3 pt-3 border-t border-border">
                 {showSaveButton && onSave && (
                   <Button
                     variant="primary"
                     onClick={() => onSave(video.id)}
-                    className={showDiscardButton ? 'flex-1' : 'w-full'}
                     size="sm"
                   >
                     <CheckCircleIcon className="w-4 h-4 mr-1.5" />
@@ -413,9 +412,9 @@ export function VideoCard({
                 )}
                 {showDiscardButton && (
                   <Button
-                    variant="danger"
+                    variant="ghost"
                     onClick={() => onDiscard(video.id)}
-                    className={showSaveButton && onSave ? 'flex-1' : 'w-full'}
+                    className="ml-auto hover:text-accent-red"
                     size="sm"
                   >
                     <XCircleIcon className="w-4 h-4 mr-1.5" />

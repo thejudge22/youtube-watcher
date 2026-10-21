@@ -10,7 +10,7 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: React.ReactNode;
 }
 
-const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-bg-primary disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:transform-none active:scale-[0.98] btn-shine';
+const baseStyles = 'inline-flex items-center justify-center font-medium rounded-lg transition-colors duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 focus-visible:ring-offset-bg-primary disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]';
 
 const sizeStyles = {
   sm: 'px-3 py-1.5 text-xs',
@@ -18,12 +18,14 @@ const sizeStyles = {
   lg: 'px-6 py-3 text-base',
 };
 
+// One solid accent (primary); destructive and positive actions are tinted so
+// they never compete with it.
 const variantStyles = {
-  primary: 'bg-accent-blue hover:bg-accent-blue-hover text-white focus:ring-accent-blue shadow-md hover:shadow-glow-blue hover:-translate-y-0.5',
-  secondary: 'bg-bg-tertiary hover:bg-bg-elevated text-text-primary border border-border hover:border-border-light focus:ring-accent-blue hover:-translate-y-0.5',
-  danger: 'bg-accent-red hover:bg-accent-red-hover text-white focus:ring-accent-red shadow-md hover:shadow-glow hover:-translate-y-0.5',
-  success: 'bg-accent-green hover:bg-accent-green text-white focus:ring-accent-green shadow-md hover:shadow-glow-green hover:-translate-y-0.5',
-  ghost: 'bg-transparent hover:bg-bg-tertiary text-text-secondary hover:text-text-primary focus:ring-accent-blue',
+  primary: 'bg-accent-red hover:bg-accent-red-hover text-white',
+  secondary: 'bg-bg-tertiary hover:bg-bg-elevated text-text-primary border border-border',
+  danger: 'bg-accent-red/10 hover:bg-accent-red/20 text-accent-red border border-accent-red/25',
+  success: 'bg-accent-green/10 hover:bg-accent-green/20 text-accent-green border border-accent-green/25',
+  ghost: 'bg-transparent hover:bg-bg-tertiary text-text-secondary hover:text-text-primary',
 };
 
 export function Button({

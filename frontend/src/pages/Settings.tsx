@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useSavedVideos, useBulkDiscardVideos, useDiscardedVideos, usePurgeAllDiscarded } from '../hooks/useVideos';
 import { Button } from '../components/common/Button';
 import { Modal } from '../components/common/Modal';
+import { PageHeader } from '../components/layout/PageHeader';
 import ImportExportSection from '../components/settings/ImportExportSection';
 import AppSettingsSection from '../components/settings/AppSettingsSection';
 import { BackupSettingsSection } from '../components/settings/BackupSettingsSection';
@@ -39,30 +40,30 @@ export function Settings() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-2xl font-bold text-text-primary mb-6">Settings</h1>
+      <PageHeader title="Settings" />
 
       {/* Application Settings Section */}
-      <div className="bg-bg-secondary rounded-lg p-6 shadow-lg mb-6">
+      <div className="bg-bg-secondary rounded-xl p-6 border border-border mb-6">
         <AppSettingsSection />
       </div>
 
       {/* Issue #54: Auto-Refresh Section */}
-      <div className="bg-bg-secondary rounded-lg p-6 shadow-lg mb-6">
+      <div className="bg-bg-secondary rounded-xl p-6 border border-border mb-6">
         <AutoRefreshSettingsSection />
       </div>
 
       {/* Issue #12: Scheduled Backups Section */}
-      <div className="bg-bg-secondary rounded-lg p-6 shadow-lg mb-6">
+      <div className="bg-bg-secondary rounded-xl p-6 border border-border mb-6">
         <BackupSettingsSection />
       </div>
 
       {/* Import/Export Section */}
-      <div className="bg-bg-secondary rounded-lg p-6 shadow-lg mb-6">
+      <div className="bg-bg-secondary rounded-xl p-6 border border-border mb-6">
         <ImportExportSection />
       </div>
 
-      <div className="bg-bg-secondary rounded-lg p-6 shadow-lg">
-        <h2 className="text-lg font-medium text-text-primary mb-4">Data Management</h2>
+      <div className="bg-bg-secondary rounded-xl p-6 border border-border">
+        <h2 className="text-lg font-semibold text-text-primary mb-4">Data Management</h2>
         <p className="text-text-secondary mb-6">
           Manage your saved videos and application data.
         </p>
@@ -85,7 +86,7 @@ export function Settings() {
 
           {showDangerZone && (
             <div className="space-y-4 mt-4">
-              <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+              <div className="bg-accent-red/10 border border-accent-red/30 rounded-lg p-4">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-md font-medium text-accent-red">Purge All Recently Deleted Videos</h3>

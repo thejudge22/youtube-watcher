@@ -57,7 +57,7 @@ export function AutoRefreshSettingsSection() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-lg font-medium text-text-primary mb-2">Auto-Refresh</h2>
+        <h2 className="text-lg font-semibold text-text-primary mb-2">Auto-Refresh</h2>
         <p className="text-text-secondary text-sm mb-4">
           Automatically check your channels for new videos on a schedule.
         </p>
@@ -72,7 +72,7 @@ export function AutoRefreshSettingsSection() {
         <button
           onClick={() => handleChange('auto_refresh_enabled', !formData.auto_refresh_enabled)}
           className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-            formData.auto_refresh_enabled ? 'bg-accent-blue' : 'bg-bg-elevated'
+            formData.auto_refresh_enabled ? 'bg-accent-red' : 'bg-bg-elevated'
           }`}
         >
           <span

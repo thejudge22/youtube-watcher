@@ -39,7 +39,7 @@ export default {
         'lg': 'var(--shadow-lg)',
         'glow': 'var(--shadow-glow)',
         'glow-blue': 'var(--shadow-glow-blue)',
-        'glow-green': '0 0 20px rgba(48, 209, 88, 0.15)',
+        'glow-green': 'none',
       },
       transitionTimingFunction: {
         'fast': 'var(--transition-fast)',
@@ -50,7 +50,6 @@ export default {
       animation: {
         'slide-up': 'slide-up-fade 0.5s ease forwards',
         'scale-in': 'scale-in 0.3s ease forwards',
-        'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
         'shimmer': 'shimmer 1.5s infinite',
       },
       backgroundImage: {

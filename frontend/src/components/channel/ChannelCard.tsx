@@ -24,26 +24,22 @@ export function ChannelCard({ channel }: ChannelCardProps) {
   };
 
   return (
-    <div className="group bg-bg-secondary rounded-xl p-4 border border-transparent hover:border-border transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+    <div className="group bg-bg-secondary rounded-xl p-4 border border-border hover:border-border-light transition-colors">
       <div className="flex items-start space-x-4">
         {/* Channel Avatar */}
         <div className="relative flex-shrink-0">
-          <div className="w-16 h-16 rounded-full overflow-hidden bg-bg-tertiary ring-2 ring-transparent group-hover:ring-border transition-all duration-300">
+          <div className="w-16 h-16 rounded-full overflow-hidden bg-bg-tertiary">
             <img
               src={channel.thumbnail_url || '/placeholder-channel.png'}
               alt={channel.name}
-              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+              className="w-full h-full object-cover"
             />
-          </div>
-          {/* Online indicator */}
-          <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-bg-secondary rounded-full flex items-center justify-center">
-            <div className="w-2.5 h-2.5 bg-accent-green rounded-full" />
           </div>
         </div>
 
         {/* Content */}
         <div className="flex-1 min-w-0">
-          <h3 className="text-text-primary font-semibold truncate group-hover:text-accent-blue transition-colors">
+          <h3 className="text-text-primary font-semibold truncate group-hover:text-accent-red transition-colors">
             {channel.name}
           </h3>
           
@@ -51,7 +47,7 @@ export function ChannelCard({ channel }: ChannelCardProps) {
             href={safeExternalUrl(channel.youtube_url)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-text-secondary hover:text-accent-blue text-sm mt-1 inline-flex items-center gap-1 transition-colors group/link"
+            className="text-text-secondary hover:text-accent-red text-sm mt-1 inline-flex items-center gap-1 transition-colors group/link"
           >
             <span>View on YouTube</span>
             <ArrowTopRightOnSquareIcon className="w-3.5 h-3.5 opacity-0 group-hover/link:opacity-100 transition-opacity" />
@@ -71,7 +67,7 @@ export function ChannelCard({ channel }: ChannelCardProps) {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="flex items-center gap-2 [@media(hover:hover)]:opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
           <Button
             variant="ghost"
             onClick={() => refreshChannel.mutate(channel.id)}

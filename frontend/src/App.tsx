@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { Header } from './components/layout/Header';
-import { Navigation } from './components/layout/Navigation';
+import { Sidebar, MobileTabBar } from './components/layout/Navigation';
 import { Inbox } from './pages/Inbox';
 import { Saved } from './pages/Saved';
 import { QuickPlay } from './pages/QuickPlay';
@@ -61,15 +61,16 @@ function AppContent() {
   return (
     <ErrorBoundary componentName="Application">
       <BrowserRouter>
-        <div className="min-h-screen bg-bg-primary transition-colors duration-200">
+        <div className="min-h-screen bg-bg-primary">
           <PWAUpdatePrompt />
           <ErrorBoundary componentName="Header">
             <Header theme={theme} onToggleTheme={toggleTheme} />
           </ErrorBoundary>
           <ErrorBoundary componentName="Navigation">
-            <Navigation />
+            <Sidebar theme={theme} onToggleTheme={toggleTheme} />
+            <MobileTabBar />
           </ErrorBoundary>
-          <main className="pb-12">
+          <main className="lg:pl-56 pb-[calc(5rem+env(safe-area-inset-bottom))] lg:pb-12">
             <Routes>
               <Route
                 path="/"

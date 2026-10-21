@@ -1,3 +1,6 @@
+import { ListBulletIcon, RectangleGroupIcon } from '@heroicons/react/24/outline';
+import { segmentedGroup, segmentedItem } from '../common/segmented';
+
 export type InboxViewMode = 'flat' | 'grouped';
 
 interface InboxViewToggleProps {
@@ -7,33 +10,23 @@ interface InboxViewToggleProps {
 
 export function InboxViewToggle({ viewMode, onChange }: InboxViewToggleProps) {
   return (
-    <div className="flex rounded-lg overflow-hidden border border-border">
+    <div className={segmentedGroup} role="group" aria-label="Inbox layout">
       <button
         onClick={() => onChange('flat')}
-        className={`flex items-center gap-1 px-3 py-1.5 text-sm transition-colors ${
-          viewMode === 'flat'
-            ? 'bg-bg-elevated text-white'
-            : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary'
-        }`}
+        className={segmentedItem(viewMode === 'flat')}
+        aria-pressed={viewMode === 'flat'}
         title="Flat view"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-        </svg>
+        <ListBulletIcon className="w-4 h-4" />
         <span>Flat</span>
       </button>
       <button
         onClick={() => onChange('grouped')}
-        className={`flex items-center gap-1 px-3 py-1.5 text-sm transition-colors ${
-          viewMode === 'grouped'
-            ? 'bg-bg-elevated text-white'
-            : 'bg-bg-secondary text-text-secondary hover:bg-bg-tertiary'
-        }`}
+        className={segmentedItem(viewMode === 'grouped')}
+        aria-pressed={viewMode === 'grouped'}
         title="Grouped by channel"
       >
-        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" />
-        </svg>
+        <RectangleGroupIcon className="w-4 h-4" />
         <span>Grouped</span>
       </button>
     </div>

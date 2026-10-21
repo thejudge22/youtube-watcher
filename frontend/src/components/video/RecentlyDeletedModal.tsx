@@ -33,7 +33,7 @@ export function RecentlyDeletedModal({ isOpen, onClose }: RecentlyDeletedModalPr
             <LoadingSpinner size="lg" />
           </div>
         ) : error ? (
-          <div className="bg-red-900/50 border border-red-700 rounded-lg p-4 text-center">
+          <div className="bg-accent-red/10 border border-accent-red/30 rounded-lg p-4 text-center">
             <p className="text-accent-red">Error loading recently deleted videos.</p>
           </div>
         ) : videos && videos.length > 0 ? (
@@ -48,6 +48,7 @@ export function RecentlyDeletedModal({ isOpen, onClose }: RecentlyDeletedModalPr
                 onDiscard={handleDiscard}
                 showSaveButton={true}
                 showDiscardButton={false}
+                viewMode="list"
                 emptyMessage="No recently deleted videos."
               />
             </div>
@@ -55,7 +56,7 @@ export function RecentlyDeletedModal({ isOpen, onClose }: RecentlyDeletedModalPr
         ) : (
           <div className="bg-bg-secondary rounded-lg p-12 text-center">
             <svg
-              className="mx-auto h-12 w-12 text-gray-500"
+              className="mx-auto h-12 w-12 text-text-tertiary"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"

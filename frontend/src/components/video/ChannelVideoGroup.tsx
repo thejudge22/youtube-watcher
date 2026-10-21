@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { Video } from '../../types';
 import { VideoList } from './VideoList';
+import { ChevronRightIcon } from '@heroicons/react/24/outline';
 import { Button } from '../common/Button';
 
 interface ChannelVideoGroupProps {
@@ -32,52 +33,49 @@ export function ChannelVideoGroup({
   const videoIds = videos.map(v => v.id);
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
-      {/* Header */}
-      <button
-        onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center justify-between p-4 bg-bg-secondary hover:bg-bg-tertiary transition-colors"
-      >
-        <div className="flex items-center gap-3">
-          {isExpanded ? (
-            <svg className="w-5 h-5 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          ) : (
-            <svg className="w-5 h-5 text-text-tertiary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          )}
-          <span className="font-medium text-text-primary">{channelName}</span>
-          <span className="text-sm text-text-secondary">({videos.length} video{videos.length !== 1 ? 's' : ''})</span>
-        </div>
+    <div className="border border-border rounded-xl overflow-hidden bg-bg-secondary">
+      {/* Header: the toggle and the bulk actions are siblings, not nested buttons */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 hover:bg-bg-tertiary/50 transition-colors">
+        <button
+          onClick={() => setIsExpanded(!isExpanded)}
+          className="flex items-center gap-3 min-w-0 flex-1 basis-48 text-left"
+          aria-expanded={isExpanded}
+        >
+          <ChevronRightIcon
+            className={`w-4 h-4 flex-shrink-0 text-text-tertiary transition-transform ${isExpanded ? 'rotate-90' : ''}`}
+          />
+          <span className="font-medium text-text-primary truncate">{channelName}</span>
+          <span className="flex-shrink-0 text-xs font-medium text-text-secondary bg-bg-tertiary px-2 py-0.5 rounded-full tabular-nums">
+            {videos.length}
+          </span>
+        </button>
 
         {/* Per-channel bulk actions */}
-        <div className="flex gap-2" onClick={e => e.stopPropagation()}>
+        <div className="flex gap-2">
           <Button
             variant="primary"
+            size="sm"
             onClick={() => onSaveAll(videoIds)}
             disabled={isSavingAll || isDiscardingAll}
             isLoading={isSavingAll}
-            className="px-2 py-1 text-sm"
           >
             Save All
           </Button>
           <Button
-            variant="secondary"
+            variant="danger"
+            size="sm"
             onClick={() => onDiscardAll(videoIds)}
             disabled={isSavingAll || isDiscardingAll}
             isLoading={isDiscardingAll}
-            className="px-2 py-1 text-sm"
           >
             Discard All
           </Button>
         </div>
-      </button>
+      </div>
 
       {/* Video list */}
       {isExpanded && (
-        <div className="p-4 bg-bg-primary">
+        <div className="p-4 bg-bg-primary border-t border-border">
           <VideoList
             videos={videos}
             onSave={onSave}

@@ -32,10 +32,10 @@ export function Modal({ isOpen, onClose, title, children }: ModalProps) {
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex min-h-full items-center justify-center p-4">
         <div
-          className="fixed inset-0 bg-black/50 transition-opacity"
+          className="fixed inset-0 bg-black/60 transition-opacity"
           onClick={onClose}
         />
-        <div className="relative bg-bg-secondary rounded-lg shadow-xl max-w-lg w-full p-6">
+        <div className="relative bg-bg-secondary border border-border rounded-xl shadow-lg max-w-lg w-full p-6">
           {title && (
             <h3 className="text-lg font-semibold text-text-primary mb-4">
               {title}

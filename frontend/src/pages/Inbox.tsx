@@ -15,6 +15,7 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { ChannelVideoGroup } from '../components/video/ChannelVideoGroup';
 import { InboxViewToggle, type InboxViewMode } from '../components/inbox/InboxViewToggle';
 import { ShortsFilterToggle } from '../components/inbox/ShortsFilterToggle';
+import { PageHeader, ToolbarDivider } from '../components/layout/PageHeader';
 import type { Video, ShortsFilter } from '../types';
 
 export function Inbox() {
@@ -146,76 +147,71 @@ export function Inbox() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-blue to-accent-purple flex items-center justify-center shadow-glow-blue">
-            <InboxIcon className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-text-primary">Inbox</h1>
-            {videos && videos.length > 0 && (
-              <p className="text-text-secondary text-sm">
-                {videos.length} video{videos.length !== 1 ? 's' : ''} to review
-                {shortsFilter !== 'all' && (
-                  <span className="ml-2 text-text-tertiary">
-                    ({shortsFilter === 'shorts' ? 'Shorts only' : 'Videos only'})
-                  </span>
-                )}
-              </p>
-            )}
-          </div>
-        </div>
-        
-        {/* Actions */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <ShortsFilterToggle value={shortsFilter} onChange={setShortsFilter} />
-          <div className="w-px h-6 bg-border mx-1" />
-          <InboxViewToggle viewMode={viewMode} onChange={setViewMode} />
-          <Button
-            variant="secondary"
-            onClick={handleDetectShorts}
-            isLoading={detectShortsBatch.isPending}
-            title="Detect which videos are Shorts"
-            size="sm"
-          >
-            <SparklesIcon className="w-4 h-4 mr-1.5" />
-            Detect Shorts
-          </Button>
-          <Button
-            variant="secondary"
-            onClick={handleRefresh}
-            isLoading={refreshAll.isPending || isLoading}
-            size="sm"
-          >
-            <ArrowPathIcon className={`w-4 h-4 mr-1.5 ${refreshAll.isPending ? 'animate-spin' : ''}`} />
-            Refresh
-          </Button>
-          {videos && videos.length > 0 && (
+      <PageHeader
+        title="Inbox"
+        subtitle={
+          videos && videos.length > 0 ? (
             <>
-              <div className="w-px h-6 bg-border mx-1" />
-              <Button
-                variant="primary"
-                onClick={handleSaveAll}
-                isLoading={bulkSave.isPending}
-                size="sm"
-              >
-                <FolderArrowDownIcon className="w-4 h-4 mr-1.5" />
-                Save All
-              </Button>
-              <Button
-                variant="danger"
-                onClick={handleDiscardAll}
-                isLoading={bulkDiscard.isPending}
-                size="sm"
-              >
-                <TrashIcon className="w-4 h-4 mr-1.5" />
-                Discard All
-              </Button>
+              {videos.length} video{videos.length !== 1 ? 's' : ''} to review
+              {groupedVideos.length > 1 && ` from ${groupedVideos.length} channels`}
+              {shortsFilter !== 'all' && (
+                <span className="ml-2 text-text-tertiary">
+                  ({shortsFilter === 'shorts' ? 'Shorts only' : 'Videos only'})
+                </span>
+              )}
             </>
-          )}
-        </div>
-      </div>
+          ) : undefined
+        }
+        actions={
+          <>
+            <ShortsFilterToggle value={shortsFilter} onChange={setShortsFilter} />
+            <InboxViewToggle viewMode={viewMode} onChange={setViewMode} />
+            <ToolbarDivider />
+            <Button
+              variant="secondary"
+              onClick={handleDetectShorts}
+              isLoading={detectShortsBatch.isPending}
+              title="Detect which videos are Shorts"
+              size="sm"
+            >
+              <SparklesIcon className="w-4 h-4 mr-1.5" />
+              Detect Shorts
+            </Button>
+            <Button
+              variant="secondary"
+              onClick={handleRefresh}
+              isLoading={refreshAll.isPending || isLoading}
+              size="sm"
+            >
+              <ArrowPathIcon className={`w-4 h-4 mr-1.5 ${refreshAll.isPending ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            {videos && videos.length > 0 && (
+              <>
+                <ToolbarDivider />
+                <Button
+                  variant="primary"
+                  onClick={handleSaveAll}
+                  isLoading={bulkSave.isPending}
+                  size="sm"
+                >
+                  <FolderArrowDownIcon className="w-4 h-4 mr-1.5" />
+                  Save All
+                </Button>
+                <Button
+                  variant="danger"
+                  onClick={handleDiscardAll}
+                  isLoading={bulkDiscard.isPending}
+                  size="sm"
+                >
+                  <TrashIcon className="w-4 h-4 mr-1.5" />
+                  Discard All
+                </Button>
+              </>
+            )}
+          </>
+        }
+      />
 
       {/* Empty State */}
       {videos?.length === 0 && (

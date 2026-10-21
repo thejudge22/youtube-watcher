@@ -12,6 +12,7 @@ import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { Modal } from '../components/common/Modal';
 import { openPlaylist } from '../utils/playlist';
+import { PageHeader, ToolbarDivider } from '../components/layout/PageHeader';
 import type { Video } from '../types';
 import { safeExternalUrl } from '../utils/safeUrl';
 
@@ -59,7 +60,7 @@ function QuickPlayPanel({
     <div className="bg-bg-secondary rounded-xl border border-border flex flex-col">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 border-b border-border">
         <div className="flex items-center gap-2">
-          <Icon className="w-5 h-5 text-accent-blue" />
+          <Icon className="w-5 h-5 text-accent-red" />
           <h2 className="font-semibold text-text-primary">{title}</h2>
         </div>
         <div className="flex items-center gap-2">
@@ -111,7 +112,7 @@ function QuickPlayPanel({
                   }}
                 />
                 <div className="flex flex-col justify-center min-w-0">
-                  <span className="text-sm font-medium text-text-primary line-clamp-2 leading-snug group-hover:text-accent-blue transition-colors">
+                  <span className="text-sm font-medium text-text-primary line-clamp-2 leading-snug group-hover:text-accent-red transition-colors">
                     {video.title}
                   </span>
                   <span className="text-xs text-text-secondary mt-0.5 truncate">
@@ -228,24 +229,15 @@ export function QuickPlay() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-red to-accent-orange flex items-center justify-center shadow-glow">
-            <PlayIcon className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-text-primary">QuickPlay</h1>
-            {!isLoading && (
-              <p className="text-text-secondary text-sm">
-                {videos.length + shortVideos.length} video
-                {videos.length + shortVideos.length !== 1 ? 's' : ''} ready to play
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2 items-center">
+      <PageHeader
+        title="QuickPlay"
+        subtitle={
+          !isLoading
+            ? `${videos.length + shortVideos.length} video${videos.length + shortVideos.length !== 1 ? 's' : ''} ready to play`
+            : undefined
+        }
+        actions={
+          <>
           <Button
             variant="secondary"
             onClick={refetch}
@@ -255,7 +247,7 @@ export function QuickPlay() {
             <ArrowPathIcon className={`w-4 h-4 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <div className="w-px h-6 bg-border mx-1" />
+          <ToolbarDivider />
           <Button
             variant="primary"
             onClick={handlePlayVideos}
@@ -283,8 +275,9 @@ export function QuickPlay() {
             <PlayIcon className="w-4 h-4 mr-1.5" />
             Play All
           </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Panels */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

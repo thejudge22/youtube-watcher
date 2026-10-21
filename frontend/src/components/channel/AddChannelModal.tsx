@@ -80,14 +80,14 @@ export function AddChannelModal({ isOpen, onClose }: AddChannelModalProps) {
             className="w-full px-3 py-2 bg-bg-tertiary border border-border rounded-md text-text-primary placeholder-text-tertiary focus:outline-none focus:ring-2 focus:ring-accent-blue focus:border-transparent"
             disabled={isLoading}
           />
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-text-tertiary">
             Paste a full YouTube URL (https://youtube.com/@channel) or just the handle (@channel)
           </p>
         </div>
 
         {error && (
-          <div className="p-3 bg-red-900/50 border border-red-700 rounded-md">
-            <p className="text-sm text-red-300">
+          <div className="p-3 bg-accent-red/10 border border-accent-red/30 rounded-md">
+            <p className="text-sm text-accent-red">
               {(error as any)?.errorCode === 'CHANNEL_ALREADY_EXISTS'
                 ? 'This channel has already been added'
                 : (error as any)?.errorMessage

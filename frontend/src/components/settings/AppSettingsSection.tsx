@@ -45,14 +45,14 @@ export default function AppSettingsSection() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-text-primary">Application Settings</h2>
+      <h2 className="text-lg font-semibold text-text-primary">Application Settings</h2>
 
       {isLoading ? (
         <div className="text-text-secondary">Loading settings...</div>
       ) : error ? (
         <div className="text-accent-red">Failed to load settings</div>
       ) : (
-        <div className="bg-bg-secondary rounded-lg p-6 space-y-6">
+        <div className="space-y-6">
           {/* Auto-Detect Shorts Toggle */}
           <div className="space-y-3">
             <div className="flex items-center justify-between">
@@ -72,7 +72,7 @@ export default function AppSettingsSection() {
                 aria-checked={autoDetectShorts}
                 onClick={() => handleAutoDetectChange(!autoDetectShorts)}
                 className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-accent-blue focus:ring-offset-2 ${
-                  autoDetectShorts ? 'bg-accent-blue' : 'bg-bg-tertiary'
+                  autoDetectShorts ? 'bg-accent-red' : 'bg-bg-elevated'
                 }`}
                 disabled={updateSettings.isPending}
               >

@@ -44,7 +44,7 @@ export function Login() {
 
         {/* Logo and Title */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-accent-red to-accent-orange flex items-center justify-center shadow-glow mx-auto mb-4">
+          <div className="w-16 h-16 rounded-2xl bg-accent-red flex items-center justify-center mx-auto mb-4">
             <svg 
               className="w-8 h-8 text-white" 
               fill="currentColor" 
@@ -53,7 +53,7 @@ export function Login() {
               <path d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-text-primary">
+          <h1 className="text-2xl font-semibold tracking-tight text-text-primary">
             YouTube Watcher
           </h1>
           <p className="mt-2 text-text-secondary">
@@ -107,7 +107,7 @@ export function Login() {
 
             {/* Error Message */}
             {(error || loginError) && (
-              <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm">
+              <div className="p-3 rounded-lg bg-accent-red/10 border border-accent-red/30 text-accent-red text-sm">
                 {error || loginError}
               </div>
             )}

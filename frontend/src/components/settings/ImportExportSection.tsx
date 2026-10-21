@@ -184,7 +184,7 @@ export default function ImportExportSection() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold text-text-primary">Import / Export</h2>
+      <h2 className="text-lg font-semibold text-text-primary">Import / Export</h2>
 
       {/* Export Section */}
       <div className="bg-bg-secondary rounded-lg p-4 space-y-4">
@@ -307,7 +307,7 @@ export default function ImportExportSection() {
             </p>
             <div className="mt-2 w-full bg-bg-tertiary rounded-full h-2">
               <div
-                className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                className="bg-accent-red h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
               />
             </div>

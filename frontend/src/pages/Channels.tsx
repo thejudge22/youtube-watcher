@@ -11,6 +11,8 @@ import { ChannelListView } from '../components/channel/ChannelListView';
 import { AddChannelModal } from '../components/channel/AddChannelModal';
 import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
+import { PageHeader } from '../components/layout/PageHeader';
+import { segmentedGroup, segmentedItem } from '../components/common/segmented';
 
 type ViewMode = 'grid' | 'list';
 
@@ -30,48 +32,32 @@ export function Channels() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-accent-purple to-accent-blue flex items-center justify-center shadow-lg">
-            <TvIcon className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-text-primary">Channels</h1>
-            {channels && channels.length > 0 && (
-              <p className="text-text-secondary text-sm">
-                {channels.length} channel{channels.length !== 1 ? 's' : ''} tracked
-              </p>
-            )}
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-3">
+      <PageHeader
+        title="Channels"
+        subtitle={
+          channels && channels.length > 0
+            ? `${channels.length} channel${channels.length !== 1 ? 's' : ''} tracked`
+            : undefined
+        }
+        actions={
+          <>
           {/* View Toggle */}
-          <div className="flex items-center bg-bg-secondary rounded-lg p-1 border border-border">
+          <div className={segmentedGroup} role="group" aria-label="View mode">
             <button
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-md transition-all duration-200 ${
-                viewMode === 'grid'
-                  ? 'bg-bg-tertiary text-text-primary shadow-sm'
-                  : 'text-text-tertiary hover:text-text-secondary'
-              }`}
+              className={segmentedItem(viewMode === 'grid')}
               aria-label="Grid view"
               title="Grid view"
             >
-              <Squares2X2Icon className="w-5 h-5" />
+              <Squares2X2Icon className="w-4 h-4" />
             </button>
             <button
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-md transition-all duration-200 ${
-                viewMode === 'list'
-                  ? 'bg-bg-tertiary text-text-primary shadow-sm'
-                  : 'text-text-tertiary hover:text-text-secondary'
-              }`}
+              className={segmentedItem(viewMode === 'list')}
               aria-label="List view"
               title="List view"
             >
-              <ListBulletIcon className="w-5 h-5" />
+              <ListBulletIcon className="w-4 h-4" />
             </button>
           </div>
           
@@ -79,8 +65,9 @@ export function Channels() {
             <PlusIcon className="w-4 h-4 mr-1.5" />
             Add Channel
           </Button>
-        </div>
-      </div>
+          </>
+        }
+      />
 
       {/* Loading */}
       {isLoading && (

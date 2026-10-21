@@ -5,11 +5,11 @@ interface ShortsBadgeProps {
 export function ShortsBadge({ className = '' }: ShortsBadgeProps) {
   return (
     <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-gradient-to-r from-accent-red to-accent-orange text-white shadow-sm ${className}`}
+      className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold bg-black/75 text-white ${className}`}
       title="YouTube Short"
     >
       <svg
-        className="w-3 h-3 mr-1"
+        className="w-3 h-3 mr-1 text-[#ff4e45]"
         viewBox="0 0 24 24"
         fill="currentColor"
       >
