@@ -73,6 +73,7 @@ class TestListSavedVideos:
         db_session.add(channel2)
         await db_session.commit()
         await db_session.refresh(channel2)
+        await db_session.refresh(sample_channel)
 
         # Create videos for both channels
         video1 = Video(
@@ -104,7 +105,7 @@ class TestListSavedVideos:
         await db_session.commit()
 
         # Filter by first channel's youtube_channel_id
-        response = await client.get(f"/api/videos/saved?channel_youtube_id={sample_channel.youtube_channel_id}")
+        response = await client.get(f"/api/videos/saved?channel_youtube_id=UC-test123")
         assert response.status_code == 200
         data = response.json()
         assert len(data["videos"]) == 1

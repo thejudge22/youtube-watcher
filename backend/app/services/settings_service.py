@@ -9,13 +9,16 @@ from ..models.setting import Setting
 
 
 async def _get_setting(db: AsyncSession) -> Setting:
-    """Get or create the singleton settings row."""
+    """
+    Return the singleton settings row, or unsaved defaults if it doesn't exist yet.
+
+    Never writes: committing here would expire every ORM object the caller has
+    loaded and break the rest of the request.
+    """
     result = await db.execute(select(Setting).where(Setting.id == "1"))
     setting = result.scalar_one_or_none()
     if setting is None:
-        setting = Setting(id="1", http_timeout=10.0)
-        db.add(setting)
-        await db.commit()
+        return Setting(id="1", http_timeout=10.0, auto_detect_shorts=True)
     return setting
 
 
