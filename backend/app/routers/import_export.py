@@ -27,7 +27,6 @@ from ..services.youtube_utils import (
     extract_video_id,
     extract_playlist_id,
     get_rss_url,
-    get_channel_url,
 )
 from ..services.settings_service import get_http_timeout
 from ..schemas.mappers import map_video_to_export
@@ -204,104 +203,70 @@ async def import_videos(
     request: ImportVideosRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    """Import saved videos from JSON. Skips existing videos."""
-    total = len(request.videos)
+    """Import saved videos from JSON (an export or backup).
+
+    Uses only the data in the file: no network calls. A video is linked to its
+    channel only if that channel is already subscribed; channels are never created.
+    """
+    now = datetime.now(timezone.utc)
     imported = 0
     skipped = 0
     errors: list[str] = []
 
+    ids = {item.youtube_video_id for item in request.videos}
+    existing_result = await db.execute(select(Video).where(Video.youtube_video_id.in_(ids)))
+    existing = {video.youtube_video_id: video for video in existing_result.scalars().all()}
+
+    channel_ids = {item.channel_youtube_id for item in request.videos if item.channel_youtube_id}
+    subscriptions: dict[str, str] = {}
+    if channel_ids:
+        result = await db.execute(
+            select(Channel.youtube_channel_id, Channel.id).where(Channel.youtube_channel_id.in_(channel_ids))
+        )
+        subscriptions = {row[0]: row[1] for row in result.all()}
+
+    seen: set[str] = set()
     for video_data in request.videos:
-        try:
-            # Check if video already exists
-            existing = await db.execute(
-                select(Video).where(
-                    Video.youtube_video_id == video_data.youtube_video_id
-                )
-            )
-            existing_video = existing.scalar_one_or_none()
+        video_id = video_data.youtube_video_id
+        if video_id in seen:
+            skipped += 1
+            continue
+        seen.add(video_id)
 
-            if existing_video:
-                # If video exists but not saved, mark it as saved
-                if existing_video.status != "saved":
-                    existing_video.status = "saved"
-                    existing_video.saved_at = video_data.saved_at or datetime.now(timezone.utc)
-                    imported += 1
-                else:
-                    skipped += 1
-                continue
+        existing_video = existing.get(video_id)
+        if existing_video:
+            # If video exists but not saved, mark it as saved
+            if existing_video.status != "saved":
+                existing_video.status = "saved"
+                existing_video.saved_at = video_data.saved_at or now
+                existing_video.discarded_at = None
+                imported += 1
+            else:
+                skipped += 1
+            continue
 
-            # Find or create channel association using export data
-            channel_id = None
-            if video_data.channel_youtube_id:
-                channel_result = await db.execute(
-                    select(Channel).where(
-                        Channel.youtube_channel_id == video_data.channel_youtube_id
-                    )
-                )
-                channel = channel_result.scalar_one_or_none()
-
-                if not channel:
-                    # Channel doesn't exist, create it by fetching from YouTube
-                    try:
-                        # Fetch full channel info from YouTube
-                        timeout = await get_http_timeout(db)
-                        channel_info = await fetch_channel_info(video_data.channel_youtube_id, timeout=timeout)
-                        if channel_info:
-                            # Use channel_url from export if available, otherwise generate it
-                            channel_url = video_data.channel_url or get_channel_url(video_data.channel_youtube_id)
-
-                            channel = Channel(
-                                youtube_channel_id=video_data.channel_youtube_id,
-                                name=channel_info.name,
-                                rss_url=get_rss_url(video_data.channel_youtube_id),
-                                youtube_url=channel_url,
-                                thumbnail_url=channel_info.thumbnail_url,
-                                last_checked=datetime.now(timezone.utc),
-                            )
-                            db.add(channel)
-                            await db.flush()
-                    except Exception as e:
-                        # If channel creation fails, continue without channel association
-                        logger.warning(
-                            f"Failed to create channel for import (channel_id={video_data.channel_youtube_id}): {str(e)}"
-                        )
-
-                if channel:
-                    channel_id = channel.id
-
-            # Use data from export (avoids unnecessary API calls)
-            # Generate thumbnail URL from video ID
-            thumbnail_url = f"https://i.ytimg.com/vi/{video_data.youtube_video_id}/hqdefault.jpg"
-
-            # Create new video as saved using export data
-            # Include embedded channel info for Issue #14
-            # is_short defaults to False for imported videos (Issue #8)
-            new_video = Video(
-                youtube_video_id=video_data.youtube_video_id,
-                channel_id=channel_id,
-                channel_youtube_id=video_data.channel_youtube_id,  # Add embedded channel info
-                channel_name=video_data.channel_name,  # Add embedded channel info
-                channel_thumbnail_url=None,  # Can be fetched separately if needed
-                title=video_data.title,
-                description="",  # Not included in export
-                thumbnail_url=thumbnail_url,
-                video_url=video_data.video_url,
-                published_at=video_data.published_at or datetime.now(timezone.utc),
-                status="saved",
-                saved_at=video_data.saved_at or datetime.now(timezone.utc),
-                is_short=False,  # Issue #8: Default to False, can be detected later
-            )
-            db.add(new_video)
-            await db.flush()
-            imported += 1
-
-        except Exception as e:
-            errors.append(f"Error importing video {video_data.youtube_video_id}: {str(e)}")
+        # is_short defaults to False for imported videos (Issue #8); it can be detected later
+        db.add(Video(
+            youtube_video_id=video_id,
+            channel_id=subscriptions.get(video_data.channel_youtube_id),
+            channel_youtube_id=video_data.channel_youtube_id,
+            channel_name=video_data.channel_name,
+            channel_thumbnail_url=None,
+            title=video_data.title,
+            description="",  # Not included in export
+            thumbnail_url=f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg",
+            video_url=video_data.video_url,
+            published_at=video_data.published_at or now,
+            status="saved",
+            saved_at=video_data.saved_at or now,
+            is_short=False,
+        ))
+        imported += 1
 
     await db.commit()
 
     return VideoImportResult(
-        total=total,
+        total=len(request.videos),
         imported=imported,
         skipped=skipped,
         errors=errors,
