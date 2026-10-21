@@ -12,7 +12,7 @@ import { Button } from '../components/common/Button';
 import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { Modal } from '../components/common/Modal';
 import { openPlaylist } from '../utils/playlist';
-import { PageHeader, ToolbarDivider } from '../components/layout/PageHeader';
+import { PageHeader } from '../components/layout/PageHeader';
 import type { Video } from '../types';
 import { safeExternalUrl } from '../utils/safeUrl';
 
@@ -40,6 +40,7 @@ function QuickPlayPanel({
   isLoading,
   emptyMessage,
   itemName,
+  onPlay,
   onRemove,
   isRemoving,
   isRemovalDisabled,
@@ -50,6 +51,7 @@ function QuickPlayPanel({
   isLoading: boolean;
   emptyMessage: string;
   itemName: 'Video' | 'Short';
+  onPlay: () => void;
   onRemove: () => void;
   isRemoving: boolean;
   isRemovalDisabled: boolean;
@@ -58,15 +60,24 @@ function QuickPlayPanel({
 
   return (
     <div className="bg-bg-secondary rounded-xl border border-border flex flex-col">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-4 py-3 border-b border-border">
-        <div className="flex items-center gap-2">
-          <Icon className="w-5 h-5 text-accent-red" />
-          <h2 className="font-semibold text-text-primary">{title}</h2>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-medium text-text-secondary bg-bg-tertiary px-2.5 py-1 rounded-full">
+      <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b border-border">
+        <div className="flex items-center gap-3">
+          <Icon className="w-4 h-4 text-text-tertiary" />
+          <h2 className="font-medium text-text-primary">{title}</h2>
+          <span className="text-xs font-medium text-text-secondary bg-bg-tertiary px-2 py-0.5 rounded-full tabular-nums">
             {videos.length}
           </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="primary"
+            size="sm"
+            onClick={onPlay}
+            disabled={isLoading || videos.length === 0}
+          >
+            <PlayIcon className="w-4 h-4 mr-1.5" />
+            Play {itemLabel}
+          </Button>
           <Button
             variant="danger"
             size="sm"
@@ -75,12 +86,12 @@ function QuickPlayPanel({
             isLoading={isRemoving}
           >
             {!isRemoving && <TrashIcon className="w-4 h-4 mr-1.5" />}
-            Remove {videos.length} {itemLabel}
+            Remove {videos.length}
           </Button>
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(100vh-320px)] p-2">
+      <div className="flex-1 min-h-0 overflow-y-auto max-h-[calc(100vh-220px)] p-2">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3">
             <LoadingSpinner size="md" />
@@ -151,12 +162,6 @@ export function QuickPlay() {
   const handlePlayShorts = () => {
     if (!shortVideos.length) return;
     openPlaylist(shortVideos);
-  };
-
-  const handlePlayAll = () => {
-    const all = [...videos, ...shortVideos];
-    if (!all.length) return;
-    openPlaylist(all);
   };
 
   const refetch = () => {
@@ -247,34 +252,6 @@ export function QuickPlay() {
             <ArrowPathIcon className={`w-4 h-4 mr-1.5 ${isLoading ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
-          <ToolbarDivider />
-          <Button
-            variant="primary"
-            onClick={handlePlayVideos}
-            disabled={!videos.length}
-            size="sm"
-          >
-            <FilmIcon className="w-4 h-4 mr-1.5" />
-            Play Videos
-          </Button>
-          <Button
-            variant="primary"
-            onClick={handlePlayShorts}
-            disabled={!shortVideos.length}
-            size="sm"
-          >
-            <BoltIcon className="w-4 h-4 mr-1.5" />
-            Play Shorts
-          </Button>
-          <Button
-            variant="success"
-            onClick={handlePlayAll}
-            disabled={!videos.length && !shortVideos.length}
-            size="sm"
-          >
-            <PlayIcon className="w-4 h-4 mr-1.5" />
-            Play All
-          </Button>
           </>
         }
       />
@@ -288,6 +265,7 @@ export function QuickPlay() {
           isLoading={regular.isLoading}
           emptyMessage="No saved videos found. Save videos from your inbox to see them here."
           itemName="Video"
+          onPlay={handlePlayVideos}
           onRemove={() => openRemovalModal('regular', 'Video', videos)}
           isRemoving={bulkDiscard.isPending && removalTarget?.section === 'regular'}
           isRemovalDisabled={bulkDiscard.isPending}
@@ -299,6 +277,7 @@ export function QuickPlay() {
           isLoading={shorts.isLoading}
           emptyMessage="No saved shorts found. Save shorts from your inbox to see them here."
           itemName="Short"
+          onPlay={handlePlayShorts}
           onRemove={() => openRemovalModal('shorts', 'Short', shortVideos)}
           isRemoving={bulkDiscard.isPending && removalTarget?.section === 'shorts'}
           isRemovalDisabled={bulkDiscard.isPending}

@@ -23,6 +23,13 @@ The app is used equally on desktop and phone (PWA), and native mobile apps (sepa
 13. **Inbox empty state** always says "Add some channels", even when the user has channels and is simply caught up.
 14. **Channel card "online" green dot** means nothing.
 15. **Triage speed:** no keyboard shortcuts (e.g. `s` save, `d` discard, `j`/`k` move) and no optimistic removal.
+16. **QuickPlay selective remove.** Today the only options are removing the whole batch of 50 or going to Saved to remove a few. Proposed design (requested 2026-10-20, not yet approved for build):
+    - A **Select** button in each panel header (videos and Shorts select independently).
+    - In selection mode, rows show checkboxes and a click toggles the row instead of opening YouTube; shift-click selects a range; on phones, drag along the checkboxes (reuse `useTouchDragSelect` from Saved).
+    - The panel header shows "N selected", Select all, Clear, **Remove selected** and Cancel; Play and Remove 50 are hidden while selecting.
+    - Remove confirms, moves the items to Recently Deleted (`bulkDiscard`), reloads that panel so the next oldest items fill in, and leaves selection mode.
+    - Frontend only (`pages/QuickPlay.tsx`, possibly the touch-select hook); no API change.
+    - Open question: also offer **Play selected**?
 
 ## Done in the 2026-10-20 visual refresh
 
@@ -43,3 +50,4 @@ Still open, seen while testing: the Saved channel filter renders duplicate React
 - **C. Mobile pass:** items 10, 11.
 - **D. Triage speed:** item 15.
 - **E. Unified Add:** item 9.
+- **F. QuickPlay selective remove:** item 16.
