@@ -79,6 +79,8 @@ AUTH_PASSWORD_HASH=<hash from script>
 
 Sessions last 14 days by default (configurable via `JWT_EXPIRE_HOURS`).
 
+After 10 failed logins from one IP address within 15 minutes, further attempts are refused for the rest of that window. Behind a reverse proxy, every client may appear as the proxy's IP, so a lockout then applies to everyone until it expires.
+
 ### API Key Access
 
 For programmatic access to protected endpoints, generate an API key:

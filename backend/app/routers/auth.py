@@ -1,10 +1,13 @@
 """
 Authentication router for Issue #41: Optional Authentication
 """
-from fastapi import APIRouter, HTTPException, status
-from pydantic import BaseModel
+import asyncio
+import math
 
-from ..auth import authenticate_user, create_access_token, verify_token
+from fastapi import APIRouter, HTTPException, Request, status
+from pydantic import BaseModel, Field
+
+from ..auth import authenticate_user, create_access_token, login_limiter, verify_token
 from ..config import settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -17,8 +20,8 @@ class AuthStatusResponse(BaseModel):
 
 class LoginRequest(BaseModel):
     """Request body for login."""
-    username: str
-    password: str
+    username: str = Field(max_length=256)
+    password: str = Field(max_length=1024)
 
 
 class LoginResponse(BaseModel):
@@ -52,7 +55,7 @@ async def get_auth_status():
 
 
 @router.post("/login", response_model=LoginResponse)
-async def login(request: LoginRequest):
+async def login(request: LoginRequest, http_request: Request):
     """
     Authenticate with username and password.
     
@@ -68,13 +71,25 @@ async def login(request: LoginRequest):
     Raises:
         HTTPException: 401 if credentials are invalid
     """
-    if not authenticate_user(request.username, request.password):
+    key = http_request.client.host if http_request.client else "unknown"
+    retry_after = login_limiter.retry_after(key)
+    if retry_after > 0:
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many failed login attempts. Try again later.",
+            headers={"Retry-After": str(math.ceil(retry_after))},
+        )
+
+    # PBKDF2 is CPU-heavy; keep it off the event loop
+    if not await asyncio.to_thread(authenticate_user, request.username, request.password):
+        login_limiter.record_failure(key)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
+    login_limiter.reset(key)
     token = create_access_token()
     return LoginResponse(token=token)
 

@@ -9,6 +9,8 @@ from typing import Optional
 import base64
 import hashlib
 import secrets
+import time
+from typing import Callable
 
 import jwt
 from fastapi import Depends, Header, HTTPException, status
@@ -150,7 +152,8 @@ async def require_auth(
 
     # Check for API key first (programmatic access)
     if settings.api_key and x_api_key:
-        if secrets.compare_digest(x_api_key, settings.api_key):
+        # Compare bytes: compare_digest raises on non-ASCII str input
+        if secrets.compare_digest(x_api_key.encode(), settings.api_key.encode()):
             return
 
     # Check for JWT token (browser session access)
@@ -164,21 +167,73 @@ async def require_auth(
     )
 
 
+class LoginRateLimiter:
+    """
+    In-memory limiter for failed logins, keyed by client IP.
+
+    A key is blocked once it has max_failures failures within window_seconds.
+    Behind a reverse proxy all clients may share one IP, so a lockout then
+    applies to everyone until the window passes.
+    """
+
+    def __init__(
+        self,
+        max_failures: int = 10,
+        window_seconds: float = 900.0,
+        clock: Callable[[], float] = time.monotonic,
+    ):
+        self.max_failures = max_failures
+        self.window_seconds = window_seconds
+        self._clock = clock
+        self._failures: dict[str, list[float]] = {}
+
+    def _recent(self, key: str) -> list[float]:
+        cutoff = self._clock() - self.window_seconds
+        recent = [t for t in self._failures.get(key, []) if t > cutoff]
+        if recent:
+            self._failures[key] = recent
+        else:
+            self._failures.pop(key, None)
+        return recent
+
+    def retry_after(self, key: str) -> float:
+        """Seconds until key may try again (0.0 when not blocked)."""
+        recent = self._recent(key)
+        if len(recent) < self.max_failures:
+            return 0.0
+        return max(0.0, recent[0] + self.window_seconds - self._clock())
+
+    def record_failure(self, key: str) -> None:
+        self._recent(key)
+        self._failures.setdefault(key, []).append(self._clock())
+
+    def reset(self, key: str) -> None:
+        self._failures.pop(key, None)
+
+    def clear(self) -> None:
+        self._failures.clear()
+
+
+login_limiter = LoginRateLimiter()
+
+
 def authenticate_user(username: str, password: str) -> bool:
     """
     Authenticate a user with username and password.
-    
+
+    Always checks both the username (constant-time) and the password, so timing
+    doesn't reveal whether the username was right.
+
     Args:
         username: The username to authenticate
         password: The plain text password
-        
+
     Returns:
         True if credentials are valid, False otherwise
     """
     if not settings.auth_enabled:
         return True
-    
-    if username != settings.auth_username:
-        return False
-    
-    return verify_password(password, settings.auth_password_hash)
+
+    user_ok = secrets.compare_digest(username.encode(), settings.auth_username.encode())
+    password_ok = verify_password(password, settings.auth_password_hash)
+    return user_ok and password_ok
