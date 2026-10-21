@@ -130,25 +130,25 @@ async def run_manual_backup(
     """Trigger a manual backup."""
     success, filenames, error = await BackupService.create_backup(db, format=request.format)
 
-    # Clean up old backups based on retention
+    # Clean up old backups based on retention (only after a successful backup)
     if success and filenames:
         result = await db.execute(select(Setting).where(Setting.id == "1"))
         settings = result.scalar_one_or_none()
         if settings:
             await BackupService.cleanup_old_backups(settings.backup_retention_days)
 
-        # Update status on success
-        from datetime import datetime, timezone
-        await db.execute(
-            update(Setting)
-            .where(Setting.id == "1")
-            .values(
-                last_backup_at=datetime.now(timezone.utc),
-                last_backup_status='success' if success else 'failed',
-                last_backup_error=error
-            )
+    # Record the outcome, including failures
+    from datetime import datetime, timezone
+    await db.execute(
+        update(Setting)
+        .where(Setting.id == "1")
+        .values(
+            last_backup_at=datetime.now(timezone.utc),
+            last_backup_status='success' if success else 'failed',
+            last_backup_error=error
         )
-        await db.commit()
+    )
+    await db.commit()
 
     return ManualBackupResponse(
         success=success,

@@ -4,7 +4,6 @@ Backup service for scheduled and manual backups.
 Issue #12: Scheduled Backups
 """
 
-import os
 import shutil
 import json
 import gzip
@@ -13,6 +12,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 from typing import Optional, Tuple, List
+from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.channel import Channel
@@ -21,8 +21,16 @@ from ..config import settings as app_settings
 
 logger = logging.getLogger(__name__)
 
-# Backup directory - stored in Docker volume
-BACKUP_DIR = Path("/app/data/backups")
+
+
+def get_database_path() -> Path:
+    """Path of the SQLite database file, taken from DATABASE_URL (relative to the working directory)."""
+    return Path(make_url(app_settings.database_url).database)
+
+
+def get_backup_dir() -> Path:
+    """Backups live in a 'backups' directory next to the database file."""
+    return get_database_path().parent / "backups"
 
 
 class BackupService:
@@ -31,7 +39,7 @@ class BackupService:
     @staticmethod
     def ensure_backup_dir():
         """Ensure backup directory exists."""
-        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
+        get_backup_dir().mkdir(parents=True, exist_ok=True)
 
     @staticmethod
     def get_backup_filename(format: str) -> str:
@@ -54,19 +62,10 @@ class BackupService:
         cls = BackupService
         cls.ensure_backup_dir()
         filename = cls.get_backup_filename('json')
-        filepath = BACKUP_DIR / filename
+        filepath = get_backup_dir() / filename
 
         try:
-            # Get database path
-            db_path = os.environ.get('DATABASE_PATH', './data/youtube-watcher.db')
-            if db_path.startswith('./'):
-                source_path = Path('/app') / db_path[2:]
-            else:
-                source_path = Path(db_path)
-
-            if not source_path.exists():
-                source_path = Path('/app/data/youtube-watcher.db')
-
+            source_path = get_database_path()
             if not source_path.exists():
                 return False, filename, f"Database file not found: {source_path}"
 
@@ -153,32 +152,33 @@ class BackupService:
     @staticmethod
     def _create_database_backup_sync() -> Tuple[bool, str, Optional[str]]:
         """
-        Synchronous helper for creating gzipped database backup.
+        Synchronous helper for creating a gzipped database backup.
+
+        Uses SQLite's online backup API so the copy is consistent even while the
+        app is writing, then gzips it.
         """
+        import sqlite3
+
         cls = BackupService
         cls.ensure_backup_dir()
         filename = cls.get_backup_filename('database')
-        filepath = BACKUP_DIR / filename
+        filepath = get_backup_dir() / filename
+        tmp_path = get_backup_dir() / f".tmp_{filename[:-3]}"
 
         try:
-            # Get database path from environment
-            db_path = os.environ.get('DATABASE_PATH', './data/youtube-watcher.db')
-
-            # Handle relative path
-            if db_path.startswith('./'):
-                source_path = Path('/app') / db_path[2:]
-            else:
-                source_path = Path(db_path)
-
-            if not source_path.exists():
-                # Try alternative location
-                source_path = Path('/app/data/youtube-watcher.db')
-
+            source_path = get_database_path()
             if not source_path.exists():
                 return False, filename, f"Database file not found: {source_path}"
 
-            # Read source file and write compressed
-            with open(source_path, 'rb') as f_in:
+            src = sqlite3.connect(source_path)
+            dst = sqlite3.connect(tmp_path)
+            try:
+                src.backup(dst)
+            finally:
+                dst.close()
+                src.close()
+
+            with open(tmp_path, 'rb') as f_in:
                 with gzip.open(filepath, 'wb') as f_out:
                     shutil.copyfileobj(f_in, f_out)
 
@@ -189,6 +189,8 @@ class BackupService:
             error_msg = f"Failed to create database backup: {str(e)}"
             logger.error(error_msg)
             return False, filename, error_msg
+        finally:
+            tmp_path.unlink(missing_ok=True)
 
     @classmethod
     async def create_database_backup(cls) -> Tuple[bool, str, Optional[str]]:
@@ -249,7 +251,7 @@ class BackupService:
         removed_count = 0
 
         # List all backup files first (synchronous)
-        all_files = list(BACKUP_DIR.iterdir())
+        all_files = list(get_backup_dir().iterdir())
 
         for backup_file in all_files:
             if backup_file.is_file() and backup_file.name.startswith('backup_'):
@@ -282,7 +284,7 @@ class BackupService:
         cls.ensure_backup_dir()
         backups = []
 
-        for backup_file in sorted(BACKUP_DIR.iterdir(), reverse=True):
+        for backup_file in sorted(get_backup_dir().iterdir(), reverse=True):
             if backup_file.is_file() and backup_file.name.startswith('backup_'):
                 stat = backup_file.stat()
 
