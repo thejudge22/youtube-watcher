@@ -1,11 +1,12 @@
-FROM python:3.12-slim
+FROM python:3.13-slim
 WORKDIR /app
 
 # Install sqlite3 and upgrade pip
 RUN apt-get update && apt-get install -y sqlite3 && pip install --upgrade pip
 
 # Copy both requirement files for development
-COPY backend/requirements.txt backend/requirements-dev.txt ./
+COPY backend/requirements.lock backend/requirements.txt backend/requirements-dev.txt ./
 
 # Install development dependencies (includes production deps via -r)
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 RUN pip install --no-cache-dir -r requirements-dev.txt pip-audit

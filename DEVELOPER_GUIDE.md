@@ -167,6 +167,21 @@ docker compose -f docker-compose-local.yml up
 ```
 The app is served at http://localhost:38000. Add `--build` to rebuild the image after code changes.
 
+### Updating Dependencies
+Backend dependencies are declared in `backend/requirements.txt` and pinned, with hashes, in `backend/requirements.lock`. Both Dockerfiles install from the lock file.
+1. Edit `backend/requirements.txt`.
+2. Regenerate the lock:
+   ```bash
+   cd backend
+   uv pip compile requirements.txt --universal --python-version 3.13 --generate-hashes -o requirements.lock
+   ```
+3. Reinstall (two commands, because pip requires hashes for every requirement once one line has them):
+   ```bash
+   .venv/bin/pip install --require-hashes -r requirements.lock
+   .venv/bin/pip install -r requirements-dev.txt pip-audit
+   ```
+4. Run the tests and `pip-audit --disable-pip --require-hashes -r requirements.lock`, then commit both files.
+
 ### Testing Suite
 Backend tests use `pytest` + `pytest-asyncio` + `pytest-mock`.
 - **Database isolation**: Tests run against an in-memory SQLite database using `StaticPool` to maintain database state across connections while preventing file-locking conflicts.

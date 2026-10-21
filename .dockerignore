@@ -42,3 +42,13 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# Local environments and data must never be baked into an image
+**/.venv/
+backend/data/
+data/
+**/.env
+**/.env.*
+**/.claude/
+**/.pytest_cache/
+**/.DS_Store

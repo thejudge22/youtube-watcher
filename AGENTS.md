@@ -71,8 +71,13 @@ docker compose logs -f
 # Stop services
 docker compose down
 
-# Run backend tests
-cd backend && pytest
+# Backend dev environment (once)
+cd backend && python3 -m venv .venv
+.venv/bin/pip install --require-hashes -r requirements.lock
+.venv/bin/pip install -r requirements-dev.txt pip-audit
+
+# Run backend tests (offline; add network access and drop -m to include integration tests)
+.venv/bin/python -m pytest -m "not integration"
 
 # API Docs (both modes)
 # http://localhost:8000/docs
