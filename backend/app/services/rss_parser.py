@@ -11,7 +11,7 @@ from typing import List, Optional
 from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
 
-from .youtube_utils import get_rss_url, get_video_url, extract_channel_id, HTTP_HEADERS, YOUTUBE_COOKIES
+from .youtube_utils import get_rss_url, get_video_url, extract_channel_id, make_youtube_client
 from .shorts_detector import is_short_from_video_info
 
 
@@ -57,12 +57,7 @@ async def fetch_channel_info(channel_id: str, timeout: float = 10.0) -> ChannelI
     """
     rss_url = get_rss_url(channel_id)
     
-    async with httpx.AsyncClient(
-        timeout=timeout,
-        follow_redirects=True,
-        headers=HTTP_HEADERS,
-        cookies=YOUTUBE_COOKIES
-    ) as client:
+    async with make_youtube_client(timeout) as client:
         response = await client.get(rss_url)
         response.raise_for_status()
         
@@ -107,7 +102,9 @@ async def fetch_channel_info(channel_id: str, timeout: float = 10.0) -> ChannelI
     wait=wait_exponential(multiplier=1, min=1, max=10),
     retry=retry_if_exception_type((httpx.HTTPError, httpx.TimeoutException)),
 )
-async def fetch_videos(rss_url: str, limit: int = 15, timeout: float = 10.0) -> List[VideoInfo]:
+async def fetch_videos(
+    rss_url: str, limit: int = 15, timeout: float = 10.0, client: Optional[httpx.AsyncClient] = None
+) -> List[VideoInfo]:
     """
     Fetch videos from a YouTube RSS feed.
 
@@ -123,107 +120,109 @@ async def fetch_videos(rss_url: str, limit: int = 15, timeout: float = 10.0) -> 
     Raises:
         ValueError: If RSS feed cannot be parsed
     """
-    async with httpx.AsyncClient(
-        timeout=timeout,
-        follow_redirects=True,
-        headers=HTTP_HEADERS,
-        cookies=YOUTUBE_COOKIES
-    ) as client:
-        response = await client.get(rss_url)
-        response.raise_for_status()
-        
-        feed = feedparser.parse(response.content)
-        
-        if not feed.entries:
-            return []
-        
-        videos = []
-        
-        # Extract channel ID from the feed URL or from entries
-        channel_id = None
-        channel_name = ''
-        
-        # Try to get channel info from feed metadata
-        if 'yt_channel_id' in feed.feed:
-            channel_id = feed.feed['yt_channel_id']
-        channel_name = feed.feed.get('title', '')
-        
-        # Limit the number of entries
-        entries = feed.entries[:limit]
-        
-        for entry in entries:
-            # Extract video ID
-            video_id = None
-            if 'yt_videoid' in entry:
-                video_id = entry['yt_videoid']
-            else:
-                # Fallback: try to extract from link
-                link = entry.get('link', '')
-                if 'watch?v=' in link:
-                    video_id = link.split('watch?v=')[-1].split('&')[0]
-            
-            if not video_id:
-                continue
-            
-            # Extract channel ID from entry if not found in feed
-            if not channel_id and 'yt_channelid' in entry:
-                channel_id = entry['yt_channelid']
-            
-            # Extract title
-            title = entry.get('title', '')
-            
-            # Extract description
-            description = None
-            if 'media_group' in entry:
-                media_group = entry.get('media_group', {})
-                description = media_group.get('media_description', '')
-            elif 'description' in entry:
-                description = entry.get('description', '')
-            
-            # Extract thumbnail
-            thumbnail_url = None
-            if 'media_thumbnail' in entry:
-                thumbnails = entry.get('media_thumbnail', [])
+    if client is None:
+        async with make_youtube_client(timeout) as own_client:
+            return await _fetch_videos_with(own_client, rss_url, limit)
+    return await _fetch_videos_with(client, rss_url, limit)
+
+
+async def _fetch_videos_with(client: httpx.AsyncClient, rss_url: str, limit: int) -> List[VideoInfo]:
+    """Fetch and parse a feed using an already-open client (never closes it)."""
+    response = await client.get(rss_url)
+    response.raise_for_status()
+
+    feed = feedparser.parse(response.content)
+
+    if not feed.entries:
+        return []
+
+    videos = []
+
+    # Extract channel ID from the feed URL or from entries
+    channel_id = None
+    channel_name = ''
+
+    # Try to get channel info from feed metadata
+    if 'yt_channel_id' in feed.feed:
+        channel_id = feed.feed['yt_channel_id']
+    channel_name = feed.feed.get('title', '')
+
+    # Limit the number of entries
+    entries = feed.entries[:limit]
+
+    for entry in entries:
+        # Extract video ID
+        video_id = None
+        if 'yt_videoid' in entry:
+            video_id = entry['yt_videoid']
+        else:
+            # Fallback: try to extract from link
+            link = entry.get('link', '')
+            if 'watch?v=' in link:
+                video_id = link.split('watch?v=')[-1].split('&')[0]
+
+        if not video_id:
+            continue
+
+        # Extract channel ID from entry if not found in feed
+        if not channel_id and 'yt_channelid' in entry:
+            channel_id = entry['yt_channelid']
+
+        # Extract title
+        title = entry.get('title', '')
+
+        # Extract description
+        description = None
+        if 'media_group' in entry:
+            media_group = entry.get('media_group', {})
+            description = media_group.get('media_description', '')
+        elif 'description' in entry:
+            description = entry.get('description', '')
+
+        # Extract thumbnail
+        thumbnail_url = None
+        if 'media_thumbnail' in entry:
+            thumbnails = entry.get('media_thumbnail', [])
+            if thumbnails and isinstance(thumbnails, list) and len(thumbnails) > 0:
+                thumbnail_url = thumbnails[0].get('url')
+        elif 'media_group' in entry:
+            media_group = entry.get('media_group', {})
+            if 'media_thumbnail' in media_group:
+                thumbnails = media_group.get('media_thumbnail', [])
                 if thumbnails and isinstance(thumbnails, list) and len(thumbnails) > 0:
                     thumbnail_url = thumbnails[0].get('url')
-            elif 'media_group' in entry:
-                media_group = entry.get('media_group', {})
-                if 'media_thumbnail' in media_group:
-                    thumbnails = media_group.get('media_thumbnail', [])
-                    if thumbnails and isinstance(thumbnails, list) and len(thumbnails) > 0:
-                        thumbnail_url = thumbnails[0].get('url')
-            
-            # Fallback to default thumbnail URL if not found
-            if not thumbnail_url and video_id:
-                thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
-            
-            # Parse published date
-            published_at = None
-            if 'published_parsed' in entry and entry['published_parsed']:
-                time_struct = entry['published_parsed']
-                published_at = datetime(*time_struct[:6])
-            elif 'updated_parsed' in entry and entry['updated_parsed']:
-                time_struct = entry['updated_parsed']
-                published_at = datetime(*time_struct[:6])
-            else:
-                # Use current time as fallback
-                published_at = datetime.now(timezone.utc)
-            
-            # Build video URL
-            video_url = get_video_url(video_id)
-            
-            videos.append(VideoInfo(
-                video_id=video_id,
-                channel_id=channel_id or '',
-                channel_name=channel_name or '',
-                title=title,
-                description=description,
-                thumbnail_url=thumbnail_url,
-                video_url=video_url,
-                published_at=published_at
-            ))
-        
-        return videos
+
+        # Fallback to default thumbnail URL if not found
+        if not thumbnail_url and video_id:
+            thumbnail_url = f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg"
+
+        # Parse published date
+        published_at = None
+        if 'published_parsed' in entry and entry['published_parsed']:
+            time_struct = entry['published_parsed']
+            published_at = datetime(*time_struct[:6])
+        elif 'updated_parsed' in entry and entry['updated_parsed']:
+            time_struct = entry['updated_parsed']
+            published_at = datetime(*time_struct[:6])
+        else:
+            # Use current time as fallback
+            published_at = datetime.now(timezone.utc)
+
+        # Build video URL
+        video_url = get_video_url(video_id)
+
+        videos.append(VideoInfo(
+            video_id=video_id,
+            channel_id=channel_id or '',
+            channel_name=channel_name or '',
+            title=title,
+            description=description,
+            thumbnail_url=thumbnail_url,
+            video_url=video_url,
+            published_at=published_at
+        ))
+
+    return videos
 
 
 def _extract_info(url: str, opts: dict) -> dict:

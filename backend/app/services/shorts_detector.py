@@ -16,7 +16,7 @@ from typing import Optional
 
 import httpx
 
-from .youtube_utils import HTTP_HEADERS, YOUTUBE_COOKIES
+from .youtube_utils import make_youtube_client
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,8 @@ def is_short_from_video_info(video_info: dict) -> bool:
 
 async def detect_short_http(
     video_id: str,
-    timeout: float = 5.0
+    timeout: float = 5.0,
+    client: Optional[httpx.AsyncClient] = None,
 ) -> Optional[bool]:
     """
     Detect if a single video is a Short via HTTP status check.
@@ -87,30 +88,32 @@ async def detect_short_http(
     Args:
         video_id: YouTube video ID (11 chars)
         timeout: Request timeout in seconds
+        client: Optional open client (must not follow redirects); one is created if omitted
 
     Returns:
         True = Short, False = not a Short, None = unavailable/error
     """
+    if client is None:
+        async with make_youtube_client(timeout, follow_redirects=False) as own_client:
+            return await _check_short(own_client, video_id)
+    return await _check_short(client, video_id)
+
+
+async def _check_short(client: httpx.AsyncClient, video_id: str) -> Optional[bool]:
+    """Run the /shorts/ status check with an already-open client."""
     url = get_shorts_url(video_id)
     try:
-        async with httpx.AsyncClient(
-            timeout=timeout,
-            follow_redirects=False,
-            headers=HTTP_HEADERS,
-            cookies=YOUTUBE_COOKIES
-        ) as client:
-            response = await client.get(url)
-
-            if response.status_code == 200:
-                return True
-            elif response.status_code in (303, 301, 302):
-                return False
-            elif response.status_code == 404:
-                logger.debug(f"Video {video_id} returned 404 (unavailable)")
-                return None
-            else:
-                logger.debug(f"Video {video_id} returned unexpected status {response.status_code}")
-                return None
+        response = await client.get(url)
+        if response.status_code == 200:
+            return True
+        elif response.status_code in (303, 301, 302):
+            return False
+        elif response.status_code == 404:
+            logger.debug(f"Video {video_id} returned 404 (unavailable)")
+            return None
+        else:
+            logger.debug(f"Video {video_id} returned unexpected status {response.status_code}")
+            return None
     except (httpx.TimeoutException, httpx.HTTPError) as e:
         logger.debug(f"HTTP check failed for {video_id}: {e}")
         return None
@@ -140,10 +143,12 @@ async def detect_shorts_batch_http(
 
     semaphore = asyncio.Semaphore(max_concurrent)
 
-    async def check_one(vid: str) -> tuple[str, Optional[bool]]:
-        async with semaphore:
-            result = await detect_short_http(vid, timeout=timeout)
-            return (vid, result)
+    async with make_youtube_client(timeout, follow_redirects=False) as client:
+        async def check_one(vid: str) -> tuple[str, Optional[bool]]:
+            async with semaphore:
+                result = await detect_short_http(vid, timeout=timeout, client=client)
+                return (vid, result)
 
-    results = await asyncio.gather(*[check_one(vid) for vid in video_ids])
+        results = await asyncio.gather(*[check_one(vid) for vid in video_ids])
+
     return {vid: result for vid, result in results}

@@ -24,6 +24,16 @@ YOUTUBE_COOKIES = {
 }
 
 
+def make_youtube_client(timeout: float, follow_redirects: bool = True) -> httpx.AsyncClient:
+    """Create an HTTP client configured for YouTube (browser headers + consent cookies)."""
+    return httpx.AsyncClient(
+        timeout=timeout,
+        follow_redirects=follow_redirects,
+        headers=HTTP_HEADERS,
+        cookies=YOUTUBE_COOKIES,
+    )
+
+
 async def extract_channel_id(url: str, timeout: float = 10.0) -> str:
     """
     Extract channel ID from various YouTube URL formats.
@@ -143,12 +153,7 @@ async def _fetch_channel_id_from_page(url: str, timeout: float = 10.0) -> str:
     Raises:
         ValueError: If channel ID cannot be found in the page
     """
-    async with httpx.AsyncClient(
-        timeout=timeout,
-        follow_redirects=True,
-        headers=HTTP_HEADERS,
-        cookies=YOUTUBE_COOKIES
-    ) as client:
+    async with make_youtube_client(timeout) as client:
         response = await client.get(url)
         response.raise_for_status()
         html = response.text

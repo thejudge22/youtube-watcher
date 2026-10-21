@@ -8,7 +8,9 @@ Issue #55: Added automatic Shorts detection during video imports.
 import asyncio
 import logging
 from datetime import datetime, timezone
-from typing import List, Tuple
+from typing import List, Optional, Tuple
+
+import httpx
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,6 +21,7 @@ from ..schemas.channel import RefreshSummary
 from .rss_parser import fetch_videos, VideoInfo
 from .settings_service import get_http_timeout, get_auto_detect_shorts
 from .shorts_detector import detect_shorts_batch_http
+from .youtube_utils import make_youtube_client
 
 logger = logging.getLogger(__name__)
 
@@ -117,14 +120,14 @@ async def process_new_videos(
 
 
 async def fetch_channel_videos(
-    channel: Channel, timeout: float
+    channel: Channel, timeout: float, client: Optional[httpx.AsyncClient] = None
 ) -> Tuple[Channel, List[VideoInfo] | None, str | None]:
     """
     Fetch videos for a channel. Returns (channel, videos_info, error).
     Error is None on success.
     """
     try:
-        videos_info = await fetch_videos(channel.rss_url, limit=50, timeout=timeout)
+        videos_info = await fetch_videos(channel.rss_url, limit=50, timeout=timeout, client=client)
         return (channel, videos_info, None)
     except Exception as e:
         return (channel, None, str(e))
@@ -153,13 +156,14 @@ async def refresh_all_channels(db: AsyncSession) -> RefreshSummary:
         # Fetch all RSS feeds in parallel with concurrency limit
         semaphore = asyncio.Semaphore(5)
 
-        async def fetch_with_semaphore(channel: Channel):
-            async with semaphore:
-                return await fetch_channel_videos(channel, timeout)
+        async with make_youtube_client(timeout) as client:
+            async def fetch_with_semaphore(channel: Channel):
+                async with semaphore:
+                    return await fetch_channel_videos(channel, timeout, client)
 
-        fetch_results = await asyncio.gather(
-            *[fetch_with_semaphore(channel) for channel in channels]
-        )
+            fetch_results = await asyncio.gather(
+                *[fetch_with_semaphore(channel) for channel in channels]
+            )
 
         channels_refreshed = 0
         all_new_ids: list[str] = []
