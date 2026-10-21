@@ -69,22 +69,18 @@ async def test_import_playlist_duplicate_videos(client, db_session, sample_video
 
 @pytest.mark.asyncio
 @pytest.mark.integration
-async def test_import_playlist_creates_channels(client, db_session):
-    """Test that channels are created when importing from playlist."""
+async def test_import_playlist_does_not_subscribe(client, db_session):
+    """Importing a playlist saves videos but never subscribes to their channels."""
     response = await client.post(
         "/api/import-export/import/playlist",
         json={"url": "https://www.youtube.com/playlist?list=PLSxDqWtr5iWGc1uDbQxAzRHygDAqbx5nc"}
     )
     assert response.status_code == 200
     result = response.json()
+    assert result["imported"] > 0
 
-    # Check that at least some videos were imported
-    if result["imported"] > 0:
-        # Verify channels were created in the database
-        from app.models.channel import Channel
-        from sqlalchemy import select
+    from app.models.channel import Channel
+    from sqlalchemy import select
 
-        channels_result = await db_session.execute(select(Channel))
-        channels = channels_result.scalars().all()
-        # At least one channel should exist
-        assert len(channels) > 0
+    channels_result = await db_session.execute(select(Channel))
+    assert channels_result.scalars().all() == []
