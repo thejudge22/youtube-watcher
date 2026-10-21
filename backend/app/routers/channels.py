@@ -216,6 +216,16 @@ async def delete_channel(
         .where(Video.channel_id == channel_id, Video.status == 'inbox')
         .values(status='discarded', discarded_at=now, saved_at=None)
     )
+    # Saved videos keep the channel's info after unlinking, even if their copies were empty
+    await db.execute(
+        update(Video)
+        .where(Video.channel_id == channel_id)
+        .values(
+            channel_youtube_id=func.coalesce(Video.channel_youtube_id, channel.youtube_channel_id),
+            channel_name=func.coalesce(Video.channel_name, channel.name),
+            channel_thumbnail_url=func.coalesce(Video.channel_thumbnail_url, channel.thumbnail_url),
+        )
+    )
     await db.execute(update(Video).where(Video.channel_id == channel_id).values(channel_id=None))
     await db.execute(delete(Channel).where(Channel.id == channel_id))
     await db.commit()

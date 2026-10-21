@@ -83,3 +83,11 @@ def test_token_survives_restart():
     token = create_access_token()
     app.auth._jwt_secret = None  # simulated restart; the secret file remains
     assert verify_token(token)
+
+
+def test_blank_secret_file_is_replaced(secret_file):
+    secret_file.parent.mkdir(parents=True)
+    secret_file.write_text("")
+    secret = get_jwt_secret()
+    assert secret
+    assert secret_file.read_text().strip() == secret

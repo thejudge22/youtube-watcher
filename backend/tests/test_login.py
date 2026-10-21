@@ -72,3 +72,11 @@ async def test_non_ascii_api_key_is_401(client, monkeypatch):
     monkeypatch.setattr(settings, "api_key", "abc")
     response = await client.get("/api/channels", headers=[(b"x-api-key", "é".encode("latin-1"))])
     assert response.status_code == 401
+
+
+async def test_parallel_wrong_logins_capped_at_limit(client, auth_on):
+    import asyncio
+    responses = await asyncio.gather(*[login(client, password="wrong") for _ in range(40)])
+    codes = [r.status_code for r in responses]
+    assert codes.count(401) <= 10
+    assert codes.count(429) >= 30

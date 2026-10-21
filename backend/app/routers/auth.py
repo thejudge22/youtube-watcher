@@ -90,9 +90,12 @@ async def login(request: LoginRequest, http_request: Request):
             headers={"Retry-After": str(math.ceil(retry_after))},
         )
 
+    # Count the attempt before checking it, so parallel requests can't all slip
+    # past the limit while their hashes are still running; cleared on success.
+    login_limiter.record_failure(key)
+
     # PBKDF2 is CPU-heavy; keep it off the event loop
     if not await asyncio.to_thread(authenticate_user, request.username, request.password):
-        login_limiter.record_failure(key)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid username or password",

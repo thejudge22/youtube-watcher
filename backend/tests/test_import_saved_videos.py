@@ -66,3 +66,9 @@ async def test_json_import_resaves_discarded(client, db_session):
 async def test_json_import_duplicate_items(client):
     data = (await client.post(ENDPOINT, json={"videos": [item(), item()]})).json()
     assert (data["imported"], data["skipped"], data["errors"]) == (1, 1, [])
+
+
+async def test_json_import_beyond_sqlite_variable_limit(client, db_session):
+    items = [item(youtube_video_id=f"{i:011d}") for i in range(40000)]
+    data = (await client.post(ENDPOINT, json={"videos": items})).json()
+    assert data["imported"] == 40000

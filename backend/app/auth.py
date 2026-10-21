@@ -116,17 +116,24 @@ def get_jwt_secret() -> str:
         return _jwt_secret
 
     path = JWT_SECRET_FILE
-    if path.exists() and path.read_text().strip():
-        _jwt_secret = path.read_text().strip()
-        return _jwt_secret
+    if path.exists():
+        stored = path.read_text().strip()
+        if stored:
+            _jwt_secret = stored
+            return _jwt_secret
+        # A blank file (e.g. a crash mid-write) would make every login fail; replace it
+        path.unlink(missing_ok=True)
 
     secret = secrets.token_urlsafe(32)
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
         fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     except FileExistsError:
-        # Another process created it first; use theirs
-        _jwt_secret = path.read_text().strip()
+        # Another process created it first; use theirs if it has been written
+        stored = path.read_text().strip()
+        if not stored:
+            raise RuntimeError(f"JWT secret file {path} is empty; delete it and restart")
+        _jwt_secret = stored
         return _jwt_secret
     with os.fdopen(fd, "w") as f:
         f.write(secret)

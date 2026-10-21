@@ -38,6 +38,14 @@ from ..services.video_import_service import import_videos_by_id
 
 router = APIRouter(prefix="/import-export", tags=["import-export"])
 
+# Keeps IN (...) lists well under SQLite's bound-variable limit
+LOOKUP_CHUNK_SIZE = 5000
+
+
+def _chunks(values: list, size: int = LOOKUP_CHUNK_SIZE):
+    for start in range(0, len(values), size):
+        yield values[start:start + size]
+
 logger = logging.getLogger(__name__)
 
 
@@ -220,17 +228,20 @@ async def import_videos(
     skipped = 0
     errors: list[str] = []
 
-    ids = {item.youtube_video_id for item in request.videos}
-    existing_result = await db.execute(select(Video).where(Video.youtube_video_id.in_(ids)))
-    existing = {video.youtube_video_id: video for video in existing_result.scalars().all()}
+    # Look up in chunks: SQLite allows at most 32,766 bound variables per statement
+    ids = list({item.youtube_video_id for item in request.videos})
+    existing: dict[str, Video] = {}
+    for chunk in _chunks(ids):
+        result = await db.execute(select(Video).where(Video.youtube_video_id.in_(chunk)))
+        existing.update({video.youtube_video_id: video for video in result.scalars().all()})
 
-    channel_ids = {item.channel_youtube_id for item in request.videos if item.channel_youtube_id}
+    channel_ids = list({item.channel_youtube_id for item in request.videos if item.channel_youtube_id})
     subscriptions: dict[str, str] = {}
-    if channel_ids:
+    for chunk in _chunks(channel_ids):
         result = await db.execute(
-            select(Channel.youtube_channel_id, Channel.id).where(Channel.youtube_channel_id.in_(channel_ids))
+            select(Channel.youtube_channel_id, Channel.id).where(Channel.youtube_channel_id.in_(chunk))
         )
-        subscriptions = {row[0]: row[1] for row in result.all()}
+        subscriptions.update({row[0]: row[1] for row in result.all()})
 
     seen: set[str] = set()
     for video_data in request.videos:

@@ -37,3 +37,19 @@ async def test_unsubscribe_keeps_saved_and_discards_inbox(client, db_session):
 def test_channel_relationship_never_cascades_deletes():
     cascade = Channel.videos.property.cascade
     assert not cascade.delete and not cascade.delete_orphan
+
+
+async def test_unsubscribe_backfills_missing_channel_info(client, db_session):
+    ch = make_channel(thumbnail_url="https://i.ytimg.com/c.jpg")
+    channel_id = ch.id
+    saved = make_video(status="saved", channel_id=channel_id, channel_youtube_id=None, channel_name=None)
+    saved_id = saved.id
+    db_session.add(ch)
+    db_session.add(saved)
+    await db_session.commit()
+
+    assert (await client.delete(f"/api/channels/{channel_id}")).status_code == 204
+
+    s = await reload(db_session, Video, saved_id)
+    assert (s.channel_name, s.channel_youtube_id, s.channel_thumbnail_url) == (
+        "Factory Channel", "UC-factory", "https://i.ytimg.com/c.jpg")
