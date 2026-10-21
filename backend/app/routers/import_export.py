@@ -25,6 +25,10 @@ from ..services.rss_parser import (
 )
 from ..services.youtube_utils import (
     extract_video_id,
+    get_channel_url,
+    get_video_url,
+    is_valid_channel_id,
+    is_valid_video_id,
     extract_playlist_id,
     get_rss_url,
 )
@@ -153,6 +157,9 @@ async def import_channels(
     errors: list[str] = []
 
     for channel_data in request.channels:
+        if not is_valid_channel_id(channel_data.youtube_channel_id):
+            errors.append(f"Invalid channel ID for {channel_data.name}: {channel_data.youtube_channel_id!r}")
+            continue
         try:
             # Check if channel already exists
             existing = await db.execute(
@@ -177,7 +184,7 @@ async def import_channels(
                 youtube_channel_id=channel_id,
                 name=channel_info.name,
                 rss_url=get_rss_url(channel_id),
-                youtube_url=channel_data.youtube_url,
+                youtube_url=get_channel_url(channel_id),  # never trust the file's URL
                 thumbnail_url=channel_info.thumbnail_url,
                 last_checked=datetime.now(timezone.utc),
             )
@@ -228,6 +235,9 @@ async def import_videos(
     seen: set[str] = set()
     for video_data in request.videos:
         video_id = video_data.youtube_video_id
+        if not is_valid_video_id(video_id):
+            errors.append(f"Invalid video ID: {video_id!r}")
+            continue
         if video_id in seen:
             skipped += 1
             continue
@@ -246,16 +256,19 @@ async def import_videos(
             continue
 
         # is_short defaults to False for imported videos (Issue #8); it can be detected later
+        channel_youtube_id = (
+            video_data.channel_youtube_id if is_valid_channel_id(video_data.channel_youtube_id) else None
+        )
         db.add(Video(
             youtube_video_id=video_id,
-            channel_id=subscriptions.get(video_data.channel_youtube_id),
-            channel_youtube_id=video_data.channel_youtube_id,
+            channel_id=subscriptions.get(channel_youtube_id),
+            channel_youtube_id=channel_youtube_id,
             channel_name=video_data.channel_name,
             channel_thumbnail_url=None,
             title=video_data.title,
             description="",  # Not included in export
             thumbnail_url=f"https://i.ytimg.com/vi/{video_id}/hqdefault.jpg",
-            video_url=video_data.video_url,
+            video_url=get_video_url(video_id),  # never trust the file's URL
             published_at=video_data.published_at or now,
             status="saved",
             saved_at=video_data.saved_at or now,

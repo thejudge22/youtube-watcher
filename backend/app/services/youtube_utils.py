@@ -24,6 +24,21 @@ YOUTUBE_COOKIES = {
 }
 
 
+# Shapes of YouTube IDs; used to validate imported data before building URLs from it
+VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+CHANNEL_ID_RE = re.compile(r"^UC[A-Za-z0-9_-]{22}$")
+
+
+def is_valid_video_id(value: Optional[str]) -> bool:
+    """True if value looks like a YouTube video ID (11 URL-safe characters)."""
+    return bool(value) and VIDEO_ID_RE.fullmatch(value) is not None
+
+
+def is_valid_channel_id(value: Optional[str]) -> bool:
+    """True if value looks like a YouTube channel ID (UC + 22 URL-safe characters)."""
+    return bool(value) and CHANNEL_ID_RE.fullmatch(value) is not None
+
+
 def make_youtube_client(timeout: float, follow_redirects: bool = True) -> httpx.AsyncClient:
     """Create an HTTP client configured for YouTube (browser headers + consent cookies)."""
     return httpx.AsyncClient(

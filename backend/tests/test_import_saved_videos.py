@@ -8,7 +8,7 @@ from sqlalchemy import select, func
 from app.models.channel import Channel
 from app.models.video import Video
 from app.services.youtube_utils import get_video_url
-from tests.factories import make_video
+from tests.factories import make_channel, make_video
 
 E = "e" * 11
 ENDPOINT = "/api/import-export/import/videos"
@@ -43,10 +43,14 @@ async def test_json_import_does_not_subscribe_or_fetch(client, db_session, no_ne
     assert (video.channel_id, video.channel_name) == (None, "Unsub Channel")
 
 
-async def test_json_import_links_existing_subscription(client, db_session, sample_channel):
-    sample_id = sample_channel.id
-    await client.post(ENDPOINT, json={"videos": [item(channel_youtube_id="UC-test123")]})
-    assert (await get_video(db_session, E)).channel_id == sample_id
+async def test_json_import_links_existing_subscription(client, db_session):
+    channel_youtube_id = "UC" + "s" * 22  # a real channel-ID shape (validated on import)
+    channel = make_channel(youtube_channel_id=channel_youtube_id)
+    channel_id = channel.id
+    db_session.add(channel)
+    await db_session.commit()
+    await client.post(ENDPOINT, json={"videos": [item(channel_youtube_id=channel_youtube_id)]})
+    assert (await get_video(db_session, E)).channel_id == channel_id
 
 
 async def test_json_import_resaves_discarded(client, db_session):
