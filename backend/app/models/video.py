@@ -5,6 +5,12 @@ from ..database import Base
 
 class Video(Base):
     __tablename__ = "videos"
+    # Composite indexes for the list queries (status filter + date ordering)
+    __table_args__ = (
+        Index("ix_videos_status_published_at", "status", "published_at"),
+        Index("ix_videos_status_saved_at", "status", "saved_at"),
+        Index("ix_videos_status_is_short_published_at", "status", "is_short", "published_at"),
+    )
 
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     # Index on youtube_video_id for efficient lookups by YouTube video ID
