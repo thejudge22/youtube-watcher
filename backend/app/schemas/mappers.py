@@ -3,6 +3,8 @@ Response mappers for converting database models to response schemas.
 """
 
 from ..models.video import Video
+from ..services.youtube_utils import get_channel_url
+from .import_export import VideoExport
 from .video import VideoResponse
 
 
@@ -42,4 +44,30 @@ def map_video_to_response(video: Video) -> VideoResponse:
         discarded_at=video.discarded_at,
         is_short=video.is_short,  # Issue #8: Include Shorts status
         is_short_detected_at=video.is_short_detected_at  # Issue #55
+    )
+
+
+def map_video_to_export(video: Video) -> VideoExport:
+    """
+    Convert a saved Video to its export form.
+
+    Channel info comes from the video's own copied fields, so videos from
+    unsubscribed channels keep it; the subscription is only a fallback.
+    """
+    channel_youtube_id = video.channel_youtube_id or (video.channel.youtube_channel_id if video.channel else None)
+    channel_name = video.channel_name or (video.channel.name if video.channel else None)
+    if video.channel:
+        channel_url = video.channel.youtube_url
+    else:
+        channel_url = get_channel_url(channel_youtube_id) if channel_youtube_id else None
+
+    return VideoExport(
+        youtube_video_id=video.youtube_video_id,
+        title=video.title,
+        video_url=video.video_url,
+        channel_youtube_id=channel_youtube_id,
+        channel_name=channel_name,
+        channel_url=channel_url,
+        saved_at=video.saved_at,
+        published_at=video.published_at,
     )

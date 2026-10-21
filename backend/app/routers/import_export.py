@@ -12,7 +12,6 @@ from ..models.channel import Channel
 from ..models.video import Video
 from ..schemas.import_export import (
     ChannelExport,
-    VideoExport,
     ExportData,
     ImportChannelsRequest,
     ImportVideosRequest,
@@ -32,6 +31,7 @@ from ..services.youtube_utils import (
     get_channel_url,
 )
 from ..services.settings_service import get_http_timeout
+from ..schemas.mappers import map_video_to_export
 
 router = APIRouter(prefix="/import-export", tags=["import-export"])
 
@@ -81,19 +81,7 @@ async def export_saved_videos(db: AsyncSession = Depends(get_db)):
     )
     videos = result.scalars().all()
 
-    video_exports = [
-        VideoExport(
-            youtube_video_id=v.youtube_video_id,
-            title=v.title,
-            video_url=v.video_url,
-            channel_youtube_id=v.channel.youtube_channel_id if v.channel else None,
-            channel_name=v.channel.name if v.channel else None,
-            channel_url=v.channel.youtube_url if v.channel else None,
-            saved_at=v.saved_at,
-            published_at=v.published_at,
-        )
-        for v in videos
-    ]
+    video_exports = [map_video_to_export(v) for v in videos]
 
     export_data = ExportData(
         version="1.0",
@@ -135,19 +123,7 @@ async def export_all(db: AsyncSession = Depends(get_db)):
     )
     videos = videos_result.scalars().all()
 
-    video_exports = [
-        VideoExport(
-            youtube_video_id=v.youtube_video_id,
-            title=v.title,
-            video_url=v.video_url,
-            channel_youtube_id=v.channel.youtube_channel_id if v.channel else None,
-            channel_name=v.channel.name if v.channel else None,
-            channel_url=v.channel.youtube_url if v.channel else None,
-            saved_at=v.saved_at,
-            published_at=v.published_at,
-        )
-        for v in videos
-    ]
+    video_exports = [map_video_to_export(v) for v in videos]
 
     export_data = ExportData(
         version="1.0",

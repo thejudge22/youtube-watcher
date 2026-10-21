@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..models.channel import Channel
 from ..models.video import Video
 from ..config import settings as app_settings
+from .youtube_utils import get_channel_url
 
 logger = logging.getLogger(__name__)
 
@@ -86,11 +87,11 @@ class BackupService:
                     v.video_url,
                     v.saved_at,
                     v.published_at,
-                    c.youtube_channel_id as channel_youtube_id,
-                    c.name as channel_name,
+                    v.channel_youtube_id,
+                    COALESCE(v.channel_name, c.name) as channel_name,
                     c.youtube_url as channel_url
                 FROM videos v
-                LEFT JOIN channels c ON v.channel_youtube_id = c.youtube_channel_id
+                LEFT JOIN channels c ON c.id = v.channel_id
                 WHERE v.status = 'saved'
                 ORDER BY v.saved_at DESC
             """)
@@ -118,7 +119,9 @@ class BackupService:
                         "video_url": v["video_url"],
                         "channel_youtube_id": v["channel_youtube_id"],
                         "channel_name": v["channel_name"],
-                        "channel_url": v["channel_url"],
+                        "channel_url": v["channel_url"] or (
+                            get_channel_url(v["channel_youtube_id"]) if v["channel_youtube_id"] else None
+                        ),
                         "saved_at": v["saved_at"],
                         "published_at": v["published_at"],
                     }
