@@ -2,6 +2,7 @@
 RSS feed parser for YouTube channels.
 """
 
+import asyncio
 import httpx
 import feedparser
 import yt_dlp
@@ -225,16 +226,18 @@ async def fetch_videos(rss_url: str, limit: int = 15, timeout: float = 10.0) -> 
         return videos
 
 
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=1, max=10),
-    retry=retry_if_exception_type((yt_dlp.utils.DownloadError,)),
-)
+def _extract_info(url: str, opts: dict) -> dict:
+    """Run yt-dlp's blocking metadata extraction (call via asyncio.to_thread)."""
+    with yt_dlp.YoutubeDL(opts) as ydl:
+        return ydl.extract_info(url, download=False)
+
+
 async def fetch_video_by_id(video_id: str, timeout: float = 10.0) -> VideoInfo:
     """
     Fetch video information using yt-dlp.
 
-    Retries up to 3 times with exponential backoff on download errors.
+    Extraction runs in a worker thread so it never blocks the event loop;
+    yt-dlp retries transient failures itself (extractor_retries).
 
     Includes Shorts detection based on URL pattern (Issue #8).
 
@@ -256,11 +259,12 @@ async def fetch_video_by_id(video_id: str, timeout: float = 10.0) -> VideoInfo:
             'no_warnings': True,
             'skip_download': True,
             'extract_flat': False,  # We need full info for description/tags
+            'socket_timeout': timeout,
+            'extractor_retries': 3,
         }
 
-        # Extract video information
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(video_url, download=False)
+        # Extract video information without blocking the event loop
+        info = await asyncio.to_thread(_extract_info, video_url, ydl_opts)
 
         # Extract fields from yt-dlp output
         title = info.get('title', '')
@@ -296,11 +300,6 @@ async def fetch_video_by_id(video_id: str, timeout: float = 10.0) -> VideoInfo:
         raise ValueError(f"Failed to fetch video info for {video_id}: {str(e)}")
 
 
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=1, max=10),
-    retry=retry_if_exception_type((yt_dlp.utils.DownloadError,)),
-)
 async def fetch_playlist_video_ids(playlist_url: str, timeout: float = 30.0) -> list[str]:
     """
     Fetch all video IDs from a YouTube playlist using yt-dlp.
@@ -324,11 +323,12 @@ async def fetch_playlist_video_ids(playlist_url: str, timeout: float = 30.0) -> 
             'no_warnings': True,
             'extract_flat': True,  # Only get video IDs, not full metadata
             'skip_download': True,
+            'socket_timeout': timeout,
+            'extractor_retries': 3,
         }
 
-        # Extract playlist information
-        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-            info = ydl.extract_info(playlist_url, download=False)
+        # Extract playlist information without blocking the event loop
+        info = await asyncio.to_thread(_extract_info, playlist_url, ydl_opts)
 
         if not info:
             raise ValueError(f"Could not extract playlist info from: {playlist_url}")
