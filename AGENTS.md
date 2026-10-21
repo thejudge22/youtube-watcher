@@ -26,7 +26,7 @@ YouTube-Watcher is a self-hosted, Docker-based web application for managing YouT
 
 | Date | Change |
 |------|--------|
-| 2026-10-20 | Visual refresh (branch `ui-refresh-slate`): slate theme with one coral accent, desktop sidebar + phone bottom tab bar, flat cards (Save solid, Discard ghost), shared `PageHeader` and segmented toggles, gradients/glows removed, hard-coded colours replaced by theme tokens. All Inbox actions unchanged. |
+| 2026-10-20 | Visual refresh (merged to local `main`, not pushed): slate theme with one coral accent, desktop sidebar + phone bottom tab bar, flat cards (Save solid, Discard ghost), shared `PageHeader` and segmented toggles, gradients/glows removed, hard-coded colours replaced by theme tokens. All Inbox actions unchanged. QuickPlay: Play All removed, Play moved into each panel. |
 | 2026-10-20 | Backend hardening: closed a static-file path traversal, login rate limiting and versioned password hashes, persistent JWT secret with sliding sessions, safe import validation, subscriptions independent of saved videos, yt-dlp off the event loop, batched refresh, composite indexes, SQLite backup API, hashed dependency lock, CI test gate. See [plans/backend-improvements.md](plans/backend-improvements.md). |
 | 2026-09-11 | Added independent QuickPlay batch-removal controls for videos and Shorts; removed items move to Recently Deleted. |
 | 2026-05-27 | Created [DEVELOPER_GUIDE.md](DEVELOPER_GUIDE.md) and updated `AGENTS.md` context for future developers/agents. |
