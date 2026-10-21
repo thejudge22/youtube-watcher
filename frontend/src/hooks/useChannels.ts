@@ -29,6 +29,8 @@ export function useDeleteChannel() {
     mutationFn: (id: string) => channelsApi.delete(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['channels'] });
+      // Unsubscribing moves inbox videos to Recently Deleted and unlinks saved ones
+      queryClient.invalidateQueries({ queryKey: ['videos'] });
     },
   });
 }

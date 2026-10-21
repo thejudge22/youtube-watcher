@@ -108,7 +108,7 @@ export function ChannelListView({ channels }: ChannelListViewProps) {
               <Button
                 variant="danger"
                 onClick={() => {
-                  if (window.confirm(`Are you sure you want to delete "${channel.name}"?`)) {
+                  if (window.confirm(`Unsubscribe from "${channel.name}"?\n\nIts inbox videos will move to Recently Deleted. Saved videos stay in your library.`)) {
                     deleteChannel.mutate(channel.id);
                   }
                 }}
