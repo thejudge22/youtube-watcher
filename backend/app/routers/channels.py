@@ -15,9 +15,13 @@ from ..models.video import Video
 from ..schemas.channel import ChannelCreate, ChannelResponse, RefreshSummary
 from ..services.youtube_utils import extract_channel_id, get_rss_url, get_channel_url
 from ..services.rss_parser import fetch_channel_info, fetch_videos
-from ..services.settings_service import get_http_timeout, get_auto_detect_shorts
-from ..services.channels_service import process_new_videos, fetch_channel_videos, refresh_all_channels as refresh_all_channels_service
-from ..services.shorts_detector import detect_shorts_batch_http
+from ..services.settings_service import get_http_timeout
+from ..services.channels_service import (
+    detect_and_store_shorts,
+    process_new_videos,
+    refresh_all_channels as refresh_all_channels_service,
+    refresh_lock,
+)
 from ..exceptions import NotFoundError, AlreadyExistsError, ValidationError, ExternalServiceError
 
 router = APIRouter()
@@ -141,14 +145,18 @@ async def create_channel(channel_data: ChannelCreate, db: AsyncSession = Depends
     await db.flush()  # Flush to get the channel ID
 
     # Step 6: Create video records with status='inbox'
+    existing_result = await db.execute(
+        select(Video.youtube_video_id).where(
+            Video.youtube_video_id.in_([video_info.video_id for video_info in videos_info])
+        )
+    )
+    known_ids = set(existing_result.scalars().all())
     new_video_ids: list[str] = []
     for video_info in videos_info:
         # Skip if video already exists (may have been added via another channel)
-        existing = await db.execute(
-            select(Video).where(Video.youtube_video_id == video_info.video_id)
-        )
-        if existing.scalar_one_or_none():
+        if video_info.video_id in known_ids:
             continue
+        known_ids.add(video_info.video_id)
 
         video = Video(
             youtube_video_id=video_info.video_id,
@@ -169,20 +177,7 @@ async def create_channel(channel_data: ChannelCreate, db: AsyncSession = Depends
     # Auto-detect shorts for new videos (Issue #55)
     if new_video_ids:
         await db.flush()  # Ensure new videos are in DB before UPDATE
-        try:
-            auto_detect = await get_auto_detect_shorts(db)
-            if auto_detect:
-                results = await detect_shorts_batch_http(new_video_ids, timeout=timeout)
-                now = datetime.now(timezone.utc)
-                for vid, is_short in results.items():
-                    if is_short is not None:
-                        await db.execute(
-                            Video.__table__.update()
-                            .where(Video.youtube_video_id == vid)
-                            .values(is_short=is_short, is_short_detected_at=now)
-                        )
-        except Exception as e:
-            logger.warning(f"Auto shorts detection failed for new channel: {e}")
+        await detect_and_store_shorts(db, new_video_ids)
 
     await db.commit()
     await db.refresh(channel)
@@ -247,17 +242,18 @@ async def refresh_channel(
     if not channel:
         raise NotFoundError("Channel", channel_id)
 
-    # Fetch current RSS feed
-    timeout = await get_http_timeout(db)
-    try:
-        videos_info = await fetch_videos(channel.rss_url, limit=50, timeout=timeout)
-    except Exception as e:
-        raise ExternalServiceError("YouTube", "fetch videos", str(e))
+    async with refresh_lock:
+        # Fetch current RSS feed
+        timeout = await get_http_timeout(db)
+        try:
+            videos_info = await fetch_videos(channel.rss_url, limit=50, timeout=timeout)
+        except Exception as e:
+            raise ExternalServiceError("YouTube", "fetch videos", str(e))
 
-    # Add new videos and update channel
-    new_videos_added = await process_new_videos(db, channel, videos_info)
+        # Add new videos and update channel
+        await process_new_videos(db, channel, videos_info)
 
-    await db.commit()
+        await db.commit()
     await db.refresh(channel)
 
     return await channel_to_response(db, channel)

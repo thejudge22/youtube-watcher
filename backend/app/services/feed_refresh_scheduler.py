@@ -14,6 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models.setting import Setting
 from .backup_scheduler import get_scheduler, get_async_session
+from ..schemas.channel import RefreshSummary
 from .channels_service import refresh_all_channels
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,20 @@ INTERVAL_HOURS = {
     '12h': 12,
     '24h': 24,
 }
+
+
+def summarize_refresh_outcome(summary: RefreshSummary) -> tuple[str, Optional[str]]:
+    """
+    Turn a refresh summary into (status, error) for the settings row.
+
+    'failed' only when no channel refreshed; partial failures stay 'success' with
+    an error summary so they are visible without hiding the successful part.
+    """
+    if not summary.errors:
+        return "success", None
+    status = "success" if summary.channels_refreshed > 0 else "failed"
+    message = f"{len(summary.errors)} channel(s) failed. First error: {summary.errors[0]}"
+    return status, message[:500]
 
 
 async def run_scheduled_refresh():
@@ -46,6 +61,7 @@ async def run_scheduled_refresh():
 
             # Run the refresh
             summary = await refresh_all_channels(db)
+            status, error = summarize_refresh_outcome(summary)
 
             # Update status
             await db.execute(
@@ -53,8 +69,8 @@ async def run_scheduled_refresh():
                 .where(Setting.id == "1")
                 .values(
                     last_refresh_at=datetime.now(timezone.utc),
-                    last_refresh_status='success',
-                    last_refresh_error=None
+                    last_refresh_status=status,
+                    last_refresh_error=error
                 )
             )
             await db.commit()
