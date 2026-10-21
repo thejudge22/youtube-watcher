@@ -1,6 +1,7 @@
 import type { Channel } from '../../types';
 import { Button } from '../common/Button';
 import { useDeleteChannel, useRefreshChannel } from '../../hooks/useChannels';
+import { safeExternalUrl } from '../../utils/safeUrl';
 
 interface ChannelListViewProps {
   channels: Channel[];
@@ -65,7 +66,7 @@ export function ChannelListView({ channels }: ChannelListViewProps) {
             <div className="col-span-3 min-w-0">
               <h3 className="text-text-primary font-medium truncate">{channel.name}</h3>
               <a
-                href={channel.youtube_url}
+                href={safeExternalUrl(channel.youtube_url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-accent-blue hover:text-accent-blue-hover text-sm flex items-center gap-1 mt-0.5"

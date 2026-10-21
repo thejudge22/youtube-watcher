@@ -9,6 +9,7 @@ import {
   PlayIcon,
   ArrowTopRightOnSquareIcon
 } from '@heroicons/react/24/outline';
+import { safeExternalUrl } from '../../utils/safeUrl';
 
 interface VideoCardProps {
   video: Video;
@@ -97,7 +98,7 @@ export function VideoCard({
 
         {/* Thumbnail - fixed width */}
         <a
-          href={video.video_url}
+          href={safeExternalUrl(video.video_url)}
           target="_blank"
           rel="noopener noreferrer"
           className="flex-shrink-0 w-44 group"
@@ -137,7 +138,7 @@ export function VideoCard({
         {/* Content - flexible */}
         <div className="flex-1 min-w-0">
           <a
-            href={video.video_url}
+            href={safeExternalUrl(video.video_url)}
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-text-primary hover:text-accent-blue transition-colors line-clamp-1 block group/link"
@@ -221,7 +222,7 @@ export function VideoCard({
         >
           {/* Thumbnail - fixed aspect ratio */}
           <a
-            href={video.video_url}
+            href={safeExternalUrl(video.video_url)}
             target="_blank"
             rel="noopener noreferrer"
             className="flex-shrink-0"
@@ -261,7 +262,7 @@ export function VideoCard({
           {/* Content - fills remaining space */}
           <div className="p-2.5 flex-1 flex flex-col min-h-0">
             <a
-              href={video.video_url}
+              href={safeExternalUrl(video.video_url)}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm font-medium text-text-primary hover:text-accent-blue transition-colors line-clamp-2 block"
@@ -335,7 +336,7 @@ export function VideoCard({
       >
         {/* Thumbnail - fixed aspect ratio */}
         <a
-          href={video.video_url}
+          href={safeExternalUrl(video.video_url)}
           target="_blank"
           rel="noopener noreferrer"
           className="flex-shrink-0"
@@ -375,7 +376,7 @@ export function VideoCard({
         {/* Content - fills remaining space */}
         <div className="p-4 flex-1 flex flex-col min-h-0">
           <a
-            href={video.video_url}
+            href={safeExternalUrl(video.video_url)}
             target="_blank"
             rel="noopener noreferrer"
             className="block group/link"

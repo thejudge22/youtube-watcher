@@ -7,6 +7,7 @@ import {
   TrashIcon,
   VideoCameraIcon 
 } from '@heroicons/react/24/outline';
+import { safeExternalUrl } from '../../utils/safeUrl';
 
 interface ChannelCardProps {
   channel: Channel;
@@ -47,7 +48,7 @@ export function ChannelCard({ channel }: ChannelCardProps) {
           </h3>
           
           <a
-            href={channel.youtube_url}
+            href={safeExternalUrl(channel.youtube_url)}
             target="_blank"
             rel="noopener noreferrer"
             className="text-text-secondary hover:text-accent-blue text-sm mt-1 inline-flex items-center gap-1 transition-colors group/link"

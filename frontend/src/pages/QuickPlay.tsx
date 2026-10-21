@@ -13,6 +13,7 @@ import { LoadingSpinner } from '../components/common/LoadingSpinner';
 import { Modal } from '../components/common/Modal';
 import { openPlaylist } from '../utils/playlist';
 import type { Video } from '../types';
+import { safeExternalUrl } from '../utils/safeUrl';
 
 type QuickPlaySection = 'regular' | 'shorts';
 
@@ -94,7 +95,7 @@ function QuickPlayPanel({
             {videos.map((video) => (
               <a
                 key={video.id}
-                href={video.video_url}
+                href={safeExternalUrl(video.video_url)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex gap-3 p-2 rounded-lg hover:bg-bg-tertiary transition-colors group"

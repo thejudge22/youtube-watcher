@@ -675,8 +675,8 @@
       }
 
       return `<div class="video-list">${videoList.map(v => `
-        <a class="video-item" href="${v.video_url}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(v.title)}">
-          <img class="video-thumbnail" src="${v.thumbnail_url || ''}" alt="" loading="lazy" onerror="this.style.display='none'">
+        <a class="video-item" href="https://www.youtube.com/watch?v=${encodeURIComponent(v.youtube_video_id)}" target="_blank" rel="noopener noreferrer" title="${escapeHtml(v.title)}">
+          <img class="video-thumbnail" src="${v.thumbnail_url && v.thumbnail_url.startsWith('https://') ? escapeHtml(v.thumbnail_url) : ''}" alt="" loading="lazy" onerror="this.style.display='none'">
           <div class="video-info">
             <div class="video-title">${escapeHtml(v.title)}</div>
             <div class="video-meta">
@@ -697,9 +697,12 @@
 
     function escapeHtml(text) {
       if (!text) return '';
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
     // Playlist actions

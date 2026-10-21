@@ -42,6 +42,13 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 const STORAGE_KEY = 'youtube_watcher_token';
 
+/** Drop API responses the service worker cached for the previous session. */
+function clearApiCache(): void {
+  if ('caches' in window) {
+    void caches.delete('api-cache');
+  }
+}
+
 interface AuthProviderProps {
   children: ReactNode;
 }
@@ -105,6 +112,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         } else {
           // Token is invalid, remove it
           localStorage.removeItem(STORAGE_KEY);
+          clearApiCache();
           setState({
             isAuthEnabled: true,
             isAuthenticated: false,
@@ -116,6 +124,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (axios.isAxiosError(err) && err.response && err.response.status < 500) {
           // The server rejected the token check outright: log in again
           localStorage.removeItem(STORAGE_KEY);
+          clearApiCache();
           setState({
             isAuthEnabled: true,
             isAuthenticated: false,
@@ -150,6 +159,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   const handleSessionExpired = useCallback(() => {
     localStorage.removeItem(STORAGE_KEY);
+    clearApiCache();
     clearAuthToken();
     setState({
       isAuthEnabled: true,
@@ -237,6 +247,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Clear token from storage and API client
     localStorage.removeItem(STORAGE_KEY);
+    clearApiCache();
     clearAuthToken();
 
     // Reset state
