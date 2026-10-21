@@ -60,7 +60,7 @@ Open http://localhost:38000. After changing the code, add `--build` to rebuild t
 
 ## Authentication
 
-Authentication is disabled by default. Enable it when exposing to public networks.
+Authentication is disabled by default. Enable it on any network you don't fully trust: with it off, any web page you visit could reach the app's API through DNS rebinding. You can also set `ALLOWED_HOSTS` (comma-separated host names or IPs you use to reach the app) to reject requests addressed to any other host.
 
 ### Username/Password Login
 
@@ -128,7 +128,7 @@ curl http://localhost:38000/api/channels \
 
 ## API Documentation
 
-Interactive docs available at `/docs` when the app is running.
+Interactive docs are available at `/docs` when authentication is disabled.
 
 ## Tech Stack
 

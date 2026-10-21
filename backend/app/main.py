@@ -8,7 +8,10 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-from fastapi import FastAPI, Depends, HTTPException
+from typing import Optional
+
+from fastapi import FastAPI, Depends, HTTPException, Request
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 
 # Ensure common MIME types are registered
@@ -20,6 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from .routers import channels, videos, import_export, settings, backup, auth, auto_refresh
 from .auth import require_auth
+from .config import settings as app_config
 from .database import get_db
 from .spa import register_frontend_routes
 from .models.setting import Setting
@@ -74,7 +78,44 @@ async def lifespan(app: FastAPI):
     stop_scheduler()
 
 
-app = FastAPI(lifespan=lifespan)
+def api_docs_urls(auth_enabled: bool) -> dict[str, Optional[str]]:
+    """Interactive API docs are only exposed when authentication is disabled."""
+    if auth_enabled:
+        return {"docs_url": None, "redoc_url": None, "openapi_url": None}
+    return {"docs_url": "/docs", "redoc_url": "/redoc", "openapi_url": "/openapi.json"}
+
+
+def parse_allowed_hosts(value: str) -> list[str]:
+    """
+    Parse ALLOWED_HOSTS (comma-separated). Empty means no Host check.
+
+    localhost and 127.0.0.1 are always added so the container healthcheck works.
+    """
+    hosts = [h.strip() for h in value.split(",") if h.strip()]
+    if not hosts:
+        return []
+    for required in ("localhost", "127.0.0.1"):
+        if required not in hosts:
+            hosts.append(required)
+    return hosts
+
+
+app = FastAPI(lifespan=lifespan, **api_docs_urls(app_config.auth_enabled))
+
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers.setdefault("X-Content-Type-Options", "nosniff")
+    response.headers.setdefault("X-Frame-Options", "DENY")
+    response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+    return response
+
+
+# Optional Host header allow-list (blocks DNS-rebinding attacks); off unless ALLOWED_HOSTS is set
+_allowed_hosts = parse_allowed_hosts(app_config.allowed_hosts)
+if _allowed_hosts:
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=_allowed_hosts)
 
 # Register exception handlers for consistent error responses
 from fastapi.exceptions import RequestValidationError

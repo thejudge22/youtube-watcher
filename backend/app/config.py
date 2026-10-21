@@ -31,4 +31,8 @@ class Settings(BaseSettings):
     # When set, include the header X-API-Key: <your-api-key> on API requests
     api_key: str = ""
 
+    # Optional comma-separated Host allow-list (e.g. "watcher.example.com,192.168.1.10").
+    # When set, requests for any other Host header are rejected (blocks DNS rebinding).
+    allowed_hosts: str = ""
+
 settings = Settings()
