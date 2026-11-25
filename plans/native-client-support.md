@@ -2,7 +2,7 @@
 
 **Created:** 2026-10-21, from the native-client compatibility audit of `v2026-10-21`. The report lives with the apps' planning docs (`QuickPlayNativeAppsPlans/COMPATIBILITY_2026-10-21.md` in the QuickPlayClient folder).
 **Goal:** the macOS/iPhone/iPad and Android apps get the same priority as the web app. Backend changes can't break them silently, and the shared screens stay in step.
-**Status (2026-10-21):** N1, N4 and N6 are done. N2 isn't needed. N3 is open. N5 needs a decision.
+**Status (2026-11-23):** N1, N4, N5 and N6 are done. N2 isn't needed. N3 is open.
 
 The client-side plans are in `QuickPlayNativeAppsPlans/plans/`. The rules this plan enforces are in [docs/native-clients.md](../docs/native-clients.md).
 
@@ -12,7 +12,7 @@ The client-side plans are in `QuickPlayNativeAppsPlans/plans/`. The rules this p
 | N2 | A way to check an API key without guessing an endpoint | P3 | Additive | **Not needed:** the 1.1 apps check the key with `GET /api/videos/saved?limit=1`, which works on every server version |
 | N3 | Restore a discarded video to the Inbox (for Undo) | P3 | Additive | Open |
 | N4 | Keep `DELETE /api/videos/{id}` until both apps use `bulk-discard` | Note | None | The 1.1 apps no longer call it. Keep it until older installs are gone |
-| N5 | Put the native contract and plans under version control | P2 | None | **Decision needed:** this repo is public, so moving the native docs here would publish them (see below) |
+| N5 | Put the native contract and plans under version control | P2 | None | **Done (2026-11-23):** consolidated into the private GitHub monorepo `thejudge22/QuickPlayClient` |
 | N6 | Native-client step in the release workflow | P2 | None | **Done:** added to the release convention in `AGENTS.md` |
 
 ---
@@ -41,14 +41,9 @@ Undo after a discard can't be done today: `POST /videos/{id}/save` moves the vid
 
 Both native apps call `DELETE /api/videos/{id}` from QuickPlay delete mode. Client plan S1 switches them to `bulk-discard`. Don't remove or change DELETE until both apps have shipped that change and been updated on the devices in use.
 
-## N5. Version control for the native contract (P2, decision needed)
+## N5. Version control for the native contract (P2, Done 2026-11-23)
 
-`QuickPlayClient/` is an umbrella folder, not a git repository. So `API_SPEC.md`, the fixtures, the design system and the native plans have no history and no remote. The options:
-
-1. **Move `QuickPlayNativeAppsPlans/` into this repo** as `docs/native/`. The contract would change in the same commit as the API. But **this repository is public on GitHub**, so the next push would publish the native apps' internal plans and handoff notes. The fixtures are already sample data.
-2. **Make `QuickPlayNativeAppsPlans/` its own private repo** on the LAN Gitea, next to the two app repos. Recommended now that the public-repo issue is known. The contract test (N1) and `docs/native-clients.md` already keep the backend side of the guarantee in this repo.
-
-Not done yet: option 1 publishes content, and option 2 creates and pushes a repo, so either one is your call.
+Resolved on 2026-11-23 by consolidating both native clients (`YTW-QuickPlay/`, `YTW-Quickplay-Android/`), `QuickPlayNativeAppsPlans/`, and the root handoff/agent docs into a single private GitHub monorepo (`thejudge22/QuickPlayClient`) with full commit history preserved. This keeps the public `youtube-watcher` repository clean of internal client plans while placing the native contract, fixtures, and apps under shared version control.
 
 ## N6. Release workflow (P2)
 
